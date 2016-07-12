@@ -117,3 +117,47 @@ In your template:
 #### alliance_bundle
 
 ### Management
+
+### Storage
+
+Use the below if you are using S3 for file storage and want to prefix media and
+/ or static files - otherwise they will all be dumped unprefixed in the bucket.
+
+Configure S3 for use with S3 Boto:
+
+```python
+AWS_ACCESS_KEY_ID = 'ACCESS_KEY'
+AWS_STORAGE_BUCKET_NAME = 'bucket-name'
+AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
+```
+
+
+#### StaticStorage
+
+This is an extension to S3BotoStorage that specifies a prefix for static files.
+This allows you to put static files and media files in S3 without worrying
+about clobbering each other.
+
+Configuration:
+
+```python
+STATICFILES_STORAGE = 'allianceutils.storage.StaticStorage'
+STATICFILES_LOCATION="static"
+
+STATIC_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, STATICFILES_LOCATION)
+```
+
+#### MediaStorage
+
+This is an extension to S3BotoStorage that specifies a prefix for static files.
+This allows you to put static files and media files in S3 without worrying
+about clobbering each other.
+
+Configuration:
+
+```python
+DEFAULT_FILE_STORAGE = 'allianceutils.storage.MediaStorage'
+MEDIAFILES_LOCATION="media"
+
+MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
+```
