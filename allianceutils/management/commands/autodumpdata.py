@@ -1,6 +1,8 @@
 import os
 
+import django
 import django.apps
+from django.conf import settings
 from django.core import serializers
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
@@ -60,6 +62,38 @@ class Command(BaseCommand):
                 app_configs = [apps.get_app_config(app_label) for app_label in app_labels]
         except (LookupError, ImportError) as e:
             raise CommandError("%s. Are you sure your INSTALLED_APPS setting is correct?" % e)
+
+        # no longer using yaml because of timezone errors: http://stackoverflow.com/a/13711316
+
+        json_serializer_overriden = settings.SERIALIZATION_MODULES.get('json') == 'allianceutils.serializers.json_orminheritancefix'
+
+        if django.get_version().split('.') < ['1', '9', '0']:
+            if not json_serializer_overriden:
+                message = "You need settings.SERIALIZATION_MODULES['json'] = 'allianceutils.serializers.json_orminheritancefix' or deserialization will fail where a PK is also a FK"
+                self.stdout.write(self.style.WARNING(message))
+
+        format_candidates = [options['format']]
+        if json_serializer_overriden:
+            format_candidates += ['json']
+        else:
+            format_candidates += ['json_orminheritancefix', 'json_ordered', 'json']
+
+        for format_selected in format_candidates:
+            try:
+                serializers.get_serializer(format_selected)
+                options['extension'] = 'json'
+                break
+            except serializers.SerializerDoesNotExist:
+                format_selected = None
+                pass
+
+        if options['format'] is not None and format_selected != options['format']:
+            message = 'Desired serialization format "%s" not available: falling back to serialization format "%s". Did you set settings.SERIALIZATION_MODULES correctly?' % (options['format'], format_selected)
+            self.stdout.write(self.style.WARNING(message))
+            options['extension'] = format_selected
+
+        options['format'] = format_selected
+
         output = []
         for app_config in app_configs:
             app_output = self.handle_app_config(app_config, **options)
@@ -68,35 +102,19 @@ class Command(BaseCommand):
         return '\n'.join(output)
 
     def handle_app_config(self, app_config, **options):
-
         try:
             f = app_config.module.models.get_autodump_labels
         except AttributeError:
             f = get_autodump_labels
 
-        # no longer using yaml because of timezone errors: http://stackoverflow.com/a/13711316
-
-        format = options['format'] or 'json_ordered'
-        format_extension = options['format'] or 'json'
-
-        try:
-            serializers.get_serializer(format)
-        except serializers.SerializerDoesNotExist:
-            if format == 'json_ordered':
-                message = '%s serialization format not available: falling back to unordered json serialization format. Did you set settings.SERIALIZATION_MODULES?' % format
-                self.stdout.write(self.style.WARNING(message))
-                format = 'json'
-            else:
-                raise
-
         app_models = f(app_config, options['fixture'])
         if app_models:
-            output_file = os.path.join(app_config.path, 'fixtures', options['fixture'] + '.' + format_extension)
+            output_file = os.path.join(app_config.path, 'fixtures', options['fixture'] + '.' + options['extension'])
             call_command('dumpdata',
                 *app_models,
                 use_natural_foreign_keys=True,
                 use_natural_primary_keys=True,
-                format=format,
+                format=options['format'],
                 indent=2,
                 output=output_file
             )

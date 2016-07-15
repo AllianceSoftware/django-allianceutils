@@ -99,16 +99,31 @@ FIXME
 
 #### JSON Ordered
 
-A version of django's core json serializer that outputs field in sorted order
-(the built-in one uses a standard dict() with completely unpredictable order which makes fixture diffs often contain field ordering changes).
+* A version of django's core json serializer that outputs field in sorted order
+* The built-in one uses a standard `dict` with completely unpredictable order which makes fixture diffs often contain field ordering changes
 
 * Setup
+    * Add to `SERIALIZATION_MODULES` in your settings
+    * This will allow you to do fixture dumps with `--format json_ordered`
+    * Note that django treats this as the file extension to use; `autodumpdata` overrides this to `.json`
 
-Add to `SERIALIZATION_MODULES` in your settings.
-
-```
+```python
 SERIALIZATION_MODULES = {
     'json_ordered': 'allianceutils.serializers.json_ordered',
+}
+```
+
+#### JSON ORM Inheritance Fix
+
+* Django does not properly handle (de)serialise models with natural keys where the PK is a FK
+    * This shows up particularly with multi-table inheritance and the user profile pattern
+    * https://code.djangoproject.com/ticket/24607
+    * CURRENTLY THIS ONLY WORKS FOR DJANGO 1.8
+* We need to replace not only the serializer but also the deserializer
+
+```python
+SERIALIZATION_MODULES = {
+    'json': 'allianceutils.serializers.json_orminheritancefix',
 }
 ```
 
