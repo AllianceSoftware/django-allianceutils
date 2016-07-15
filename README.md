@@ -255,15 +255,12 @@ FIXME
 
 #### TimestampWebpackLoader
 
-Extension of WebpackLoader that appends a ?ts=(timestamp) query string based on last modified time of chunk to serve.
+* Extension of WebpackLoader that appends a `?ts=(timestamp)` query string based on last modified time of chunk to serve.
+* Allows static asset web server to send far future expiry headers without worrying about cache invalidation.
 
-Allows static asset web server to send far future expiry headers without worrying about cache invalidation.
+* Example usage
 
-* Setup
-
-Set the `LOADER_CLASS` key in `WEBPACK_LOADER` config to `allianceutils.webpack.TimestampWebpackLoader`. eg.
-
-```
+```python
 WEBPACK_LOADER = {
     'DEFAULT': {
         'BUNDLE_DIR_NAME': 'dist/prod/',
