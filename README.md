@@ -2,6 +2,20 @@
 
 A collection of utilities for django projects.
 
+* [Installation](#installation)
+* [Package](#package)
+    * [Commands](#commands)
+    * [Views](#views)
+    * [Decorators](#decorators)
+    * [Filters](#filters)
+    * [Middleware](#middleware)
+    * [Migrations](#migrations)
+    * [API](#api)
+    * [Models](#models)
+    * [Auth](#auth)
+    * [Webpack](#webpack)
+    * [Serializers](#serializers)
+
 ## Installation
 
 `pip install -e git+git@gitlab.internal.alliancesoftware.com.au:alliance/alliance-django-utils.git@master#egg=allianceutils`
