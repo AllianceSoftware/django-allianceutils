@@ -200,10 +200,11 @@ MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
 
 #### script_json
 
+* Dump a python object into json for embedding in a script tag
+
 * Usage
 
-In your template:
-```
+```html
 {% load script_json %}
 
 <script>window.__APP_SETTINGS = {{ APP_SETTINGS|script_json }};</script>
@@ -211,7 +212,35 @@ In your template:
 
 #### alliance_bundle
 
-FIXME
+* A wrapper to the webpack_bundle tag that accounts for the fact that
+    * in production builds there will be separate JS + CSS files
+    * in dev builds the CSS will be embedded in the webpack JS bundle
+* Assumes that each JS file is paired with a CSS file.
+    * If you are only including JS without extracted CSS then use `webpack_bundle`, or include a placeholder CSS bundle (will just include a webpack stub; if you are using `django-compress` then overhead from this will be minimal)
+
+* Example Usage
+
+```html
+{% load alliance_bundle %}
+<html>
+<head>
+  {% alliance_bundle 'shared-bower-jqueryui' 'css' %}
+  {% alliance_bundle 'shared-bower-common' 'css' %}
+  {% alliance_bundle 'shared-styles' 'css' %}
+</head>
+<body>
+  
+  ...
+  
+  {% alliance_bundle 'shared-bower-jqueryui' 'js' %}
+  {% alliance_bundle 'shared-bower-common' 'js' %}
+  {% alliance_bundle 'shared-styles' 'js' %}
+</body>
+</html>
+```
+
+* In production (`not settings.DEBUG`), the css tag will be a standard `<link rel="stylesheet" ...>` tag 
+* In development (`settings.DEBUG`), the css tag will be a webpack JS inclusion that contains the CSS (and inherit webpack hotloading etc)
 
 ### Views 
 
