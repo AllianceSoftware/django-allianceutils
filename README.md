@@ -83,11 +83,11 @@ FIXME
 
 #### MultipleFieldCharFilter
 
-Search for a string across multiple fields. Requires django_filters.
+Search for a string across multiple fields. Requires `django_filters`.
 
 * Usage 
 
-```
+```python
 from allianceutils.filters import MultipleFieldCharFilter
 
 # ...
@@ -103,15 +103,15 @@ FIXME
 
 #### CurrentUserMiddleware
 
-Middleware to enable accessing the currently logged-in user without a request object.
+* Middleware to enable accessing the currently logged-in user without a request object.
+    * Properly handles multithreaded python by keeping track of the current user in a `dict` of `{'threadId': User}` 
 
 * Setup
-
-Add `allianceutils.middleware.CurrentUserMiddleware` to MIDDLEWARE_CLASSES.
+    * Add `allianceutils.middleware.CurrentUserMiddleware` to `MIDDLEWARE_CLASSES`.
 
 * Usage
 
-```
+```python
 from allianceutils.middleware import CurrentUserMiddleware
 
 user = CurrentUserMiddleware.get_user()
@@ -159,10 +159,9 @@ SERIALIZATION_MODULES = {
 
 ### Storage
 
-Use the below if you are using S3 for file storage and want to prefix media and
-/ or static files - otherwise they will all be dumped unprefixed in the bucket.
+* Use the below if you are using S3 for file storage and want to prefix media and / or static files - otherwise they will all be dumped unprefixed in the bucket.
 
-Configure S3 for use with S3 Boto:
+* Configure S3 for use with S3 Boto
 
 ```python
 AWS_ACCESS_KEY_ID = 'ACCESS_KEY'
@@ -170,14 +169,11 @@ AWS_STORAGE_BUCKET_NAME = 'bucket-name'
 AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
 ```
 
-
 #### StaticStorage
 
-This is an extension to S3BotoStorage that specifies a prefix for static files.
-This allows you to put static files and media files in S3 without worrying
-about clobbering each other.
-
-Configuration:
+* An extension to S3BotoStorage that specifies a prefix for static files.
+* Allows you to put static files and media files in S3 without worrying about clobbering each other.
+* Configuration
 
 ```python
 STATICFILES_STORAGE = 'allianceutils.storage.StaticStorage'
@@ -188,9 +184,8 @@ STATIC_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, STATICFILES_LOCATION)
 
 #### MediaStorage
 
-This is an extension to S3BotoStorage that specifies a prefix for static files.
-This allows you to put static files and media files in S3 without worrying
-about clobbering each other.
+* An extension to S3BotoStorage that specifies a prefix for static files.
+* Allows you to put static files and media files in S3 without worrying about clobbering each other.
 
 Configuration:
 
