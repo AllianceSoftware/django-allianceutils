@@ -37,7 +37,37 @@ FIXME
 
 #### autodumpdata
 
-FIXME  
+* Designed to more conveniently allow dumping of data from different models into different fixtures
+* Strongly advised to also use the [Serializers](#serializers)
+
+* For each model, add a list of fixtures that this model should be part of in the `fixures_autodump` list
+    * The following will dump the Customer model as part of the `customers` and `test` fixtures
+
+```python
+class Customer(models.Model):
+    fixtures_autodump = ['customers', 'test']
+```
+
+* If `autodumpdata` is invoked without a fixture, it defaults to `dev`
+* This is particularly useful for dumping django group permissions (which you typically want to send to a live server) separately from test data
+* To add autodump metadata to models that are part of core django, add the following to one of your apps:
+
+```python
+# This will take the default fixture dumping config for this app and add the core auth.group and authtools.user
+# tables to the groups and users fixtures respsectively 
+def get_autodump_labels(app_config, fixture):
+    import allianceutils.management.commands.autodumpdata
+    extras = {
+        'groups': [
+            'auth.group',
+        ],
+        'users': [
+            'authtools.user',
+        ],
+    }
+    return allianceutils.management.commands.autodumpdata.get_autodump_labels(app_config, fixture) + extras.get(fixture, [])
+```
+
 
 #### mysqlquickdump
 
