@@ -159,6 +159,8 @@ SERIALIZATION_MODULES = {
 
 ### Storage
 
+* Requires `django-storages` and `boto` to be installed
+
 * Use the below if you are using S3 for file storage and want to prefix media and / or static files - otherwise they will all be dumped unprefixed in the bucket.
 
 * Configure S3 for use with S3 Boto
@@ -173,6 +175,7 @@ AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
 
 * An extension to S3BotoStorage that specifies a prefix for static files.
 * Allows you to put static files and media files in S3 without worrying about clobbering each other.
+* Note that if using on Heroku this doesn't play nice with pipelines so you probably don't want to use it
 * Configuration
 
 ```python
