@@ -1,0 +1,10 @@
+#!/bin/bash -e
+set -o pipefail
+
+IFS=$'\n'
+FILES=(`git diff --cached --name-only --diff-filter=ACM allianceutils | ( egrep '\.py$' || true ) `)
+unset IFS
+
+if [ "${#FILES[@]}" -gt 0 ] ; then
+	bin/lint.sh "${FILES[@]}"
+fi

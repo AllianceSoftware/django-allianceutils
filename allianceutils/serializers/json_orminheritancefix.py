@@ -32,11 +32,10 @@ from django.core.serializers import base
 from django.core.serializers.base import DeserializationError
 from django.db import DEFAULT_DB_ALIAS
 from django.db import models
-from django.utils.encoding import force_text
 from django.utils import six
+from django.utils.encoding import force_text
 
 import allianceutils.serializers.json_ordered
-
 
 _NONE = object()
 
