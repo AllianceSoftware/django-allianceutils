@@ -15,6 +15,7 @@ import django
 
 is_ci = os.environ.get('CI_SERVER', 'no') == 'yes'
 
+
 def setup():
     BASE_DIR = os.path.dirname(__file__)
 
@@ -24,20 +25,23 @@ def setup():
         'PASSWORD': ('MYSQL_PASSWORD', None),
         'NAME': ('MYSQL_DATABASE', 'alliancedjangoutils'),
     }
-    db_vars = { var: os.environ.get(env_var, default) for var, (env_var, default) in db_vars.items() }
-    db_vars = { key: value for key, value in db_vars.items() if value }
+    db_vars = {var: os.environ.get(env_var, default) for var, (env_var, default) in db_vars.items()}
+    db_vars = {key: value for key, value in db_vars.items() if value}
     db_vars['ENGINE'] = 'django.db.backends.mysql'
     db_vars['OPTIONS'] = {
         'init_command': 'SET default_storage_engine=InnoDB',
         'read_default_file': '~/.my.cnf',
     }
 
-    if is_ci:
-        db_vars['TEST'] = {
-            'NAME': db_vars['NAME'],
-        }
+    # Django connects via the live DB in order to create/drop the test DB
+    # If the live DB doesn't exist then it bails out before even trying to
+    # create the test DB, so this doesn't really work
+    # if is_ci:
+    #     db_vars['TEST'] = {
+    #         'NAME': db_vars['NAME'],
+    #     }
 
-    DATABASES = { 'default': db_vars }
+    DATABASES = {'default': db_vars}
 
     INSTALLED_APPS = [
         'django.contrib.auth',

@@ -1,13 +1,13 @@
 # Attached service containers
 services:
-  - mysql:alliance-ephemeral
+  - alliance/mysql
 
 cache:
   paths:
     - .pip
 
 variables:
-  MYSQL_HOST: mysql
+  MYSQL_HOST: alliance-mysql
   MYSQL_USER: ephemeral_user
   MYSQL_PASSWORD: password
   MYSQL_DATABASE: ephemeral_db
@@ -19,7 +19,7 @@ before_script:
   # pre-warmed tox virtualenvs
   - ln -s /tox .tox
 
-image: alliance-python:levitest
+image: alliance/python
 
 # linting
 lint:
