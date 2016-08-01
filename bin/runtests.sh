@@ -18,4 +18,4 @@ if [ "$CI_SERVER" = "yes" ] && ! [ -e ~/.my.cnf ] ; then
 	EOM
 fi
 
-tox
+tox "$@"
