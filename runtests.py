@@ -19,21 +19,24 @@ def setup():
     BASE_DIR = os.path.dirname(__file__)
 
     db_vars = {
-        'HOST': 'MYSQL_HOST',
-        'USER': 'MYSQL_USER',
-        'PASSWORD': 'MYSQL_PASSWORD',
-        'NAME': 'MYSQL_DATABASE',
+        'HOST': ('MYSQL_HOST', None),
+        'USER': ('MYSQL_USER', None),
+        'PASSWORD': ('MYSQL_PASSWORD', None),
+        'NAME': ('MYSQL_DATABASE', 'alliancedjangoutils'),
     }
-    db_vars = { var: os.environ.get(env_var, '') for var, env_var in db_vars.items() }
+    db_vars = { var: os.environ.get(env_var, default) for var, (env_var, default) in db_vars.items() }
     db_vars = { key: value for key, value in db_vars.items() if value }
     db_vars['ENGINE'] = 'django.db.backends.mysql'
     db_vars['OPTIONS'] = {
         'init_command': 'SET default_storage_engine=InnoDB',
         'read_default_file': '~/.my.cnf',
     }
-    db_vars['TEST'] = {}
-    if 'NAME' in db_vars and is_ci:
-        db_vars['TEST']['NAME'] = db_vars['NAME']
+
+    if is_ci:
+        db_vars['TEST'] = {
+            'NAME': db_vars['NAME'],
+        }
+
     DATABASES = { 'default': db_vars }
 
     INSTALLED_APPS = [
