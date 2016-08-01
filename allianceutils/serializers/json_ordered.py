@@ -1,6 +1,7 @@
 import collections
 
 import django.core.serializers.json
+import django.utils.six as six
 
 
 class Serializer(django.core.serializers.json.Serializer):
@@ -10,5 +11,5 @@ class Serializer(django.core.serializers.json.Serializer):
     which makes fixture diffs often contain field ordering changes)
     """
     def end_object(self, obj):
-        self._current = collections.OrderedDict(sorted(self._current.iteritems()))
+        self._current = collections.OrderedDict(sorted(six.iteritems(self._current)))
         super(Serializer, self).end_object(obj)

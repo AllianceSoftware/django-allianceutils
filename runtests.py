@@ -40,6 +40,8 @@ def setup():
     DATABASES = { 'default': db_vars }
 
     INSTALLED_APPS = [
+        'django.contrib.auth',
+        'django.contrib.contenttypes',
         'allianceutils',
         'allianceutils.tests.serializers',
     ]
