@@ -1,0 +1,15 @@
+# hard (runtime) dependencies
+# keep this in sync with setup.py
+unipath
+
+# tox dependencies
+django_nose>=1.2
+django-filter
+django-storages
+django-webpack-loader
+djangorestframework
+isort
+mysqlclient
+
+# .. plus specific version dependencies defined in tox.ini
+# we can't list them here because of https://github.com/pypa/pip/issues/2367

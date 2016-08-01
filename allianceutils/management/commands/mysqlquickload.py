@@ -49,6 +49,9 @@ class Command(django.core.management.commands.flush.Command):
         sql_file = allianceutils.management.commands.mysqlquickdump.get_dump_file_path(options['dump_file'])
         cmd = [
             'mysql',
+            '--batch',
+            '--disable-auto-rehash',
+            '--no-auto-rehash',
             db_name,
         ]
 

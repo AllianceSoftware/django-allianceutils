@@ -1,0 +1,35 @@
+# Attached service containers
+services:
+  - alliance/mysql
+
+cache:
+  paths:
+    - .pip
+
+variables:
+  MYSQL_HOST: alliance-mysql
+  MYSQL_USER: ephemeral_user
+  MYSQL_PASSWORD: password
+  MYSQL_DATABASE: ephemeral_db
+  MYSQL_ROOT_PASSWORD: password
+
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip"
+
+before_script:
+  # pre-warmed tox virtualenvs
+  - ln -s /tox .tox
+
+image: alliance/python
+
+# linting
+lint:
+  script:
+    # we install required packages so linter's isort can know is(n't) a 3rd party package
+    - source /virtualenvs/py35-django18/bin/activate
+    - pip install -r requirements.txt
+    - bin/lint.sh
+
+# basic test
+test-python:
+  script:
+    - bin/runtests.sh

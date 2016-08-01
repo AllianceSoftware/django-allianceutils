@@ -1,1 +1,4 @@
 *.pyc
+
+allianceutils.egg-info/
+.tox/

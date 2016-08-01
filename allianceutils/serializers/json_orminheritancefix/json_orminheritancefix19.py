@@ -1,6 +1,6 @@
 """
 JSON serializer with the following properties:
- - output is ordered (so revision controll diffs are sane)
+ - output is ordered (so revision control diffs are sane)
  - Fixes multi-table inheritance as per
     - https://code.djangoproject.com/ticket/24607
     - https://github.com/django/django/pull/4477/files
@@ -32,16 +32,15 @@ from django.core.serializers import base
 from django.core.serializers.base import DeserializationError
 from django.db import DEFAULT_DB_ALIAS
 from django.db import models
-from django.utils.encoding import force_text
 from django.utils import six
+from django.utils.encoding import force_text
 
 import allianceutils.serializers.json_ordered
 
+# The ORM _meta changed in 1.9, this code only works with 1.8
+assert (1, 9) <= django.VERSION < (1, 10), 'json_orminheritancefix19 only works with django 1.9'
 
 _NONE = object()
-
-# The ORM _meta changed in 1.9, this code only works with 1.8
-assert django.get_version().split('.') < ['1', '9', '0'], 'json_orminheritancefix only works with django 1.8'
 
 
 class Serializer(allianceutils.serializers.json_ordered.Serializer):
@@ -54,10 +53,9 @@ class Serializer(allianceutils.serializers.json_ordered.Serializer):
 
     def get_dump_pk(self, obj, level):
         pk = obj._meta.pk
-
-        if pk.rel:
+        if pk.remote_field:
             if self.use_natural_foreign_keys:
-                return self.get_dump_pk(getattr(obj, pk.rel.field.name), level + 1)
+                return self.get_dump_pk(getattr(obj, pk.remote_field.field.name), level + 1)
             else:
                 return force_text(obj.pk, strings_only=True)
         elif self.use_natural_primary_keys and hasattr(obj, "natural_key"):
@@ -71,6 +69,7 @@ class Serializer(allianceutils.serializers.json_ordered.Serializer):
         pk = self.get_dump_pk(obj, 0)
         if pk is not _NONE:
             data["pk"] = pk
+        data['fields'] = self._current
         return data
 
 
@@ -85,7 +84,7 @@ def Deserializer(stream_or_string, **options):
         stream_or_string = stream_or_string.decode('utf-8')
     try:
         objects = json.loads(stream_or_string)
-        for obj in PythonDeserializer(objects, **options):
+        for obj in _PythonDeserializer(objects, **options):
             yield obj
     except GeneratorExit:
         raise
@@ -97,21 +96,21 @@ def Deserializer(stream_or_string, **options):
 def _get_by_natural_pk(model, npk):
     while True:
         pk = model._meta.pk
-        if pk.rel:
-            model = pk.rel.model
+        if pk.remote_field:
+            model = pk.remote_field.model
         else:
             return model._default_manager.get_by_natural_key(*npk).pk
 
 
-def PythonDeserializer(object_list, **options):
+def _PythonDeserializer(object_list, **options):
     """
     Deserialize simple Python objects back into Django ORM instances.
-
     It's expected that you pass the Python objects themselves (instead of a
     stream or a string) to the constructor
     """
     db = options.pop('using', DEFAULT_DB_ALIAS)
     ignore = options.pop('ignorenonexistent', False)
+    field_names_cache = {}  # Model: <list of field_names>
 
     for d in object_list:
         # Look up the model and starting build a dict of data for it.
@@ -124,7 +123,6 @@ def PythonDeserializer(object_list, **options):
                 raise
         data = {}
         if 'pk' in d:
-            # data[Model._meta.pk.attname] = Model._meta.pk.to_python(d.get("pk", None))
             pk = d.get("pk", None)
             if isinstance(pk, (list, tuple)):
                 pk = _get_by_natural_pk(Model, pk)
@@ -135,7 +133,10 @@ def PythonDeserializer(object_list, **options):
                     raise base.DeserializationError.WithData(e, d['model'], pk, None)
             data[Model._meta.pk.attname] = pk
         m2m_data = {}
-        field_names = {f.name for f in Model._meta.get_fields()}
+
+        if Model not in field_names_cache:
+            field_names_cache[Model] = {f.name for f in Model._meta.get_fields()}
+        field_names = field_names_cache[Model]
 
         # Handle each field
         for (field_name, field_value) in six.iteritems(d["fields"]):
@@ -152,39 +153,56 @@ def PythonDeserializer(object_list, **options):
             field = Model._meta.get_field(field_name)
 
             # Handle M2M relations
-            if field.rel and isinstance(field.rel, models.ManyToManyRel):
-                if hasattr(field.rel.to._default_manager, 'get_by_natural_key'):
+            if field.remote_field and isinstance(field.remote_field, models.ManyToManyRel):
+                model = field.remote_field.model
+                if hasattr(model._default_manager, 'get_by_natural_key'):
                     def m2m_convert(value):
                         if hasattr(value, '__iter__') and not isinstance(value, six.text_type):
-                            return field.rel.to._default_manager.db_manager(db).get_by_natural_key(*value).pk
+                            return model._default_manager.db_manager(db).get_by_natural_key(*value).pk
                         else:
-                            return force_text(field.rel.to._meta.pk.to_python(value), strings_only=True)
+                            return force_text(model._meta.pk.to_python(value), strings_only=True)
                 else:
-                    m2m_convert = lambda v: force_text(field.rel.to._meta.pk.to_python(v), strings_only=True)
-                m2m_data[field.name] = [m2m_convert(pk) for pk in field_value]
+                    def m2m_convert(v):
+                        return force_text(model._meta.pk.to_python(v), strings_only=True)
+
+                try:
+                    m2m_data[field.name] = []
+                    for pk in field_value:
+                        m2m_data[field.name].append(m2m_convert(pk))
+                except Exception as e:
+                    raise base.DeserializationError.WithData(e, d['model'], d.get('pk'), pk)
 
             # Handle FK fields
-            elif field.rel and isinstance(field.rel, models.ManyToOneRel):
+            elif field.remote_field and isinstance(field.remote_field, models.ManyToOneRel):
+                model = field.remote_field.model
                 if field_value is not None:
-                    if hasattr(field.rel.to._default_manager, 'get_by_natural_key'):
-                        if hasattr(field_value, '__iter__') and not isinstance(field_value, six.text_type):
-                            obj = field.rel.to._default_manager.db_manager(db).get_by_natural_key(*field_value)
-                            value = getattr(obj, field.rel.field_name)
-                            # If this is a natural foreign key to an object that
-                            # has a FK/O2O as the foreign key, use the FK value
-                            if field.rel.to._meta.pk.rel:
-                                value = value.pk
+                    try:
+                        default_manager = model._default_manager
+                        field_name = field.remote_field.field_name
+                        if hasattr(default_manager, 'get_by_natural_key'):
+                            if hasattr(field_value, '__iter__') and not isinstance(field_value, six.text_type):
+                                obj = default_manager.db_manager(db).get_by_natural_key(*field_value)
+                                value = getattr(obj, field.remote_field.field_name)
+                                # If this is a natural foreign key to an object that
+                                # has a FK/O2O as the foreign key, use the FK value
+                                if model._meta.pk.remote_field:
+                                    value = value.pk
+                            else:
+                                value = model._meta.get_field(field_name).to_python(field_value)
+                            data[field.attname] = value
                         else:
-                            value = field.rel.to._meta.get_field(field.rel.field_name).to_python(field_value)
-                        data[field.attname] = value
-                    else:
-                        data[field.attname] = field.rel.to._meta.get_field(field.rel.field_name).to_python(field_value)
+                            data[field.attname] = model._meta.get_field(field_name).to_python(field_value)
+                    except Exception as e:
+                        raise base.DeserializationError.WithData(e, d['model'], d.get('pk'), field_value)
                 else:
                     data[field.attname] = None
 
             # Handle all other fields
             else:
-                data[field.name] = field.to_python(field_value)
+                try:
+                    data[field.name] = field.to_python(field_value)
+                except Exception as e:
+                    raise base.DeserializationError.WithData(e, d['model'], d.get('pk'), field_value)
 
         obj = base.build_instance(Model, data, db)
         yield base.DeserializedObject(obj, m2m_data)
