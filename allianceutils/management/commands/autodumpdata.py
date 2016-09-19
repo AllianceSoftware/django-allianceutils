@@ -1,11 +1,11 @@
-import os
+
 
 import django
 import django.apps
 from django.conf import settings
 from django.core import serializers
 from django.core.management import call_command
-from django.core.management.base import BaseCommand
+from django.core.management.base import AppCommand
 from django.core.management.base import CommandError
 import django.core.management.commands.dumpdata
 
@@ -30,46 +30,71 @@ def get_autodump_labels(app_config, fixture):
     return app_models
 
 
-class Command(BaseCommand):
-    """
-    A lot of the code here is cut & patse from AppCommand but we want
-    to allow empty app arguments (which will default to everything); we can't unset
-    a class level variable (missing_args_message) without ugly code to allow this though
-    """
+class Command(AppCommand):
     help = 'Alliance Software version of dumpdata with more sensible defaults.'
 
-    def add_arguments(self, parser):
-        BaseCommand.add_arguments(self, parser)
+    def __init__(self, *args, **kwargs):
+        self.app_counter = 0 # counter of how many apps with models we've processed
+        super(Command, self).__init__(*args, **kwargs)
 
-        parser.add_argument('--fixture', metavar='fixture',
+    def __getattribute__(self, name):
+        # we need to hide the missing_args_message inherited from the parent class
+        # to make the app argument(s) optional
+        if name == 'missing_args_message':
+            raise AttributeError()
+
+        return super(Command, self).__getattribute__(name)
+
+    def add_arguments(self, parser):
+        super(Command, self).add_arguments(parser)
+
+        # is no public way of modifying an existing action, so we have to do this
+        for action in parser._actions:
+            if action.dest == u'args':
+                action.nargs = '*'
+
+        parser.add_argument('--fixture',
+            metavar='fixture',
             default='dev',
             help='Fixture name')
-        parser.add_argument('--format', metavar='format',
+        parser.add_argument('--format',
+            metavar='format',
             default=None,
             help='Format')
-        parser.add_argument('args', metavar='app_label', nargs='*',
+        parser.add_argument('--output',
+            metavar='output_filename',
+            help='Output filename')
+        parser.add_argument('--stdout',
+            default=False,
+            action='store_true',
+            help='Output to stdout?')
+        parser.add_argument('args',
+            metavar='app_label',
+            nargs='*',
             help='One or more application label.')
         # parser.add_argument('args', metavar='app_label', nargs='*',
         #     help='One or more application label.')
 
     def handle(self, *app_labels, **options):
-        from django.apps import apps
+        # we override options here in handle() rather than handle_app_config()
+        # so that it is not executed multiple times (and you don't get repeated warnings)
 
-        try:
-            if not app_labels:
-                app_configs = django.apps.apps.get_app_configs()
-            else:
-                app_configs = [apps.get_app_config(app_label) for app_label in app_labels]
-        except (LookupError, ImportError) as e:
-            raise CommandError("%s. Are you sure your INSTALLED_APPS setting is correct?" % e)
+        options['show_warnings'] = not options['stdout']
+        options['show_info'] = not options['stdout'] and options['verbosity'] > 0
+
+        if options['output'] and options['stdout']:
+            raise CommandError('Cannot specify both --stdout and --output')
 
         # no longer using yaml because of timezone errors: http://stackoverflow.com/a/13711316
+        try:
+            json_serializer_overriden = settings.SERIALIZATION_MODULES.get('json') == 'allianceutils.serializers.json_orminheritancefix'
+        except AttributeError:
+            json_serializer_overriden = False
 
-        json_serializer_overriden = settings.SERIALIZATION_MODULES.get('json') == 'allianceutils.serializers.json_orminheritancefix'
-
-        if django.get_version().split('.') < ['1', '9', '0']:
-            if not json_serializer_overriden:
-                message = "You need settings.SERIALIZATION_MODULES['json'] = 'allianceutils.serializers.json_orminheritancefix' or deserialization will fail where a PK is also a FK"
+        # if django.VERSION < (1, 9):
+        if not json_serializer_overriden:
+            message = "You need settings.SERIALIZATION_MODULES['json'] = 'allianceutils.serializers.json_orminheritancefix' or deserialization will fail where a PK is also a FK"
+            if options['show_warnings']:
                 self.stdout.write(self.style.WARNING(message))
 
         format_candidates = [options['format']]
@@ -89,17 +114,19 @@ class Command(BaseCommand):
 
         if options['format'] is not None and format_selected != options['format']:
             message = 'Desired serialization format "%s" not available: falling back to serialization format "%s". Did you set settings.SERIALIZATION_MODULES correctly?' % (options['format'], format_selected)
-            self.stdout.write(self.style.WARNING(message))
+            if options['show_warnings']:
+                self.stdout.write(self.style.WARNING(message))
             options['extension'] = format_selected
 
         options['format'] = format_selected
 
-        output = []
-        for app_config in app_configs:
-            app_output = self.handle_app_config(app_config, **options)
-            if app_output:
-                output.append(app_output)
-        return '\n'.join(output)
+        # we allow an empty list of apps to mean "all apps"
+        if not app_labels:
+            app_labels = [app_config.label for app_config in django.apps.apps.get_app_configs()]
+
+        self.app_counter = 0
+
+        return super(Command, self).handle(*app_labels, **options)
 
     def handle_app_config(self, app_config, **options):
         try:
@@ -109,13 +136,31 @@ class Command(BaseCommand):
 
         app_models = f(app_config, options['fixture'])
         if app_models:
-            output_file = os.path.join(app_config.path, 'fixtures', options['fixture'] + '.' + options['extension'])
+
+            self.app_counter += 1
+            if (options['stdout'] or options['output']) and self.app_counter > 1:
+                # we can't just count the number of app_labels because many don't have any relevant models
+                raise CommandError('Cannot use --stdout or --output with multiple apps')
+
+            if options['stdout']:
+                output = None
+                output_file = '[stdout]'
+            elif options['output']:
+                output = options['output']
+                output_file = output
+            else:
+                output = os.path.join(app_config.path, 'fixtures', options['fixture'] + '.' + options['extension'])
+                output_file = output
+
             call_command('dumpdata',
                 *app_models,
                 use_natural_foreign_keys=True,
                 use_natural_primary_keys=True,
                 format=options['format'],
                 indent=2,
-                output=output_file
+                output=output
             )
-            self.stdout.write('Wrote to %s: %s' % (output_file, ', '.join(app_models)))
+
+            # give verbose output if not outputting to stdout
+            if options['show_info']:
+                self.stdout.write('Wrote to %s: %s' % (output_file, ', '.join(app_models)))
