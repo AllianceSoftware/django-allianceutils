@@ -18,6 +18,7 @@ A collection of utilities for django projects.
     * [Template Tags](#template-tags)
     * [Views](#views)
     * [Webpack](#webpack)
+* [Changelog](#changelog)
 
 ## Installation
 
@@ -148,7 +149,6 @@ SERIALIZATION_MODULES = {
 * Django does not properly handle (de)serialise models with natural keys where the PK is a FK
     * This shows up particularly with multi-table inheritance and the user profile pattern
     * https://code.djangoproject.com/ticket/24607
-    * CURRENTLY THIS ONLY WORKS FOR DJANGO 1.8
 * We need to replace not only the serializer but also the deserializer
 
 ```python
@@ -269,3 +269,18 @@ WEBPACK_LOADER = {
     },
 }
 ```
+
+## Changelog
+
+* dev
+* 0.1
+    * 0.1.3
+        * Added autodumpdata test cases
+        * Added autodumpdata `--stdout`, `--output` options
+        * Fix autodumpdata failing if `settings.SERIALIZATION_MODULES` not defined
+    * 0.1.2
+        * Added test cases, documentation
+    * 0.1.1
+        * Added StaticStorage, MediaStorage
+    * 0.1.0
+        * Initial release
