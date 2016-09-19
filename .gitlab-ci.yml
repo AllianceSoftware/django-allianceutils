@@ -16,8 +16,8 @@ variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip"
 
 before_script:
-  # pre-warmed tox virtualenvs
-  - ln -s /tox .tox
+  - source python-gitlab-ci-init.inc \
+    --tox
 
 image: alliance/python
 
