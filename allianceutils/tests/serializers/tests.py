@@ -71,14 +71,26 @@ class TestNaturalKeysAndInheritance(TransactionTestCase):
         self.assertEqual(2, len(Customer.objects.all()))
 
     def test_neither(self):
+        """
+        Test json_orminheritancefix
+        """
         self.dump_and_load()
 
     def test_primary(self):
+        """
+        Test json_orminheritancefix natural PK
+        """
         self.dump_and_load(natural_primary_keys=True)
 
     def test_foreign(self):
+        """
+        Test json_orminheritancefix natural FK
+        """
         self.dump_and_load(natural_foreign_keys=True)
 
     def test_both(self):
+        """
+        Test json_orminheritancefix natural PK, FK
+        """
         self.dump_and_load(natural_primary_keys=True,
                            natural_foreign_keys=True)
