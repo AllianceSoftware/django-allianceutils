@@ -2,13 +2,19 @@
 set -o pipefail
 
 # if on OSX then prefer the gnu version (the osx version does nothing) greadlink
-READLINK=`which greadlink || which readlink`
+source $(dirname $0)/common.inc
 
-SOURCE_ROOT=`dirname "$($READLINK "$0" || echo $0)"`/..
+SOURCE_ROOT=$(readlink $(dirname "$0") )
 
 if [[ "$1" = "--check-only" ]] ; then
 	CHECK_ONLY="--check-only"
 	shift
+else
+    # Insist on an explicit target if we're going to be modifying files
+	if [[ $# -eq 0 ]] ; then
+        echo "You must specify something to reformat" >&2
+        exit 1
+	fi
 fi
 
 ISORT=`which isort || true`
@@ -27,7 +33,7 @@ if ! [ -x $ISORT ] ; then
 	exit 1
 fi
 
-$ISORT \
+"$ISORT" \
 	--settings-path "$SOURCE_ROOT" \
 	--recursive \
 	--project allianceutils \
