@@ -9,9 +9,8 @@ from django.core.management import call_command
 from django.test import override_settings
 from django.test import TransactionTestCase
 
-
-from .models import Publication
 from .models import Book
+from .models import Publication
 
 
 class TempJSONFile(object):
