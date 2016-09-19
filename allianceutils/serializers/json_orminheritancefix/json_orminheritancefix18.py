@@ -37,7 +37,6 @@ from django.utils.encoding import force_text
 
 import allianceutils.serializers.json_ordered
 
-
 # The ORM _meta changed in 1.9, this code only works with 1.8
 assert (1, 8) <= django.VERSION < (1, 9), 'json_orminheritancefix18 only works with django 1.8'
 

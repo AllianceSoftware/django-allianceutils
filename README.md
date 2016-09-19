@@ -54,7 +54,7 @@ class Customer(models.Model):
 
 ```python
 # This will take the default fixture dumping config for this app and add the core auth.group and authtools.user
-# tables to the groups and users fixtures respsectively 
+# tables to the groups and users fixtures respectively 
 def get_autodump_labels(app_config, fixture):
     import allianceutils.management.commands.autodumpdata
     extras = {

@@ -47,6 +47,7 @@ def setup():
         'django.contrib.auth',
         'django.contrib.contenttypes',
         'allianceutils',
+        'allianceutils.tests.autodumpdata',
         'allianceutils.tests.serializers',
     ]
 
