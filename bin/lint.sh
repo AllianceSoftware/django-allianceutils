@@ -1,6 +1,6 @@
 #!/bin/bash -e
 set -o pipefail
 
-cd $(dirname $0)/..
+cd "$(dirname "$BASH_SOURCE")/.."
 
-bin/reformatimports.sh --check-only "$@"
+bin/reformat-imports.sh --check-only "$@"
