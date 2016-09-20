@@ -5,9 +5,11 @@ try:
 except ImportError:
     from distutils.core import setup
 
+__version__ = '0.1.4'
+
 setup(
     name='allianceutils',
-    version='0.1.2',
+    version=__version__,
     author='Alliance Software',
     author_email='support@alliancesoftware.com.au',
     packages=['allianceutils'], # this must be the same as the name above
@@ -21,7 +23,7 @@ setup(
     ],
     url='http://gitlab.internal.alliancesoftware.com.au/alliance/alliance-django-utils',
     classifiers=[],
-    download_url='http://gitlab.internal.alliancesoftware.com.au/alliance/alliance-django-utils/repository/archive.tar.gz?ref=0.1.1',
+    download_url='http://gitlab.internal.alliancesoftware.com.au/alliance/alliance-django-utils/repository/archive.tar.gz?ref=' + __version__,
     keywords=[
 		'alliance',
 		'alliancesoftware',
