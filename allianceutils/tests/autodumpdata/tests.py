@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 
+import errno
 import json
 import os
+import shutil
 import tempfile
 
 from django.conf import settings
@@ -39,6 +41,12 @@ class TestAutoDumpData(TransactionTestCase):
         Book.objects.create(isbn='1234567890', is_hardcover=False)
         Book.objects.create(isbn='1122334455', is_hardcover=True)
 
+        self.expected_json_data = [
+            {"model": "autodumpdata.publication", "fields": {"isbn": "9988776655"}},
+            {"model": "autodumpdata.publication", "fields": {"isbn": "1234567890"}},
+            {"model": "autodumpdata.publication", "fields": {"isbn": "1122334455"}},
+        ]
+
     def test_fixture_no_model(self):
         """
         Test autodump with no valid models
@@ -49,19 +57,18 @@ class TestAutoDumpData(TransactionTestCase):
             with open(filename, 'r') as f:
                 self.assertEqual('', f.read())
 
-    def test_normal(self):
+    def test_normal_filename(self):
         """
-        Test autodump normal
+        Test autodump normal to explicit filename
         """
         with TempJSONFile() as filename:
             call_command('autodumpdata', fixture='publication', output=filename)
             with open(filename, 'r') as f:
                 data = json.load(f)
-            self.assertEqual(data, [
-                {"model": "autodumpdata.publication", "fields": {"isbn": "9988776655"}},
-                {"model": "autodumpdata.publication", "fields": {"isbn": "1234567890"}},
-                {"model": "autodumpdata.publication", "fields": {"isbn": "1122334455"}},
-            ])
+            self.assertEqual(data, self.expected_json_data)
+
+    def test_normal(self):
+        call_command('autodumpdata', fixture='publication')
 
     @override_settings()
     def test_no_settings(self):

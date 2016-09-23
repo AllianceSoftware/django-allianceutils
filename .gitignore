@@ -1,4 +1,5 @@
 *.pyc
 
-allianceutils.egg-info/
 .tox/
+allianceutils.egg-info/
+allianceutils/tests/autodumpdata/fixtures/publication.json
