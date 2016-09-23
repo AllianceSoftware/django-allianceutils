@@ -274,8 +274,11 @@ WEBPACK_LOADER = {
 
 * dev
 * 0.1
-	* 0.1.4
-		* Fix bad versioning in previous release
+    * 0.1.5
+        * Fix missing import if using autodumpdata automatically calculated filenames
+        * autodumpdata now creates missing fixture directory automatically
+    * 0.1.4
+        * Fix bad versioning in previous release
     * 0.1.3
         * Added autodumpdata test cases
         * Added autodumpdata `--stdout`, `--output` options
