@@ -68,6 +68,15 @@ class TestAutoDumpData(TransactionTestCase):
             self.assertEqual(data, self.expected_json_data)
 
     def test_normal(self):
+        """
+        Test autodump normal: calculates output filename, creates fixtures directory, can be run twice
+        """
+        try:
+            shutil.rmtree(os.path.join(os.path.dirname(__file__), 'fixtures'))
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise
+        call_command('autodumpdata', fixture='publication')
         call_command('autodumpdata', fixture='publication')
 
     @override_settings()

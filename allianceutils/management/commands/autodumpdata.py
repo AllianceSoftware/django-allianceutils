@@ -1,3 +1,4 @@
+import errno
 import os
 
 import django
@@ -149,8 +150,17 @@ class Command(AppCommand):
                 output = options['output']
                 output_file = output
             else:
-                output = os.path.join(app_config.path, 'fixtures', options['fixture'] + '.' + options['extension'])
+                fixture_dir = os.path.join(app_config.path, 'fixtures')
+                output = os.path.join(fixture_dir, options['fixture'] + '.' + options['extension'])
                 output_file = output
+
+                # try to make sure the fixtures output directory exists
+                # if the caller explicitly set the output file then it's up to them to do this
+                try:
+                    os.mkdir(fixture_dir)
+                except OSError as e:
+                    if e.errno != errno.EEXIST:
+                        raise
 
             call_command('dumpdata',
                 *app_models,
