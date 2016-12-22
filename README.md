@@ -29,6 +29,41 @@ A collection of utilities for django projects.
 ### API
 
 FIXME
+#### Permissions
+
+##### SimpleDjangoObjectPermissions
+
+Permission class for Django Rest Framework that adds support for object level permissions.
+
+* Setup
+    * Add to `REST_FRAMEWORK` `DEFAULT_PERMISSION_CLASSES` in your settings
+
+```python
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        # default to requiring authentication & a role
+        # you can override this by setting the permission_classes to AllowAny in the view
+        'rest_framework.permissions.IsAuthenticated',
+        'allianceutils.api.permissions.SimpleDjangoObjectPermissions',
+    ),
+}
+```
+
+* Usage 
+
+In a view set `permission_required` to the static permission required:
+
+```
+ass AccountViewSet(viewsets.ModelViewSet):
+    serializer_class = AccountSerializer
+    queryset = Account.objects.all()
+
+    permission_required = 'password_manager.view_account'
+```
+
+If you have no object level permissions (eg. from rules) then it will just do a static
+permission check.
+
 
 ### Auth
 
