@@ -3,8 +3,9 @@ services:
   - alliance/mysql
 
 cache:
+  key: global
   paths:
-    - .pip
+    - ci-cache
 
 variables:
   MYSQL_HOST: alliance-mysql
@@ -13,11 +14,10 @@ variables:
   MYSQL_DATABASE: ephemeral_db
   MYSQL_ROOT_PASSWORD: password
 
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip"
+  PYTHON_VERSION: py35
 
 before_script:
-  - source python-gitlab-ci-init.inc
-      --tox
+  - source gitlab-ci-init-python.inc
 
 image: alliance/python
 
@@ -25,7 +25,6 @@ image: alliance/python
 lint:
   script:
     # we install required packages so linter's isort can know is(n't) a 3rd party package
-    - source /virtualenvs/py35-django18/bin/activate
     - pip install -r requirements.txt
     - bin/lint.sh
 

@@ -15,6 +15,6 @@ function realpath() {
 }
 
 # BASE_DIR and PROJECT_DIR should resolve to the same thing as in the django settings file
-REPO_DIR="$(realpath "$(dirname "$BASH_SOURCE")/..")"
+REPO_DIR="$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")"
 
 SOURCE_ROOT="$REPO_DIR/allianceutils"
