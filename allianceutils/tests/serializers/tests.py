@@ -6,6 +6,7 @@ import tempfile
 from django.core import management
 from django.test import TransactionTestCase
 
+from .models import Purchase
 from .models import Customer
 from .models import Person
 from .models import User
@@ -30,12 +31,14 @@ class TempJSONFile(object):
 class TestNaturalKeysAndInheritance(TransactionTestCase):
 
     def setUp(self):
-        Customer.objects.create(username="toto", label="ping", num=23)
-        Customer.objects.create(username="titi", label="pong", num=34)
-        Person  .objects.create(username="tata", label="pang")
         User    .objects.create(username="tutu")
+        Person  .objects.create(username="tata", label="pang")
+        Customer.objects.create(username="toto", label="ping", num=23)
+        c = Customer.objects.create(username="titi", label="pong", num=34)
+        Purchase.objects.create(customer=c)
 
     def clear_tables(self):
+        Purchase.objects.all().delete()
         Customer.objects.all().delete()
         Person  .objects.all().delete()
         User    .objects.all().delete()
@@ -69,6 +72,7 @@ class TestNaturalKeysAndInheritance(TransactionTestCase):
         self.assertEqual(4, len(User    .objects.all()))
         self.assertEqual(3, len(Person  .objects.all()))
         self.assertEqual(2, len(Customer.objects.all()))
+        self.assertEqual(1, len(Purchase.objects.all()))
 
     def test_neither(self):
         """

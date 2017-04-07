@@ -185,6 +185,7 @@ SERIALIZATION_MODULES = {
     * This shows up particularly with multi-table inheritance and the user profile pattern
     * https://code.djangoproject.com/ticket/24607
 * We need to replace not only the serializer but also the deserializer
+* Note that child models will not inherit the parent `Manager` if the parent is not `abstract`; you need to define a `Manager` that has a `get_by_natural_key()` in each descendant model if you use FK references to the descendant model. 
 
 ```python
 SERIALIZATION_MODULES = {

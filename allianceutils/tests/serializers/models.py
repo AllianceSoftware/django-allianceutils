@@ -15,8 +15,17 @@ class User(models.Model):
 
 
 class Person(User):
+    objects = UserManager()
     label = models.CharField(max_length=10)
 
 
 class Customer(Person):
+    objects = UserManager()
     num = models.IntegerField()
+
+
+class Purchase(models.Model):
+    customer = models.ForeignKey(to=Customer, null=False)
+
+    def natural_key(self):
+        return (self.customer.natural_key(),)
