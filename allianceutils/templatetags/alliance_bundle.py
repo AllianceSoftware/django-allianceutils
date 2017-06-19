@@ -1,7 +1,14 @@
 from django import template
 from django.conf import settings
-from webpack_loader.templatetags.webpack_loader import _get_bundle
-from webpack_loader.templatetags.webpack_loader import render_as_tags
+
+import webpack_loader
+if webpack_loader.__version__ < "0.5":
+    from webpack_loader.templatetags.webpack_loader import _get_bundle
+    from webpack_loader.templatetags.webpack_loader import render_as_tags
+else:
+    # funcs moved to utils since webpack_loader 0.5, usage stay the same
+    from webpack_loader.utils import _get_bundle
+    from webpack_loader.utils import get_as_tags as render_as_tags
 
 register = template.Library()
 
