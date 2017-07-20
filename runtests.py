@@ -51,6 +51,7 @@ def setup():
         'allianceutils.tests.serializers',
     ]
 
+
     MIDDLEWARE_CLASSES = []
 
     TEMPLATE_DIRS = [
@@ -81,6 +82,8 @@ def setup():
             TEMPLATE_DIRS=TEMPLATE_DIRS,
             TEMPLATES=TEMPLATES,
             SERIALIZATION_MODULES=SERIALIZATION_MODULES,
+            NOSE_ARGS = ['--nocapture',
+                     '--nologcapture',], # dont suppress stdout :/
         )
 
 
