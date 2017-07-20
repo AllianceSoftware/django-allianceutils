@@ -6,7 +6,6 @@ import os
 import shutil
 import tempfile
 
-from django.conf import settings
 from django.core.management import call_command
 from django.test import override_settings
 from django.test import TransactionTestCase
@@ -79,11 +78,10 @@ class TestAutoDumpData(TransactionTestCase):
         call_command('autodumpdata', fixture='publication')
         call_command('autodumpdata', fixture='publication')
 
-    @override_settings()
+    @override_settings(SERIALIZATION_MODULES=[])
     def test_no_settings(self):
         """
         Test autodump with no SERIALIZATION_MODULES defined
         """
-        del settings.SERIALIZATION_MODULES
         with TempJSONFile() as filename:
             call_command('autodumpdata', fixture='publication', output=filename)
