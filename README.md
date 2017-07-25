@@ -313,6 +313,7 @@ WEBPACK_LOADER = {
 * dev
 * 0.1
     * 0.1.x
+    * 0.1.6
         * Update `json_orminheritancefix` to work with django 1.11 
     * 0.1.5
         * Fix missing import if using autodumpdata automatically calculated filenames
