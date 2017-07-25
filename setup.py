@@ -1,11 +1,28 @@
 from __future__ import unicode_literals
 
+from distutils.version import StrictVersion
+import re
+
 try:
     from setuptools import setup
 except ImportError:
     from distutils.core import setup
 
-__version__ = '0.1.5'
+# automatically detect the current version from the highest version in the changelog section of the README
+with open('README.md', 'r') as f:
+    section = None
+    highest_ver = StrictVersion('0.0.0')
+    for line in f.readlines():
+        if re.match('^#', line):
+            section = line.strip('#').strip().upper()
+        if section == 'CHANGELOG' and re.match('^[ \t]*\* [0-9.]+', line):
+            cur_ver = line.replace('*', ' ').strip()
+            try:
+                highest_ver = max(highest_ver, StrictVersion(cur_ver))
+            except ValueError:
+                pass
+
+__version__ = str(highest_ver)
 
 setup(
     name='allianceutils',
