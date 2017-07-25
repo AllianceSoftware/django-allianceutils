@@ -184,6 +184,8 @@ SERIALIZATION_MODULES = {
 * Django does not properly handle (de)serialise models with natural keys where the PK is a FK
     * This shows up particularly with multi-table inheritance and the user profile pattern
     * https://code.djangoproject.com/ticket/24607
+        * Patch was accepted into 1.11 but then removed
+        * We are willing to deal with potentially spurious migrations in order to have fixtures work
 * We need to replace not only the serializer but also the deserializer
 * Note that child models will not inherit the parent `Manager` if the parent is not `abstract`; you need to define a `Manager` that has a `get_by_natural_key()` in each descendant model if you use FK references to the descendant model. 
 
@@ -310,6 +312,8 @@ WEBPACK_LOADER = {
 
 * dev
 * 0.1
+    * 0.1.x
+        * Update `json_orminheritancefix` to work with django 1.11 
     * 0.1.5
         * Fix missing import if using autodumpdata automatically calculated filenames
         * autodumpdata now creates missing fixture directory automatically
