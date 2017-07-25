@@ -3,10 +3,13 @@ JSON serializer with the following properties:
  - output is ordered (so revision control diffs are sane)
  - Fixes multi-table inheritance as per
     - https://code.djangoproject.com/ticket/24607
-    - https://github.com/django/django/pull/4477/files
-    - ^ As of 2017-06-19, 4447 had been marked as obsoleted and the new PR can be found at https://github.com/django/django/pull/8370/files
-
-The patch at https://github.com/levic/django/tree/inheritance-natural-key patches core to work but only works with 1.9+
+	    - Bug report
+    - First patch: https://github.com/django/django/pull/4477/files
+	    - Was accepted but then reverted due to creating spurious migrations
+		- Rebased version: https://github.com/levic/django/tree/inheritance-natural-key
+    - New patch: https://github.com/django/django/pull/8370/files
+		- Due to internal meta changes, can only be applied with django>=1.9
+    - This implementation checks the django version and uses two different patches to work with both <1.9 and >=1.9
 
 To use, in your settings.py add:
 
