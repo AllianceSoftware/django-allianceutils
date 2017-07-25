@@ -81,6 +81,11 @@ def setup():
             TEMPLATE_DIRS=TEMPLATE_DIRS,
             TEMPLATES=TEMPLATES,
             SERIALIZATION_MODULES=SERIALIZATION_MODULES,
+            NOSE_ARGS=[
+                # dont suppress stdout
+                '--nocapture',
+                '--nologcapture',
+            ],
         )
 
 
