@@ -3,11 +3,13 @@ JSON serializer with the following properties:
  - output is ordered (so revision control diffs are sane)
  - Fixes multi-table inheritance as per
     - https://code.djangoproject.com/ticket/24607
-    - https://github.com/django/django/pull/4477/files
-
-The patch at https://github.com/levic/django/tree/inheritance-natural-key patches core to work but only works with 1.9+
-
-This implementation works with django 1.8 only (django ORM meta changed with 1.9)
+	    - Bug report
+    - First patch: https://github.com/django/django/pull/4477/files
+	    - Was accepted but then reverted due to creating spurious migrations
+		- Rebased version: https://github.com/levic/django/tree/inheritance-natural-key
+    - New patch: https://github.com/django/django/pull/8370/files
+		- Due to internal meta changes, can only be applied with django>=1.9
+    - This implementation checks the django version and uses two different patches to work with both <1.9 and >=1.9
 
 To use, in your settings.py add:
 
@@ -37,8 +39,7 @@ from django.utils.encoding import force_text
 
 import allianceutils.serializers.json_ordered
 
-# The ORM _meta changed in 1.9, this code only works with 1.8
-assert (1, 9) <= django.VERSION < (1, 10), 'json_orminheritancefix19 only works with django 1.9'
+assert (1, 9) <= django.VERSION < (1, 12), 'json_orminheritancefix19 only works with django 1.9-1.11'
 
 _NONE = object()
 
