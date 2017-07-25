@@ -104,14 +104,19 @@ def get_autodump_labels(app_config, fixture):
     return allianceutils.management.commands.autodumpdata.get_autodump_labels(app_config, fixture) + extras.get(fixture, [])
 ```
 
-
 #### mysqlquickdump
 
-FIXME
+* Command to quickly dump a mysql database
+    * Significantly faster than django fixtures
+* Can be useful for saving & restoring the state of the database in test cases
+    * Not intended to be used on production servers
+* Expects that DB structure will not change
+* See `./manage.py mysqlquickdump --help` for usage details
 
 #### mysqlquickload
 
-FIXME
+* Load a database dumped with `mysqlquickdump`
+* See `./manage.py mysqlquickload --help` for usage details
 
 ### Decorators
 
@@ -313,6 +318,7 @@ WEBPACK_LOADER = {
 * dev
 * 0.1
     * 0.1.x
+        * Added `mysqlquickdump` options `--model` and `--explicit` 
     * 0.1.6
         * Update `json_orminheritancefix` to work with django 1.11 
     * 0.1.5
