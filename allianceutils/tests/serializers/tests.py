@@ -6,9 +6,9 @@ import tempfile
 from django.core import management
 from django.test import TransactionTestCase
 
-from .models import Purchase
 from .models import Customer
 from .models import Person
+from .models import Purchase
 from .models import User
 
 
