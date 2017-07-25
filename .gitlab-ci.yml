@@ -1,34 +1,35 @@
-# Attached service containers
-services:
-  - alliance/mysql
+variables:
+
 
 cache:
   key: global
   paths:
     - ci-cache
 
-variables:
-  MYSQL_HOST: alliance-mysql
-  MYSQL_USER: ephemeral_user
-  MYSQL_PASSWORD: password
-  MYSQL_DATABASE: ephemeral_db
-  MYSQL_ROOT_PASSWORD: password
-
-  PYTHON_VERSION: py35
 
 before_script:
-  - source gitlab-ci-init-python.inc
+  - time source gitlab-ci-init-python.inc
+      # --verbose
+      # --verbose
+      # --verbose
+
 
 image: alliance/python
+
 
 # linting
 lint:
   script:
     # we install required packages so linter's isort can know is(n't) a 3rd party package
-    - pip install -r requirements.txt
-    - bin/lint.sh
+    - time pip install -r requirements.txt
+    - time bin/lint.sh
+#  when: manual
 
-# basic test
+
+# unit tests
 test-python:
+  services:
+    - alliance/mysql
   script:
-    - bin/runtests.sh
+    - time bin/runtests.sh
+#  when: manual
