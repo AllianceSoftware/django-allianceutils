@@ -14,9 +14,11 @@ class Publication(models.Model):
         return (self.isbn,)
 
     fixtures_autodump = ['publication']
+    fixtures_autodump_sql = ['publication']
 
 
 class Book(Publication):
     is_hardcover = models.BooleanField()
 
     fixtures_autodump = ['book']
+    # note book will get a sql dump on "publication": it inherited fixture_autodump_sql

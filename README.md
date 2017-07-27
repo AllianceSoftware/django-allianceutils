@@ -75,18 +75,28 @@ FIXME
 
 * Designed to more conveniently allow dumping of data from different models into different fixtures
 * Strongly advised to also use the [Serializers](#serializers)
-
-* For each model, add a list of fixtures that this model should be part of in the `fixures_autodump` list
+* If `autodumpdata` is invoked without a fixture name, it defaults to `dev`
+* For each model, you add a list of fixture names that this model should be part of
+    * `fixures_autodump`
+        * Fixtures in JSON format
+    * `fixtures_autodump_sql`
+        * Fixures in SQL
+        * Only works with mysql
+        * Much likelier to cause merge conflicts and are less readable by developers but are significantly faster.
+        * Should only be used for large tables where django's default fixture loading is too slow.
+	
+* Example
     * The following will dump the Customer model as part of the `customers` and `test` fixtures
+    * The following will also dump the Customer model in SQL as part of the `fast` fixture
 
 ```python
 class Customer(models.Model):
     fixtures_autodump = ['customers', 'test']
+    fixtures_autodump_sql = ['fast']
 ```
 
-* If `autodumpdata` is invoked without a fixture, it defaults to `dev`
-* This is particularly useful for dumping django group permissions (which you typically want to send to a live server) separately from test data
-* To add autodump metadata to models that are part of core django, add the following to one of your apps:
+* To add autodump metadata to models that are part of core django, add the following code to one of your apps
+	* This can be particularly useful for dumping django group permissions (which you typically want to send to a live server) separately from test data
 
 ```python
 # This will take the default fixture dumping config for this app and add the core auth.group and authtools.user
@@ -101,7 +111,10 @@ def get_autodump_labels(app_config, fixture):
             'authtools.user',
         ],
     }
-    return allianceutils.management.commands.autodumpdata.get_autodump_labels(app_config, fixture) + extras.get(fixture, [])
+    original_json, original_sql = allianceutils.management.commands.autodumpdata.get_autodump_labels(app_config, fixture)
+    for fixture in extras:
+    	original_json[fixture] = original_json.get(fixture, []) + extras[fixture]
+    return (original_json, original_sql)
 ```
 
 #### mysqlquickdump
@@ -317,7 +330,10 @@ WEBPACK_LOADER = {
 
 * dev
 * 0.1
-    * 0.1.x
+    * 0.2.x
+        * Breaking Changes
+            * The interface for `get_autodump_labels` has changed 
+        * Added autodumpdata SQL output format
         * Added `mysqlquickdump` options `--model` and `--explicit` 
     * 0.1.6
         * Update `json_orminheritancefix` to work with django 1.11 

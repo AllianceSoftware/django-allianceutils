@@ -1,34 +1,36 @@
 import errno
 import os
 
-import django
-import django.apps
+from django.apps import apps
 from django.conf import settings
 from django.core import serializers
 from django.core.management import call_command
 from django.core.management.base import AppCommand
 from django.core.management.base import CommandError
-import django.core.management.commands.dumpdata
+from django.utils.six import string_types
 
 
 def get_autodump_labels(app_config, fixture):
     """
-    Takes an app config and returns an array of 'app_label.model_label' strings describing models to dump for
-    a given fixture
+    Takes an app config and returns ('app_label.model_label' strings, 'app_label_model_label' strings)
+    describing models to dump for a given fixture, with first array in json and 2nd array in sql
     :param app_config: django app config
     :param fixture: fixture name
-    :return: list(string)
+    :return: ([strings,], [strings,])
     """
     app_models = []
+    app_models_sql = []
+
     for model in app_config.get_models():
-        try:
-            model_fixtures = model.fixtures_autodump
-        except AttributeError:
-            model_fixtures = []
-        if fixture in model_fixtures:
-            model_name = model._meta.model_name
-            app_models.append(app_config.label + '.' + model_name)
-    return app_models
+        if hasattr(model, 'fixtures_autodump') and fixture in getattr(model, 'fixtures_autodump'):
+            app_models.append(model._meta.model_name)
+        if hasattr(model, 'fixtures_autodump_sql') and fixture in getattr(model, 'fixtures_autodump_sql'):
+            app_models_sql.append(model._meta.model_name)
+
+    app_models = ["%s.%s" % (app_config.label, model) for model in app_models]
+    app_models_sql = ["%s.%s" % (app_config.label, model) for model in app_models_sql]
+
+    return (app_models, app_models_sql)
 
 
 class Command(AppCommand):
@@ -123,7 +125,7 @@ class Command(AppCommand):
 
         # we allow an empty list of apps to mean "all apps"
         if not app_labels:
-            app_labels = [app_config.label for app_config in django.apps.apps.get_app_configs()]
+            app_labels = [app_config.label for app_config in apps.get_app_configs()]
 
         self.app_counter = 0
 
@@ -135,9 +137,13 @@ class Command(AppCommand):
         except AttributeError:
             f = get_autodump_labels
 
-        app_models = f(app_config, options['fixture'])
-        if app_models:
+        models_to_dump = f(app_config, options['fixture'])
+        
+        # check for pre-0.2.0 code that had a different interface
+        assert not isinstance(models_to_dump[0], string_types), "The interface of autodumpdata had changed. See README in alliance-django-utils for reference."
 
+        app_models, app_models_sql = models_to_dump
+        if app_models or app_models_sql:
             self.app_counter += 1
             if (options['stdout'] or options['output']) and self.app_counter > 1:
                 # we can't just count the number of app_labels because many don't have any relevant models
@@ -145,14 +151,14 @@ class Command(AppCommand):
 
             if options['stdout']:
                 output = None
-                output_file = '[stdout]'
+                output_sql = None
             elif options['output']:
                 output = options['output']
-                output_file = output
+                output_sql = os.path.splitext(output)[0] + '.sql'
             else:
                 fixture_dir = os.path.join(app_config.path, 'fixtures')
                 output = os.path.join(fixture_dir, options['fixture'] + '.' + options['extension'])
-                output_file = output
+                output_sql = os.path.join(fixture_dir, options['fixture'] + '.sql')
 
                 # try to make sure the fixtures output directory exists
                 # if the caller explicitly set the output file then it's up to them to do this
@@ -162,15 +168,26 @@ class Command(AppCommand):
                     if e.errno != errno.EEXIST:
                         raise
 
-            call_command('dumpdata',
-                *app_models,
-                use_natural_foreign_keys=True,
-                use_natural_primary_keys=True,
-                format=options['format'],
-                indent=2,
-                output=output
-            )
+            if app_models:
+                call_command('dumpdata',
+                    *app_models,
+                    use_natural_foreign_keys=True,
+                    use_natural_primary_keys=True,
+                    format=options['format'],
+                    indent=2,
+                    output=output
+                )
+
+            if app_models_sql:
+                app_models_sql_tables = [apps.get_model(app_model)._meta.model_name for app_model in app_models_sql]
+                call_command('mysqlquickdump',
+                     model=app_models_sql_tables,
+                     dump=output_sql,
+                )
 
             # give verbose output if not outputting to stdout
             if options['show_info']:
-                self.stdout.write('Wrote to %s: %s' % (output_file, ', '.join(app_models)))
+                if app_models:
+                    self.stdout.write('Wrote to %s: %s' % (output, ' '.join(app_models)))
+                if app_models_sql:
+                    self.stdout.write('Wrote to %s: %s' % (output_sql, ' '.join(app_models_sql)))
