@@ -97,7 +97,7 @@ def runtests(*test_args):
 
     runner = django_nose.NoseTestSuiteRunner(
         verbosity=2,
-        interactive=not is_ci
+        interactive=not is_ci,
     )
     failures = runner.run_tests(test_args)
     sys.exit(failures)

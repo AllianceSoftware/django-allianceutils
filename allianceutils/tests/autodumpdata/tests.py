@@ -28,6 +28,11 @@ class TempJSONFile(object):
             os.unlink(self.filename)
         except:
             pass
+        # might also be an .sql file
+        try:
+            os.unlink(self.filename.replace('.json', '.sql'))
+        except:
+            pass
 
 
 class TestAutoDumpData(TransactionTestCase):
@@ -55,20 +60,29 @@ class TestAutoDumpData(TransactionTestCase):
             call_command('autodumpdata', fixture='foobar', output=filename)
             with open(filename, 'r') as f:
                 self.assertEqual('', f.read())
+            self.assertEqual(os.path.exists(filename.replace('.json', '.sql')), False)
 
     def test_normal_filename(self):
         """
-        Test autodump normal to explicit filename
+        Test autodump normal (+ SQL dump) to explicit filename
         """
         with TempJSONFile() as filename:
             call_command('autodumpdata', fixture='publication', output=filename)
+    
+            # check json output
             with open(filename, 'r') as f:
                 data = json.load(f)
             self.assertEqual(data, self.expected_json_data)
 
+            # check sql output
+            with open(filename.replace('.json', '.sql'), 'r') as f:
+                data = f.read()
+            self.assertIn("REPLACE INTO `autodumpdata_publication` (`id`, `isbn`) VALUES (1,'9988776655'),(2,'1234567890'),(3", data)
+            self.assertIn("REPLACE INTO `autodumpdata_book` (`publication_ptr_id`, `is_hardcover`) VALUES (2,0),(3,1);", data)
+
     def test_normal(self):
         """
-        Test autodump normal: calculates output filename, creates fixtures directory, can be run twice
+        Test autodump normal: calculates output filename, creates fixtures directory & can be run twice
         """
         try:
             shutil.rmtree(os.path.join(os.path.dirname(__file__), 'fixtures'))

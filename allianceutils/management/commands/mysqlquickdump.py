@@ -27,6 +27,14 @@ class Command(django.core.management.base.BaseCommand):
             default='data.sql',
             help='Database dump to load (default: %(default)s)')
 
+        parser.add_argument('--model', action='append', dest='dump_tables',
+                        default=[],
+                        help='Models dump to load (default: ALL')
+
+        parser.add_argument('--explicit', action='store', dest='explicit_mode',
+                        default=False,
+                        help='Make mysqldump use full INSERTs with column names, one row per line. Slower but more robust. (default: FALSE')
+
     def handle(self, **options):
         verbosity = options.get('verbosity')
         database = options.get('database')
@@ -40,6 +48,7 @@ class Command(django.core.management.base.BaseCommand):
         cmd = [
             'mysqldump',
             db_name,
+            ] + options['dump_tables'] +[
             '--comments',
             '--dump-date',
             '--disable-keys',
@@ -54,11 +63,14 @@ class Command(django.core.management.base.BaseCommand):
             '--no-create-info',
             '--replace',
 
-            # These make things more resilient to schema changes but are significantly slower:
-            # '--skip-extended-insert',
-            # '--skip-compact',
-            # '--complete-insert',
+            '--complete-insert',
         ]
+
+        if options['explicit_mode']:
+            cmd += ['--skip-extended-insert',]
+        else:
+            cmd += ['--extended-insert',]
+
         if not sql_file.parent.isdir():
             if verbosity >= 1:
                 self.stdout.write('%s %s\n' % (self.style.WARNING('Creating'), sql_file.parent))
