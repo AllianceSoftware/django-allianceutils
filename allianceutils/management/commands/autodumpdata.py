@@ -179,7 +179,7 @@ class Command(AppCommand):
                 )
 
             if app_models_sql:
-                app_models_sql_tables = [apps.get_model(app_model)._meta.model_name for app_model in app_models_sql]
+                app_models_sql_tables = [apps.get_model(app_model)._meta.db_table for app_model in app_models_sql]
                 call_command('mysqlquickdump',
                      model=app_models_sql_tables,
                      dump=output_sql,
