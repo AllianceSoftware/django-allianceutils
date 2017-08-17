@@ -49,6 +49,7 @@ def setup():
         'allianceutils',
         'allianceutils.tests.autodumpdata',
         'allianceutils.tests.serializers',
+        'allianceutils.tests.util',
     ]
 
     MIDDLEWARE_CLASSES = []

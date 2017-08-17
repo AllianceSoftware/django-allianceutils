@@ -16,6 +16,7 @@ A collection of utilities for django projects.
     * [Serializers](#serializers)
     * [Storage](#storage)
     * [Template Tags](#template-tags)
+    * [Util](#util)
     * [Views](#views)
     * [Webpack](#webpack)
 * [Changelog](#changelog)
@@ -300,6 +301,27 @@ MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
 
 * In production (`not settings.DEBUG`), the css tag will be a standard `<link rel="stylesheet" ...>` tag 
 * In development (`settings.DEBUG`), the css tag will be a webpack JS inclusion that contains the CSS (and inherit webpack hotloading etc)
+
+### Util
+
+#### retry_fn
+
+* Repeatedly (up to a hard limit) call specified function while it raises specified exception types or until it returns
+
+```
+from allianceutils.util import retry_fn
+
+# Generate next number in sequence for a model
+# Number here has unique constraint resulting in IntegrityError being thrown
+# whenever a duplicate is added. can be useful for working around mysql's lack
+# of sequences
+def generate_number():
+	qs = MyModel.objects.aggregate(last_number=Max(F('card_number')))
+	next_number = (qs.get('last_card_number') or 0) + 1
+	self.card_number = card_number
+	super().save(*args, **kwargs)
+retry_fn(generate_number, (IntegrityError, ), 10)
+```
 
 ### Views 
 
