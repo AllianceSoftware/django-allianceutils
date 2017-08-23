@@ -1,7 +1,18 @@
 from django import template
 from django.conf import settings
-from webpack_loader.templatetags.webpack_loader import _get_bundle
-from webpack_loader.templatetags.webpack_loader import render_as_tags
+import webpack_loader
+
+# Handle both pre-and post 0.5 imports
+try:
+    from webpack_loader.utils import _get_bundle
+except ImportError:
+    from webpack_loader.templatetags.webpack_loader import _get_bundle
+
+try:
+    from webpack_loader.utils import get_as_tags as render_as_tags
+except ImportError:
+    from webpack_loader.templatetags.webpack_loader import render_as_tags
+
 
 register = template.Library()
 
