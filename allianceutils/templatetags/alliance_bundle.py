@@ -1,7 +1,7 @@
 from django import template
 from django.conf import settings
-
 import webpack_loader
+
 if webpack_loader.__version__ < "0.5":
     from webpack_loader.templatetags.webpack_loader import _get_bundle
     from webpack_loader.templatetags.webpack_loader import render_as_tags
