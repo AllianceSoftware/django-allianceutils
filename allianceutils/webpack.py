@@ -35,7 +35,7 @@ class TimestampWebpackLoader(WebpackLoader):
 
 class ContentHashWebpackLoader(WebpackLoader):
     """
-    Extension of WebpackLoader that appends a ?ts=(timestamp) query string based on last modified time of chunk to serve
+    Extension of WebpackLoader that appends a ?hash=(hash) query string based on hash of chunk to serve
     Allows static asset web server to send far future expiry headers without worrying about cache invalidation
 
     Set WEBPACK_LOADER['DEFAULT']['LOADER_CLASS'] in django settings to use this

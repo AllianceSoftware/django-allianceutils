@@ -357,6 +357,7 @@ WEBPACK_LOADER = {
             * The interface for `get_autodump_labels` has changed 
         * Added autodumpdata SQL output format
         * Added `mysqlquickdump` options `--model` and `--explicit` 
+        * Update to work with webpack_loader 0.5
     * 0.1.6
         * Update `json_orminheritancefix` to work with django 1.11 
     * 0.1.5
