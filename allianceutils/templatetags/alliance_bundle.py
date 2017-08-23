@@ -2,13 +2,17 @@ from django import template
 from django.conf import settings
 import webpack_loader
 
-if webpack_loader.__version__ < "0.5":
-    from webpack_loader.templatetags.webpack_loader import _get_bundle
-    from webpack_loader.templatetags.webpack_loader import render_as_tags
-else:
-    # funcs moved to utils since webpack_loader 0.5, usage stay the same
+# Handle both pre-and post 0.5 imports
+try:
     from webpack_loader.utils import _get_bundle
+except ImportError:
+    from webpack_loader.templatetags.webpack_loader import _get_bundle
+
+try:
     from webpack_loader.utils import get_as_tags as render_as_tags
+except ImportError:
+    from webpack_loader.templatetags.webpack_loader import render_as_tags
+
 
 register = template.Library()
 
