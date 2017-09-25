@@ -3,7 +3,6 @@
 unipath
 
 # tox dependencies
-django_nose>=1.2
 django-filter
 django-storages
 django-webpack-loader
