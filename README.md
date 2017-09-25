@@ -352,7 +352,10 @@ WEBPACK_LOADER = {
 
 * dev
 * 0.1
-    * 0.2.x
+    * 0.3.x
+    	* Breaking Changes
+    		* Dropped support for python <3.4
+    		* Dropped support for django <1.11
     * 0.2.0
         * Breaking Changes
             * The interface for `get_autodump_labels` has changed 
