@@ -178,7 +178,97 @@ FIXME
 
 ### Models
 
-FIXME
+#### Utility functions / classes
+
+##### Authentication functions
+* `add_group_permissions(group_id, codenames)`
+    * Add permissions to a given group (permissions must already exist)
+* `get_users_with_permission(permission)`
+    * Single-permission shorthand for `get_users_with_permissions` 
+* `get_users_with_permissions(permissions)`
+    * Gets all users with any of the specified static permissions
+
+##### combine_querysets_as_manager
+* Replacement for django_permanent.managers.MultiPassThroughManager which no longer works in django 1.8
+* Returns a new Manager instance that passes through calls to multiple underlying queryset_classes via inheritance 
+
+##### NoDeleteModel
+
+* A model that blocks deletes in django
+    * Can still be deleted with manual queries
+* Read django docs about [manager inheritance](https://docs.djangoproject.com/en/1.11/topics/db/managers/#custom-managers-and-model-inheritance)
+    * If you wish add your own manager, you need to combine the querysets:
+
+```
+class MyModel(NoDeleteModel):
+        objects = combine_querysets_as_manager(NoDeleteQuerySet, MyQuerySet)
+```  
+
+#### GenericUserProfile
+
+Allows you to iterate over a `User` table and have it return the corresponding `UserProfile` records without any extra queries
+
+Example:
+
+```
+# ------------------------------------------------------------------
+# base User model 
+class UserManager(django.contrib.auth.models.UserManager):
+    def get_by_natural_key(self, username):
+        return self.get(username=username)
+
+
+class User(django.contrib.auth.models.AbstractUser):
+    objects = UserManager()
+
+    def natural_key(self):
+        return (self.username,)
+
+
+# ------------------------------------------------------------------
+# Custom user profiles
+class CustomerProfile(User):
+    customer_details = models.CharField(max_length=191)
+
+
+class AdminProfile(User):
+    admin_details = models.CharField(max_length=191)
+
+
+# ------------------------------------------------------------------
+# Usually you wish to inherit default UserManager functionality
+class GenericUserProfileManager(allianceutils.models.GenericUserProfileManager, User._default_manager.__class__):
+    use_proxy_model = False
+
+    @classmethod
+    def user_to_profile(cls, user):
+        if hasattr(user, 'customerprofile'):
+            return user.customerprofile
+        elif hasattr(user, 'adminprofile'):
+            return user.adminprofile
+        return user
+
+    @classmethod
+    def select_related_profiles(cls, queryset):
+        return queryset.select_related(
+            'customerprofile',
+            'adminprofile',
+        )
+
+class GenericUserProfile(User):
+    objects = GenericUserProfileManager()
+
+    class Meta:
+        proxy = True
+
+```
+
+* `GenericUserProfileManager` class cannot know when being constructed what `Model` it will be attached to so you must manually define any model manager(s) you wish to inherit from  
+* If `use_proxy_model` is `False` then the underlying `User` model will be returned from queries instead of the proxy model
+    * `user_to_profile()` can use any logic you wish
+    * `select_related_profiles()` should include all relevant profiles
+* If `settings.AUTH_USER_MODEL is set to GenericUserProfile` then `AuthenticationMiddleware` will cause `request.user` to contain the appropriate profile with no extra queries  
+    * Due to a django limitation, if `AUTH_USER_MODEL` is set then you cannot use `django.contrib.auth.models.User`, you must create your own `User` table (usually based on `AbstractUser`)  
 
 ### Serializers
 
