@@ -1,4 +1,5 @@
-from django.test import Client, override_settings
+from django.test import Client
+from django.test import override_settings
 from django.test import TestCase
 from django.urls import reverse
 from django.utils.http import urlencode
@@ -55,7 +56,7 @@ class AuthTestCase(TestCase):
         Iterating over users instantiates the correct profile type (original User model)
         """
         with self.assertNumQueries(1):
-            qs = GenericUserProfile.objects.all()
+            qs = GenericUserProfile.objects.all().filter(id__gt=0).filter(id__isnull=False)
             for fetched in qs:
                 self.assertEqual(self.expected_class(self.profiles[fetched.id], use_proxy=False), fetched.__class__)
             self.assertEqual(qs.count(), len(self.profiles))
@@ -65,7 +66,7 @@ class AuthTestCase(TestCase):
         Iterating over users instantiates the correct profile type (proxied User model)
         """
         with self.assertNumQueries(1):
-            qs = GenericUserProfile.objects.all()
+            qs = GenericUserProfile.objects.all().filter(id__gt=0).filter(id__isnull=False)
             for fetched in qs:
                 self.assertEqual(self.expected_class(self.profiles[fetched.id], use_proxy=True), fetched.__class__)
             self.assertEqual(qs.count(), len(self.profiles))
@@ -92,9 +93,15 @@ class AuthTestCase(TestCase):
         """
         Manager should inherit from the base model manager
         """
-        for manager in (GenericUserProfile.objects, GenericUserProfile.objects_proxy):
-            manager.create_user(username='user100', email='user100@example.com', password='abc123')
-            self.assertIsNotNone(manager.get_by_natural_key(('user101',)))
+        manager = GenericUserProfile.objects
+        user = manager.create_user(username='user100', email='user100@example.com', password='abc123')
+        self.assertEqual(user.__class__, User)
+        self.assertIsNotNone(manager.get_by_natural_key('user100'))
+
+        manager = GenericUserProfile.objects_proxy
+        user = manager.create_user(username='user101', email='user101@example.com', password='abc123')
+        self.assertEqual(user.__class__, GenericUserProfile)
+        self.assertIsNotNone(manager.get_by_natural_key('user101'))
 
     def test_login(self):
         """
@@ -154,4 +161,3 @@ class AuthTestCase(TestCase):
             response = client.get(reverse('logout'))
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, 'This is a logout page')
-

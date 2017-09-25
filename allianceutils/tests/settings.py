@@ -76,22 +76,3 @@ NOSE_ARGS=[
 ]
 
 SECRET_KEY = _hashlib.sha256(str(_random.SystemRandom().getrandbits(256)).encode('ascii')).hexdigest()
-
-
-# def runtests(*test_args):
-#
-#     django.setup()
-#
-#     import django_nose  # has to be imported after django config happens
-#
-#     runner = django_nose.NoseTestSuiteRunner(
-#         verbosity=2,
-#         interactive=not is_ci,
-#     )
-#     failures = runner.run_tests(test_args)
-#     sys.exit(failures)
-#
-#
-# if __name__ == '__main__':
-#     setup()
-#     runtests(*sys.argv[1:])

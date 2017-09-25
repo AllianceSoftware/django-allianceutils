@@ -1,13 +1,19 @@
-# from authtools.models import AbstractEmailUser
-from django.contrib.auth.models import AbstractUser
+import django.contrib.auth.models
 from django.db import models
 
 import allianceutils.models
 
 
-class User(AbstractUser):
-# class User(AbstractEmailUser):
-    pass
+class UserManager(django.contrib.auth.models.UserManager):
+    def get_by_natural_key(self, username):
+        return self.get(username=username)
+
+
+class User(django.contrib.auth.models.AbstractUser):
+    objects = UserManager()
+
+    def natural_key(self):
+        return (self.username,)
 
 
 class CustomerProfile(User):
@@ -18,7 +24,9 @@ class AdminProfile(User):
     admin_details = models.CharField(max_length=191)
 
 
-class UserProfileManager(allianceutils.models.GenericUserProfileManager):
+class GenericUserProfileManager(allianceutils.models.GenericUserProfileManager, User._default_manager.__class__):
+    use_proxy_model = False
+
     @classmethod
     def user_to_profile(cls, user):
         if hasattr(user, 'customerprofile'):
@@ -35,12 +43,12 @@ class UserProfileManager(allianceutils.models.GenericUserProfileManager):
         )
 
 
-class ProxyUserProfileManager(UserProfileManager):
+class ProxyUserProfileManager(GenericUserProfileManager):
     use_proxy_model = True
 
 
 class GenericUserProfile(User):
-    objects = UserProfileManager()
+    objects = GenericUserProfileManager()
     objects_proxy = ProxyUserProfileManager()
 
     class Meta:
