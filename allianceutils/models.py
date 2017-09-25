@@ -4,6 +4,8 @@ from django.contrib.auth.models import Permission
 from django.db import IntegrityError
 from django.db import models
 from django.db.models import Q
+from django.db.models.manager import BaseManager
+from django.db.models.query import ModelIterable
 
 
 def add_group_permissions(group_id, codenames):
@@ -89,3 +91,77 @@ class NoDeleteModel(models.Model):
 
     class Meta:
         abstract = True
+
+# ---------------------------------------------------------------------------------------------------------------------
+
+
+class _GenericUserProfileIterable(ModelIterable):
+    def __iter__(self):
+        for user in super().__iter__():
+            yield self.queryset.user_to_profile(user)
+
+
+class _GenericUserProfileQuerySet(models.QuerySet):
+    def __init__(self,
+            full_init=False,
+            dereference_proxy_model=False,
+            model=None,
+            user_to_profile=None,
+            *args,
+            **kwargs):
+        if full_init:
+            self.user_to_profile = user_to_profile
+            if dereference_proxy_model and model._meta.proxy:
+                model = model._meta.concrete_model
+        super().__init__(model=model, *args, **kwargs)
+        self._iterable_class = _GenericUserProfileIterable
+
+    def _clone(self, **kwargs):
+        clone = super()._clone(**kwargs)
+        clone.user_to_profile = self.user_to_profile
+        return clone
+
+
+class GenericUserProfileManager(BaseManager.from_queryset(_GenericUserProfileQuerySet)):
+    """
+    Polymorphic manager that uses user_to_profile() to
+
+    """
+
+    # Implementation is complicated because a manager doesn't know at the time of definition (or even at construction)
+    # what model it is going to be part of
+
+    """ Set this in descendant classes to pass the proxy model rather than the concrete model to user_to_profile() """
+    use_proxy_model = False
+
+    def __init__(self, *args, **kwargs):
+        # We have to jump through some hoops because the QuerySet creation is hardcoded in multiple
+        # places in BaseManager -- eg _clone() -- so we can't simply add extra constructor params
+        def queryset_construct(*args, **kwargs):
+            return _GenericUserProfileQuerySet(
+                full_init=True,
+                dereference_proxy_model=not self.use_proxy_model,
+                user_to_profile = self.user_to_profile,
+                *args,
+                **kwargs
+            )
+        self._queryset_class = queryset_construct
+        super().__init__(*args, **kwargs)
+
+    def get_queryset(self, *args, **kwargs):
+        qs = super().get_queryset(*args, **kwargs)
+        return self.select_related_profiles(qs)
+
+    @classmethod
+    def user_to_profile(cls, user):
+        """
+        Takes a User record and returns the relevant associated Profile object
+        """
+        raise NotImplementedError('GenericUserProfileManagers need to implement user_to_profile()')
+
+    @classmethod
+    def select_related_profiles(cls, queryset):
+        """
+        Takes a queryset and adds select_related() to that user_to_profile() doens't trigger extra queries
+        """
+        raise NotImplementedError('GenericUserProfileManagers need to implement select_related_profiles()')

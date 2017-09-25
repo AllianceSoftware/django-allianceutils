@@ -34,18 +34,21 @@ _db_vars['OPTIONS'] = {
 
 DATABASES = {'default': _db_vars}
 
-print(DATABASES)
-
 INSTALLED_APPS = [
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
     'allianceutils',
     'allianceutils.tests.autodumpdata',
+    'allianceutils.tests.profile_auth',
     'allianceutils.tests.serializers',
     'allianceutils.tests.util',
+
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
 ]
 
-MIDDLEWARE_CLASSES = []
+AUTH_USER_MODEL = 'profile_auth.GenericUserProfile'
+
+MIDDLEWARE = []
 
 TEMPLATE_DIRS = [
     # os.path.join(BASE_DIR, 'compat/tests/templates/')
@@ -64,7 +67,7 @@ SERIALIZATION_MODULES = {
     'json': 'allianceutils.serializers.json_orminheritancefix',
 }
 
-#ROOT_URLCONF = 'tests.urls',
+ROOT_URLCONF = 'allianceutils.tests.urls'
 
 NOSE_ARGS=[
     # dont suppress stdout
