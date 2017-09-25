@@ -14,7 +14,10 @@ from .models import User
     MIDDLEWARE=[
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.contrib.auth.middleware.AuthenticationMiddleware',
-    ]
+    ],
+    PASSWORD_HASHERS = (
+        'django.contrib.auth.hashers.UnsaltedSHA1PasswordHasher',
+    )
 )
 class AuthTestCase(TestCase):
     def setUp(self):
