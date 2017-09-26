@@ -29,15 +29,37 @@ A collection of utilities for django projects.
 
 ### API
 
-FIXME
+#### CacheObjectMixin
+
+**Status: No unit tests**
+
+Caches the result of `get_object()` in the request
+* TODO: Why cache this on `request` and not on `self`?
+    * If you are customising `get_object()`, `django.utils.functional.cached_property` is probably simpler 
+
+```python
+class MyViewSet(allianceutils.api.mixins.CacheObjectMixin, GenericViewSet):
+	# ...
+```  
+
 #### Permissions
 
 ##### SimpleDjangoObjectPermissions
 
+**Status: No unit tests**
+
 Permission class for Django Rest Framework that adds support for object level permissions.
 
-* Setup
-    * Add to `REST_FRAMEWORK` `DEFAULT_PERMISSION_CLASSES` in your settings
+Differs from just using DjangoObjectPermissions because it
+* does not require a queryset
+* uses a single permission for all request methods
+
+Notes
+* As per [DRF documentation](http://www.django-rest-framework.org/api-guide/permissions/#object-level-permissions): get_object() is only required if you want to implement object-level permissions
+* **WARNING** If you override `get_object()` then you need to *manually* invoke `self.check_object_permissions(self.request, obj)`
+
+Setup
+* To apply to all classes in django rest framework:
 
 ```python
 REST_FRAMEWORK = {
@@ -50,21 +72,24 @@ REST_FRAMEWORK = {
 }
 ```
 
-* Usage 
+* To apply to one particular view, override `permission_required`
+```python
+class MyAPIView(PermissionRequiredAPIMixin, APIView):
+        permission_required = 'my_module.my_permission'
 
-In a view set `permission_required` to the static permission required:
-
+		# You do not have to override get_object() but if you do you must explicitly call check_object_permissions() 
+        def get_object(self):
+            obj = get_object_or_404(self.get_queryset())
+            self.check_object_permissions(self.request, obj)
+            return obj
 ```
-ass AccountViewSet(viewsets.ModelViewSet):
-    serializer_class = AccountSerializer
-    queryset = Account.objects.all()
 
-    permission_required = 'password_manager.view_account'
-```
+If you have no object level permissions (eg. from rules) then it will just do a static permission check.
 
-If you have no object level permissions (eg. from rules) then it will just do a static
-permission check.
 
+##### GenericDjangoViewsetPermissions
+
+**Status: No unit tests**
 
 ### Auth
 

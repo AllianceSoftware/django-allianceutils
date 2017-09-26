@@ -1,5 +1,5 @@
-from typing import Callable
 from typing import Iterable
+from typing import List
 from typing import Optional
 
 from django.contrib.auth import get_user_model
@@ -14,14 +14,11 @@ from django.db.models.manager import BaseManager
 from django.db.models.query import ModelIterable
 
 
-def add_group_permissions(group_id, codenames):
+def add_group_permissions(group_id: int, codenames: List[str]):
     """
     Add permissions to a group
 
-    :param group_id: group to add permissions to
-    :param codenames: sequence of permission codenames (assumed permission already exists)
-    :param allow_duplicates: Whether to throw an error if duplicate permissions assigned (defaults to false)
-    :return:
+    Assumes permissions with codenames already exist
     """
     group = Group.objects.get(pk=group_id)
 
@@ -39,11 +36,9 @@ def get_users_with_permission(permission):
     return get_users_with_permissions((permission,))
 
 
-def get_users_with_permissions(permissions):
+def get_users_with_permissions(permissions: List[str]) -> Iterable[Model]:
     """
-    Assumes authtools is the user model, grabs all users with specified static permissions
-    :param permissions: permissions codenames to check
-    :return: queryset of users with any of the listed permissions (via a group or directly)
+    Retrieves all users with specified static permissions (via a group or directly assigned)
     """
     query = Q(False)
     for permission in permissions:
@@ -58,7 +53,7 @@ def get_users_with_permissions(permissions):
     return users
 
 
-def combine_querysets_as_manager(*queryset_classes):
+def combine_querysets_as_manager(*queryset_classes: List[QuerySet]) -> Manager:
     """
     Replacement for django_permanent.managers.MultiPassThroughManager which no longer works in django 1.8
 
@@ -72,7 +67,7 @@ def combine_querysets_as_manager(*queryset_classes):
 
 
 class NoDeleteQuerySet(QuerySet):
-    def delete(self, force=False):
+    def delete(self, force: bool=False):
         raise IntegrityError("Instances of model '%s' are marked as undeletable" % self.__class__.__name__)
 
 
