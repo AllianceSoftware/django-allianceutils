@@ -469,9 +469,9 @@ WEBPACK_LOADER = {
 
 ## Changelog
 
-* dev
-* 0.3
-    * 0.3.x
+* Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools 
+* 0.3.dev
+    * 0.3.0.dev
     	* Breaking Changes
     		* Dropped support for python <3.4
     		* Dropped support for django <1.11

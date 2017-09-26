@@ -1,7 +1,8 @@
 from __future__ import unicode_literals
 
-from distutils.version import StrictVersion
 import re
+
+from pkg_resources import parse_version
 
 try:
     from setuptools import setup
@@ -11,16 +12,19 @@ except ImportError:
 # automatically detect the current version from the highest version in the changelog section of the README
 with open('README.md', 'r') as f:
     section = None
-    highest_ver = StrictVersion('0.0.0')
+    highest_ver = parse_version('0')
     for line in f.readlines():
         if re.match('^#', line):
             section = line.strip('#').strip().upper()
-        if section == 'CHANGELOG' and re.match('^[ \t]*\* [0-9.]+', line):
+        if section == 'CHANGELOG' and re.match('^[ \t]*\* [0-9.]+(dev)?', line):
             cur_ver = line.replace('*', ' ').strip()
             try:
-                highest_ver = max(highest_ver, StrictVersion(cur_ver))
+                cur_ver = parse_version(cur_ver)
             except ValueError:
                 pass
+            else:
+                if cur_ver >= highest_ver:
+                    highest_ver = cur_ver
 
 __version__ = str(highest_ver)
 
