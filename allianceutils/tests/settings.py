@@ -34,18 +34,21 @@ _db_vars['OPTIONS'] = {
 
 DATABASES = {'default': _db_vars}
 
-print(DATABASES)
-
 INSTALLED_APPS = [
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
     'allianceutils',
     'allianceutils.tests.autodumpdata',
+    'allianceutils.tests.profile_auth',
     'allianceutils.tests.serializers',
     'allianceutils.tests.util',
+
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
 ]
 
-MIDDLEWARE_CLASSES = []
+AUTH_USER_MODEL = 'profile_auth.GenericUserProfile'
+
+MIDDLEWARE = []
 
 TEMPLATE_DIRS = [
     # os.path.join(BASE_DIR, 'compat/tests/templates/')
@@ -64,7 +67,7 @@ SERIALIZATION_MODULES = {
     'json': 'allianceutils.serializers.json_orminheritancefix',
 }
 
-#ROOT_URLCONF = 'tests.urls',
+ROOT_URLCONF = 'allianceutils.tests.urls'
 
 NOSE_ARGS=[
     # dont suppress stdout
@@ -73,22 +76,3 @@ NOSE_ARGS=[
 ]
 
 SECRET_KEY = _hashlib.sha256(str(_random.SystemRandom().getrandbits(256)).encode('ascii')).hexdigest()
-
-
-# def runtests(*test_args):
-#
-#     django.setup()
-#
-#     import django_nose  # has to be imported after django config happens
-#
-#     runner = django_nose.NoseTestSuiteRunner(
-#         verbosity=2,
-#         interactive=not is_ci,
-#     )
-#     failures = runner.run_tests(test_args)
-#     sys.exit(failures)
-#
-#
-# if __name__ == '__main__':
-#     setup()
-#     runtests(*sys.argv[1:])
