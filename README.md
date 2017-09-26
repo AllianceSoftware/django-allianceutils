@@ -446,6 +446,9 @@ WEBPACK_LOADER = {
     	* Breaking Changes
     		* Dropped support for python <3.4
     		* Dropped support for django <1.11
+		* Added GenericUserProfile
+		* Type annotations added for all model classes
+		* Test against python 3.4, 3.5, 3.6
     * 0.2.0
         * Breaking Changes
             * The interface for `get_autodump_labels` has changed 
