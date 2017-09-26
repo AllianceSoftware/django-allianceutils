@@ -1,4 +1,56 @@
-def retry_fn(fn, allowable_exceptions, retry_count=5):
+# IMPORTANT
+# python_to_django_date_format() may be used in django settings files
+# If you import django in this file that should be considered a breaking change
+import re
+from typing import Callable
+from typing import Match
+from typing import Tuple
+
+_date_format_map = {
+    '%%': '%',
+    '%a': 'D',
+    '%A': 'l',
+    '%b': 'M',
+    '%B': 'F',
+    '%c': '',
+    '%d': 'd',
+    '%-d':'j',
+    '%f': '',
+    '%H': 'H',
+    '%-H':'G',
+    '%I': 'h',
+    '%-I':'g',
+    '%j': 'z',
+    '%m': 'm',
+    '%-m':'n',
+    '%M': 'i',
+    '%p': 'A',
+    '%S': 's',
+    '%U': '',
+    '%w': 'w',
+    '%W': 'W',
+    '%x': '',
+    '%X': '',
+    '%y': 'y',
+    '%Y': 'Y',
+    '%z': 'O',
+    '%Z': 'e',
+}
+_date_format_re = re.compile('|'.join(re.escape(key) for key in _date_format_map))
+
+
+def _date_format_replace(x: Match) -> str:
+    return _date_format_map[x.group(0)]
+
+
+def python_to_django_date_format(python_format: str) -> str:
+    """
+    Convert python date formatting string to django date formatting string
+    """
+    return _date_format_re.sub(_date_format_replace, python_format)
+
+
+def retry_fn(fn: Callable, allowable_exceptions: Tuple, retry_count: int=5):
     """
     Call fn, retrying if exception type in allowable_exceptions is raised up to retry_count times
     """

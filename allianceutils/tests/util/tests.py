@@ -1,9 +1,10 @@
-from django.test import TestCase
+from django.test import SimpleTestCase
 
+from allianceutils.util import python_to_django_date_format
 from allianceutils.util import retry_fn
 
 
-class UtilTestCase(TestCase):
+class UtilTestCase(SimpleTestCase):
 
     def test_retry_fn(self):
         """
@@ -26,3 +27,37 @@ class UtilTestCase(TestCase):
         fn.a = 0
         with self.assertRaises(ValueError):
             retry_fn(fn, (ValueError, IndexError), 3)
+
+
+class DateFormatTestCase(SimpleTestCase):
+
+    def test_date_format(self):
+        formats = {
+            # no django equivalent:
+            '%x%X': '',
+
+            # nothing special:
+            '%a%A%b%B': 'DlMF',
+
+            # contains literal chars
+            '%a99%Z': 'D99e',
+
+            # make sure does not do recursive substitutions
+            '%%c': '%c',
+            '%%%ddd': '%ddd',
+            '%%%p%A': '%Al',
+            '%%%%': '%%',
+
+            # Unknown % codes
+            '%Q': '%Q',
+        }
+
+        for format_in, format_out in formats.items():
+            self.assertEqual(python_to_django_date_format(format_in), format_out)
+
+        format_in = ''.join(formats.keys())
+        format_out = ''.join(formats.values())
+        self.assertEqual(python_to_django_date_format(format_in), format_out)
+
+        # incomplete % at the end of a string (can't include above because it gets joined and is no longer at the end)
+        self.assertEqual(python_to_django_date_format('%'), '%')

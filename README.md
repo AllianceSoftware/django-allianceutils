@@ -419,6 +419,10 @@ MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
 
 ### Util
 
+#### python_to_django_date_format
+
+Converts a python [strftime/strptime](https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior) datetime format string into a []django template/PHP](https://docs.djangoproject.com/en/dev/ref/templates/builtins/#std:templatefilter-date) date format string
+
 #### retry_fn
 
 * Repeatedly (up to a hard limit) call specified function while it raises specified exception types or until it returns
@@ -466,20 +470,22 @@ WEBPACK_LOADER = {
 ## Changelog
 
 * dev
-* 0.1
+* 0.3
     * 0.3.x
     	* Breaking Changes
     		* Dropped support for python <3.4
     		* Dropped support for django <1.11
-		* Added GenericUserProfile
-		* Type annotations added for all model classes
+		* Added `GenericUserProfile`
+		* Added `python_to_django_date_format`
 		* Test against python 3.4, 3.5, 3.6
+* 0.2
     * 0.2.0
         * Breaking Changes
             * The interface for `get_autodump_labels` has changed 
         * Added autodumpdata SQL output format
         * Added `mysqlquickdump` options `--model` and `--explicit` 
         * Update to work with webpack_loader 0.5
+* 0.1
     * 0.1.6
         * Update `json_orminheritancefix` to work with django 1.11 
     * 0.1.5
@@ -494,6 +500,6 @@ WEBPACK_LOADER = {
     * 0.1.2
         * Added test cases, documentation
     * 0.1.1
-        * Added StaticStorage, MediaStorage
+        * Added `StaticStorage`, `MediaStorage`
     * 0.1.0
         * Initial release
