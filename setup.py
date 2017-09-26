@@ -42,8 +42,8 @@ setup(
     classifiers=[],
     download_url='http://gitlab.internal.alliancesoftware.com.au/alliance/alliance-django-utils/repository/archive.tar.gz?ref=' + __version__,
     keywords=[
-		'alliance',
-		'alliancesoftware',
-		'django',
-	],
+        'alliance',
+        'alliancesoftware',
+        'django',
+    ],
 )
