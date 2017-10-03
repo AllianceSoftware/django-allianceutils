@@ -10,6 +10,7 @@ A collection of utilities for django projects.
     * [Decorators](#decorators)
     * [Filters](#filters)
     * [Management](#management)
+        * [Checks](#checks)
     * [Middleware](#middleware)
     * [Migrations](#migrations)
     * [Models](#models)
@@ -178,6 +179,22 @@ customer = MultipleFieldCharFilter(names=('customer__first_name', 'customer__las
 ### Management
 
 FIXME
+
+#### Checks
+
+##### check_url_trailing_slash
+
+* Checks that your URLs are consistent with the `settings.APPEND_SLASH` using a [django system check](https://docs.djangoproject.com/en/dev/ref/checks/)
+* In your app's `checks.py`: 
+
+```
+from django.core.checks import register
+from django.core.checks import Tags
+
+from allianceutils.checks import check_url_trailing_slash
+
+register(check=check_url_trailing_slash, tags=Tags.url)
+```
 
 ### Middleware
 
@@ -477,6 +494,7 @@ WEBPACK_LOADER = {
     		* Dropped support for django <1.11
 		* Added `GenericUserProfile`
 		* Added `python_to_django_date_format`
+		* Added `check_url_trailing_slash`
 		* Test against python 3.4, 3.5, 3.6
 * 0.2
     * 0.2.0
