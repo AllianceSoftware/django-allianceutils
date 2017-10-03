@@ -20,8 +20,6 @@ SERIALIZATION_MODULES = {
 - There is no way to override django.core.serializers.python.Deserializer in part so this is a cut & paste
   of both the json & python deserializers with patches applied
 """
-from __future__ import absolute_import
-
 import json
 import sys
 

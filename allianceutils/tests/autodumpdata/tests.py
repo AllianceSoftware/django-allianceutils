@@ -1,6 +1,3 @@
-from __future__ import unicode_literals
-
-import errno
 import json
 import os
 import shutil
@@ -86,9 +83,8 @@ class TestAutoDumpData(TransactionTestCase):
         """
         try:
             shutil.rmtree(os.path.join(os.path.dirname(__file__), 'fixtures'))
-        except OSError as e:
-            if e.errno != errno.ENOENT:
-                raise
+        except FileNotFoundError:
+            pass
         call_command('autodumpdata', fixture='publication')
         call_command('autodumpdata', fixture='publication')
 

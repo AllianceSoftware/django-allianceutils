@@ -1,4 +1,3 @@
-import errno
 import os
 
 from django.apps import apps
@@ -164,9 +163,8 @@ class Command(AppCommand):
                 # if the caller explicitly set the output file then it's up to them to do this
                 try:
                     os.mkdir(fixture_dir)
-                except OSError as e:
-                    if e.errno != errno.EEXIST:
-                        raise
+                except FileExistsError:
+                    pass
 
             if app_models:
                 call_command('dumpdata',
