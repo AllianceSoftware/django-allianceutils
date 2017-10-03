@@ -36,8 +36,6 @@ class Command(django.core.management.commands.flush.Command):
         parser.set_defaults(load_initial_data=False)
 
     def handle(self, **options):
-        import datetime
-        t1 = datetime.datetime.now()
         verbosity = options.get('verbosity')
         database = options.get('database')
         connection = django.db.connections[database]
@@ -86,9 +84,6 @@ class Command(django.core.management.commands.flush.Command):
             returncode = subprocess.call(cmd, stdin=f, stdout=self.stdout, stderr=self.stderr)
             if returncode != 0:
                 self.stdout.write(self.style.ERROR('Error executing mysql (return code %s)\n' % returncode))
-        t2 = datetime.datetime.now()
-        print t2-t1
-
 
     @staticmethod
     def emit_post_migrate(verbosity, interactive, database):

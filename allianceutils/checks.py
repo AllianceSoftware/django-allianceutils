@@ -17,7 +17,6 @@ def check_url_trailing_slash(app_configs, **kwargs):
                 warnings.extend(check_resolver(url_pattern))
             else:
                 regex_pattern = url_pattern.regex.pattern
-                print(regex_pattern)
 
                 if regex_pattern.endswith('/$') != settings.APPEND_SLASH:
                     warnings.append(
