@@ -34,9 +34,10 @@ _db_vars['OPTIONS'] = {
 
 DATABASES = {'default': _db_vars}
 
-INSTALLED_APPS = [
+INSTALLED_APPS = (
     'allianceutils',
     'allianceutils.tests.autodumpdata',
+    'allianceutils.tests.checks',
     'allianceutils.tests.profile_auth',
     'allianceutils.tests.serializers',
     'allianceutils.tests.util',
@@ -44,7 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-]
+)
 
 AUTH_USER_MODEL = 'profile_auth.GenericUserProfile'
 

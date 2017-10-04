@@ -10,6 +10,7 @@ A collection of utilities for django projects.
     * [Decorators](#decorators)
     * [Filters](#filters)
     * [Management](#management)
+        * [Checks](#checks)
     * [Middleware](#middleware)
     * [Migrations](#migrations)
     * [Models](#models)
@@ -178,6 +179,38 @@ customer = MultipleFieldCharFilter(names=('customer__first_name', 'customer__las
 ### Management
 
 FIXME
+
+#### Checks
+
+##### check_url_trailing_slash
+
+* Checks that your URLs are consistent with the `settings.APPEND_SLASH` using a [django system check](https://docs.djangoproject.com/en/dev/ref/checks/)
+* In your [app config](https://docs.djangoproject.com/en/1.11/ref/applications/#for-application-authors) 
+
+```
+from django.apps import AppConfig
+from django.core.checks import register
+from django.core.checks import Tags
+
+from allianceutils.checks import check_url_trailing_slash
+
+class MyAppConfig(AppConfig):
+	# ...
+
+    def ready(self):
+        # trigger checks to register
+        check = check_url_trailing_slash(expect_trailing_slash=True)
+        register(check=check, tags=Tags.url)
+```
+
+* Optional arguments to `check_url_trailing_slash`
+    * `ignore_attrs` - skip checks on url patterns where an attribute of the pattern matches something in here (see example above)
+        * Most relevant attributes of a `RegexURLResolver`:
+            * `_regex` - string used for regex matching. Defaults to `[r'^$']`
+            * `app_name` - app name (only works for `include()` patterns). Defaults to `['djdt']` (django debug toolbar)
+            * `namespace` - pattern defines a namespace
+            * `lookup_str` - string defining view to use. Defaults to `['django.views.static.serve']`
+        * Note that if you skip a resolver it will also skip checks on everything inside that resolver  
 
 ### Middleware
 
@@ -477,6 +510,7 @@ WEBPACK_LOADER = {
     		* Dropped support for django <1.11
 		* Added `GenericUserProfile`
 		* Added `python_to_django_date_format`
+		* Added `check_url_trailing_slash`
 		* Test against python 3.4, 3.5, 3.6
 * 0.2
     * 0.2.0
