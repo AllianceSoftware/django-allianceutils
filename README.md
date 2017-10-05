@@ -242,6 +242,16 @@ user = CurrentUserMiddleware.get_user()
 ```python
 warnings.simplefilter('always', allianceutils.middleware.QueryCountWarning)
 ```
+
+* To increase the query count limit for a given request, you can increase `request.QUERY_COUNT_WARNING_THRESHOLD`
+	* Rather than hardcode a new limit, you should increment the existing value
+	* If `request.QUERY_COUNT_WARNING_THRESHOLD` is falsy then checks are disabled for this request 
+```python
+def my_view(request, *args, **kwargs):
+	request.QUERY_COUNT_WARNING_THRESHOLD += 10
+	...
+
+```
  
 
 ### Migrations
