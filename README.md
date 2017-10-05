@@ -187,7 +187,7 @@ FIXME
 * Checks that your URLs are consistent with the `settings.APPEND_SLASH` using a [django system check](https://docs.djangoproject.com/en/dev/ref/checks/)
 * In your [app config](https://docs.djangoproject.com/en/1.11/ref/applications/#for-application-authors) 
 
-```
+```python
 from django.apps import AppConfig
 from django.core.checks import register
 from django.core.checks import Tags
@@ -257,7 +257,7 @@ FIXME
 * Read django docs about [manager inheritance](https://docs.djangoproject.com/en/1.11/topics/db/managers/#custom-managers-and-model-inheritance)
     * If you wish add your own manager, you need to combine the querysets:
 
-```
+```python
 class MyModel(NoDeleteModel):
         objects = combine_querysets_as_manager(NoDeleteQuerySet, MyQuerySet)
 ```  
@@ -268,7 +268,7 @@ Allows you to iterate over a `User` table and have it return the corresponding `
 
 Example:
 
-```
+```python
 # ------------------------------------------------------------------
 # base User model 
 class UserManager(django.contrib.auth.models.UserManager):
@@ -460,7 +460,7 @@ Converts a python [strftime/strptime](https://docs.python.org/3/library/datetime
 
 * Repeatedly (up to a hard limit) call specified function while it raises specified exception types or until it returns
 
-```
+```python
 from allianceutils.util import retry_fn
 
 # Generate next number in sequence for a model
