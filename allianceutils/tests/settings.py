@@ -48,19 +48,19 @@ INSTALLED_APPS = (
 
 AUTH_USER_MODEL = 'profile_auth.GenericUserProfile'
 
-MIDDLEWARE = []
+MIDDLEWARE = ()
 
-TEMPLATE_DIRS = [
+TEMPLATE_DIRS = (
     # os.path.join(BASE_DIR, 'compat/tests/templates/')
-]
+)
 
-TEMPLATES = [
+TEMPLATES = (
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'APP_DIRS': True,
         'DIRS': TEMPLATE_DIRS,
     },
-]
+)
 
 SERIALIZATION_MODULES = {
     'json_ordered': 'allianceutils.serializers.json_ordered',
@@ -68,11 +68,5 @@ SERIALIZATION_MODULES = {
 }
 
 ROOT_URLCONF = 'allianceutils.tests.urls'
-
-NOSE_ARGS=[
-    # dont suppress stdout
-    '--nocapture',
-    '--nologcapture',
-]
 
 SECRET_KEY = _hashlib.sha256(str(_random.SystemRandom().getrandbits(256)).encode('ascii')).hexdigest()
