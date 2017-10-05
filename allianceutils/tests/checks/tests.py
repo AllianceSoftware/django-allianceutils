@@ -34,7 +34,7 @@ class TestUrls(SimpleTestCase):
         Base case: nothing should be wrong
         """
         errors = self.get_errors(expect_trailing_slash=True)
-        self.assertEquals(errors, [])
+        self.assertEqual(errors, [])
 
     @override_settings(**check_urls_settings)
     def test_missing_slash(self):
@@ -47,7 +47,7 @@ class TestUrls(SimpleTestCase):
             '^noslash2$',
             '^noslash3$',
         ]
-        self.assertEquals(sorted(errors), sorted(expected))
+        self.assertEqual(sorted(errors), sorted(expected))
 
     @override_settings(**check_urls_settings)
     def test_extra_slash(self):
@@ -59,4 +59,4 @@ class TestUrls(SimpleTestCase):
             '^slash1/$',
             '^slash2/$',
         ]
-        self.assertEquals(sorted(errors), sorted(expected))
+        self.assertEqual(sorted(errors), sorted(expected))

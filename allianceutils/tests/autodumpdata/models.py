@@ -22,3 +22,5 @@ class Book(Publication):
 
     fixtures_autodump = ['book']
     # note book will get a sql dump on "publication": it inherited fixture_autodump_sql
+    class Meta:
+        manager_inheritance_from_future = True

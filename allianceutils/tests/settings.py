@@ -2,6 +2,7 @@ import hashlib as _hashlib
 import os as _os
 import random as _random
 import sys as _sys
+import warnings as _warnings
 
 # import django
 
@@ -73,3 +74,5 @@ ROOT_URLCONF = 'allianceutils.tests.urls'
 SECRET_KEY = _hashlib.sha256(str(_random.SystemRandom().getrandbits(256)).encode('ascii')).hexdigest()
 
 QUERY_COUNT_WARNING_THRESHOLD = 40
+
+_warnings.simplefilter('always')

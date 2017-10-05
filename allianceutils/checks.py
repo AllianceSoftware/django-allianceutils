@@ -2,8 +2,8 @@ from typing import Iterable
 from typing import Mapping
 
 from django.conf.urls import RegexURLResolver
-from django.core import urlresolvers
 from django.core.checks import Warning
+from django.urls import get_resolver
 
 
 def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[str, Iterable[str]]={}):
@@ -55,5 +55,5 @@ def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[
 
             return warnings
 
-        return check_resolver(urlresolvers.get_resolver())
+        return check_resolver(get_resolver())
     return _check_url_trailing_slash
