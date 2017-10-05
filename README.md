@@ -220,7 +220,7 @@ class MyAppConfig(AppConfig):
     * Properly handles multithreaded python by keeping track of the current user in a `dict` of `{'threadId': User}` 
 
 * Setup
-    * Add `allianceutils.middleware.CurrentUserMiddleware` to `MIDDLEWARE_CLASSES`.
+    * Add `allianceutils.middleware.CurrentUserMiddleware` to `MIDDLEWARE`.
 
 * Usage
 
@@ -229,6 +229,20 @@ from allianceutils.middleware import CurrentUserMiddleware
 
 user = CurrentUserMiddleware.get_user()
 ```
+
+#### QueryCountMiddleware
+
+* Warns if query count reaches a given threshold
+	* Threshold can be changed by setting `settings.QUERY_COUNT_WARNING_THRESHOLD`
+
+* Usage
+    * Add `allianceutils.middleware.CurrentUserMiddleware` to `MIDDLEWARE`.
+	* Uses the `warnings` module to raise a warning; by default this is suppressed by django
+    	* To ensure `QueryCountWarning` is never suppressed  
+```python
+warnings.simplefilter('always', allianceutils.middleware.QueryCountWarning)
+```
+ 
 
 ### Migrations
 

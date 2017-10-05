@@ -38,6 +38,7 @@ INSTALLED_APPS = (
     'allianceutils',
     'allianceutils.tests.autodumpdata',
     'allianceutils.tests.checks',
+    'allianceutils.tests.middleware',
     'allianceutils.tests.profile_auth',
     'allianceutils.tests.serializers',
 
@@ -70,3 +71,5 @@ SERIALIZATION_MODULES = {
 ROOT_URLCONF = 'allianceutils.tests.urls'
 
 SECRET_KEY = _hashlib.sha256(str(_random.SystemRandom().getrandbits(256)).encode('ascii')).hexdigest()
+
+QUERY_COUNT_WARNING_THRESHOLD = 40
