@@ -40,7 +40,6 @@ INSTALLED_APPS = (
     'allianceutils.tests.checks',
     'allianceutils.tests.profile_auth',
     'allianceutils.tests.serializers',
-    'allianceutils.tests.util',
 
     'django.contrib.auth',
     'django.contrib.contenttypes',
