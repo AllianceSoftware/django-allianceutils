@@ -1,3 +1,5 @@
+# requirements for local development
+# this is not used by tox
 -r requirements-common.txt
 
 Django>=1.11

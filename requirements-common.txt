@@ -2,7 +2,7 @@
 # keep this in sync with setup.py
 unipath
 
-# tox dependencies
+# dependencies for tox testing
 django-filter
 django-storages
 django-webpack-loader
