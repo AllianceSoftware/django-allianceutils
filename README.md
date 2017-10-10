@@ -187,7 +187,7 @@ FIXME
 * Checks that your URLs are consistent with the `settings.APPEND_SLASH` using a [django system check](https://docs.djangoproject.com/en/dev/ref/checks/)
 * In your [app config](https://docs.djangoproject.com/en/1.11/ref/applications/#for-application-authors) 
 
-```
+```python
 from django.apps import AppConfig
 from django.core.checks import register
 from django.core.checks import Tags
@@ -220,7 +220,7 @@ class MyAppConfig(AppConfig):
     * Properly handles multithreaded python by keeping track of the current user in a `dict` of `{'threadId': User}` 
 
 * Setup
-    * Add `allianceutils.middleware.CurrentUserMiddleware` to `MIDDLEWARE_CLASSES`.
+    * Add `allianceutils.middleware.CurrentUserMiddleware` to `MIDDLEWARE`.
 
 * Usage
 
@@ -229,6 +229,30 @@ from allianceutils.middleware import CurrentUserMiddleware
 
 user = CurrentUserMiddleware.get_user()
 ```
+
+#### QueryCountMiddleware
+
+* Warns if query count reaches a given threshold
+	* Threshold can be changed by setting `settings.QUERY_COUNT_WARNING_THRESHOLD`
+
+* Usage
+    * Add `allianceutils.middleware.CurrentUserMiddleware` to `MIDDLEWARE`.
+	* Uses the `warnings` module to raise a warning; by default this is suppressed by django
+    	* To ensure `QueryCountWarning` is never suppressed  
+```python
+warnings.simplefilter('always', allianceutils.middleware.QueryCountWarning)
+```
+
+* To increase the query count limit for a given request, you can increase `request.QUERY_COUNT_WARNING_THRESHOLD`
+	* Rather than hardcode a new limit, you should increment the existing value
+	* If `request.QUERY_COUNT_WARNING_THRESHOLD` is falsy then checks are disabled for this request 
+```python
+def my_view(request, *args, **kwargs):
+	request.QUERY_COUNT_WARNING_THRESHOLD += 10
+	...
+
+```
+ 
 
 ### Migrations
 
@@ -257,7 +281,7 @@ FIXME
 * Read django docs about [manager inheritance](https://docs.djangoproject.com/en/1.11/topics/db/managers/#custom-managers-and-model-inheritance)
     * If you wish add your own manager, you need to combine the querysets:
 
-```
+```python
 class MyModel(NoDeleteModel):
         objects = combine_querysets_as_manager(NoDeleteQuerySet, MyQuerySet)
 ```  
@@ -268,7 +292,7 @@ Allows you to iterate over a `User` table and have it return the corresponding `
 
 Example:
 
-```
+```python
 # ------------------------------------------------------------------
 # base User model 
 class UserManager(django.contrib.auth.models.UserManager):
@@ -460,7 +484,7 @@ Converts a python [strftime/strptime](https://docs.python.org/3/library/datetime
 
 * Repeatedly (up to a hard limit) call specified function while it raises specified exception types or until it returns
 
-```
+```python
 from allianceutils.util import retry_fn
 
 # Generate next number in sequence for a model

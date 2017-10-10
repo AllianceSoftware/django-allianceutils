@@ -2,6 +2,7 @@ import hashlib as _hashlib
 import os as _os
 import random as _random
 import sys as _sys
+import warnings as _warnings
 
 # import django
 
@@ -38,9 +39,9 @@ INSTALLED_APPS = (
     'allianceutils',
     'allianceutils.tests.autodumpdata',
     'allianceutils.tests.checks',
+    'allianceutils.tests.middleware',
     'allianceutils.tests.profile_auth',
     'allianceutils.tests.serializers',
-    'allianceutils.tests.util',
 
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -49,19 +50,19 @@ INSTALLED_APPS = (
 
 AUTH_USER_MODEL = 'profile_auth.GenericUserProfile'
 
-MIDDLEWARE = []
+MIDDLEWARE = ()
 
-TEMPLATE_DIRS = [
+TEMPLATE_DIRS = (
     # os.path.join(BASE_DIR, 'compat/tests/templates/')
-]
+)
 
-TEMPLATES = [
+TEMPLATES = (
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'APP_DIRS': True,
         'DIRS': TEMPLATE_DIRS,
     },
-]
+)
 
 SERIALIZATION_MODULES = {
     'json_ordered': 'allianceutils.serializers.json_ordered',
@@ -70,10 +71,8 @@ SERIALIZATION_MODULES = {
 
 ROOT_URLCONF = 'allianceutils.tests.urls'
 
-NOSE_ARGS=[
-    # dont suppress stdout
-    '--nocapture',
-    '--nologcapture',
-]
-
 SECRET_KEY = _hashlib.sha256(str(_random.SystemRandom().getrandbits(256)).encode('ascii')).hexdigest()
+
+QUERY_COUNT_WARNING_THRESHOLD = 40
+
+_warnings.simplefilter('always')

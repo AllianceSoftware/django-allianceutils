@@ -25,7 +25,7 @@ class Customer(Person):
 
 
 class Purchase(models.Model):
-    customer = models.ForeignKey(to=Customer, null=False)
+    customer = models.ForeignKey(to=Customer, null=False, on_delete=models.CASCADE)
 
     def natural_key(self):
         return (self.customer.natural_key(),)

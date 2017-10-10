@@ -18,7 +18,7 @@ class UtilTestCase(SimpleTestCase):
                 raise IndexError()
             return 666
         fn.a = 0
-        self.assertEquals(retry_fn(fn, (ValueError, IndexError,)), 666)
+        self.assertEqual(retry_fn(fn, (ValueError, IndexError,)), 666)
 
         fn.a = 0
         with self.assertRaises(IndexError):

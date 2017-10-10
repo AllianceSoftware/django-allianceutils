@@ -19,9 +19,15 @@ class User(django.contrib.auth.models.AbstractUser):
 class CustomerProfile(User):
     customer_details = models.CharField(max_length=191)
 
+    class Meta:
+        manager_inheritance_from_future = True
+
 
 class AdminProfile(User):
     admin_details = models.CharField(max_length=191)
+
+    class Meta:
+        manager_inheritance_from_future = True
 
 
 class GenericUserProfileManager(allianceutils.models.GenericUserProfileManager, User._default_manager.__class__):
