@@ -158,6 +158,6 @@ class QueryCountMiddleware(object):
             response = self.get_response(request)
 
         if getattr(request, 'QUERY_COUNT_WARNING_THRESHOLD', 0) and self.query_count >= request.QUERY_COUNT_WARNING_THRESHOLD:
-            logger.warning('Request ran %d queries', self.query_count)
+            logger.warning('Request "%s %s" ran %d queries', request.method, request.path, self.query_count)
 
         return response
