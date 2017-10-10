@@ -24,22 +24,23 @@ with open('README.md', 'r') as f:
                 if cur_ver >= highest_ver:
                     highest_ver = cur_ver
 
+package_name = 'allianceutils'
+
 __version__ = str(highest_ver)
+# uncomment to confirm version calculation is working
+# print('%s version %s' % (package_name, __version__))
+# raise SystemExit()
 
 setup(
-    name='allianceutils',
+    name=package_name,
     version=__version__,
     author='Alliance Software',
     author_email='support@alliancesoftware.com.au',
-    packages=['allianceutils'], # this must be the same as the name above
+    packages=[package_name],
     include_package_data=True,
     description='Alliance Software common utilities for django',
     # long_description=...,
     # license='??',
-    install_requires=[
-        # remember to keep this in sync with requirements.txt if necessary
-        'unipath',
-    ],
     url='http://gitlab.internal.alliancesoftware.com.au/alliance/alliance-django-utils',
     classifiers=[],
     download_url='http://gitlab.internal.alliancesoftware.com.au/alliance/alliance-django-utils/repository/archive.tar.gz?ref=' + __version__,
@@ -48,4 +49,17 @@ setup(
         'alliancesoftware',
         'django',
     ],
+    install_requires=[
+        # remember to keep this in sync with requirements.txt if necessary
+        'django',
+        'typing; python_version < "3.5"',
+        'unipath',
+    ],
+    extras_require={
+        # keep in sync with requirements-optional.txt
+        'API': ['djangorestframework'],
+        'Filters': ['django-filter'],
+        'Permissions': ['rules'],
+        'Webpack': ['webpack-loader'],
+    },
 )
