@@ -38,7 +38,8 @@ def register_custom_permissions(appname, permissions, verbosity=1):
         app_label=appname,
         defaults={'name': appname},
     )
-    if created and verbosity >= 2: print "Added custom content type '%s'" % ct
+    if created and verbosity >= 2:
+        print("Added custom content type '%s'" % ct)
     # create permissions
     for codename, name in permissions:
         p, created = Permission.objects.get_or_create(
@@ -50,4 +51,4 @@ def register_custom_permissions(appname, permissions, verbosity=1):
             }
         )
         if created and verbosity >= 2:
-            print "Added custom permission '%s'" % p
+            print("Added custom permission '%s'" % p)
