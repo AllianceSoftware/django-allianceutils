@@ -527,14 +527,15 @@ WEBPACK_LOADER = {
 ## Changelog
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools 
-* 0.3.dev
-    * 0.3.0.dev
+* 0.3
+    * 0.3.0
     	* Breaking Changes
     		* Dropped support for python <3.4
     		* Dropped support for django <1.11
 		* Added `GenericUserProfile`
 		* Added `python_to_django_date_format`
 		* Added `check_url_trailing_slash`
+		* Added `QueryCountMiddleware`
 		* Test against python 3.4, 3.5, 3.6
 * 0.2
     * 0.2.0
