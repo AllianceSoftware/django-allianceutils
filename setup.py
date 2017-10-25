@@ -51,7 +51,7 @@ setup(
     ],
     install_requires=[
         # remember to keep this in sync with requirements.txt if necessary
-        'django',
+        'django >= 1.11',
         'typing; python_version < "3.5"',
         'unipath',
     ],
