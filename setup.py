@@ -1,11 +1,8 @@
 import re
+import sys
 
 from pkg_resources import parse_version
-
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+import setuptools
 
 # automatically detect the current version from the highest version in the changelog section of the README
 with open('README.md', 'r') as f:
@@ -31,7 +28,20 @@ __version__ = str(highest_ver)
 # print('%s version %s' % (package_name, __version__))
 # raise SystemExit()
 
-setup(
+
+install_requires = [
+    # remember to keep this in sync with requirements.txt if necessary
+    'django >= 1.11',
+    'unipath',
+]
+
+# setuptools only added environment markers in v20.5
+if parse_version(setuptools.__version__) >= parse_version('20.3'):
+    install_requires.append('typing; python_version < "3.5"')
+elif sys.version_info < (3, 5):
+    install_requires.append('typing')
+
+setuptools.setup(
     name=package_name,
     version=__version__,
     author='Alliance Software',
@@ -49,12 +59,7 @@ setup(
         'alliancesoftware',
         'django',
     ],
-    install_requires=[
-        # remember to keep this in sync with requirements.txt if necessary
-        'django >= 1.11',
-        'typing; python_version < "3.5"',
-        'unipath',
-    ],
+    install_requires=install_requires,
     extras_require={
         # keep in sync with requirements-optional.txt
         'API': ['djangorestframework'],

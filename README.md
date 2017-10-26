@@ -528,6 +528,8 @@ WEBPACK_LOADER = {
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools 
 * 0.3
+	* 0.3.x
+		* Fix install failure with setuptools<20.3  
     * 0.3.0
     	* Breaking Changes
     		* Dropped support for python <3.4
