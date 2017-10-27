@@ -528,7 +528,7 @@ WEBPACK_LOADER = {
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools 
 * 0.3
-    * 0.3.x
+    * 0.3.2
         * Fix `check_url_trailing_slash` failing with `admin.site.urls`
     * 0.3.1
         * Fix install failure with setuptools<20.3  
