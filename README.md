@@ -40,7 +40,7 @@ Caches the result of `get_object()` in the request
 
 ```python
 class MyViewSet(allianceutils.api.mixins.CacheObjectMixin, GenericViewSet):
-	# ...
+    # ...
 ```  
 
 #### Permissions
@@ -78,7 +78,7 @@ REST_FRAMEWORK = {
 class MyAPIView(PermissionRequiredAPIMixin, APIView):
         permission_required = 'my_module.my_permission'
 
-		# You do not have to override get_object() but if you do you must explicitly call check_object_permissions() 
+        # You do not have to override get_object() but if you do you must explicitly call check_object_permissions() 
         def get_object(self):
             obj = get_object_or_404(self.get_queryset())
             self.check_object_permissions(self.request, obj)
@@ -111,7 +111,7 @@ FIXME
         * Only works with mysql
         * Much likelier to cause merge conflicts and are less readable by developers but are significantly faster.
         * Should only be used for large tables where django's default fixture loading is too slow.
-	
+    
 * Example
     * The following will dump the Customer model as part of the `customers` and `test` fixtures
     * The following will also dump the Customer model in SQL as part of the `fast` fixture
@@ -123,7 +123,7 @@ class Customer(models.Model):
 ```
 
 * To add autodump metadata to models that are part of core django, add the following code to one of your apps
-	* This can be particularly useful for dumping django group permissions (which you typically want to send to a live server) separately from test data
+    * This can be particularly useful for dumping django group permissions (which you typically want to send to a live server) separately from test data
 
 ```python
 # This will take the default fixture dumping config for this app and add the core auth.group and authtools.user
@@ -140,7 +140,7 @@ def get_autodump_labels(app_config, fixture):
     }
     original_json, original_sql = allianceutils.management.commands.autodumpdata.get_autodump_labels(app_config, fixture)
     for fixture in extras:
-    	original_json[fixture] = original_json.get(fixture, []) + extras[fixture]
+        original_json[fixture] = original_json.get(fixture, []) + extras[fixture]
     return (original_json, original_sql)
 ```
 
@@ -195,7 +195,7 @@ from django.core.checks import Tags
 from allianceutils.checks import check_url_trailing_slash
 
 class MyAppConfig(AppConfig):
-	# ...
+    # ...
 
     def ready(self):
         # trigger checks to register
@@ -233,23 +233,23 @@ user = CurrentUserMiddleware.get_user()
 #### QueryCountMiddleware
 
 * Warns if query count reaches a given threshold
-	* Threshold can be changed by setting `settings.QUERY_COUNT_WARNING_THRESHOLD`
+    * Threshold can be changed by setting `settings.QUERY_COUNT_WARNING_THRESHOLD`
 
 * Usage
     * Add `allianceutils.middleware.CurrentUserMiddleware` to `MIDDLEWARE`.
-	* Uses the `warnings` module to raise a warning; by default this is suppressed by django
-    	* To ensure `QueryCountWarning` is never suppressed  
+    * Uses the `warnings` module to raise a warning; by default this is suppressed by django
+        * To ensure `QueryCountWarning` is never suppressed  
 ```python
 warnings.simplefilter('always', allianceutils.middleware.QueryCountWarning)
 ```
 
 * To increase the query count limit for a given request, you can increase `request.QUERY_COUNT_WARNING_THRESHOLD`
-	* Rather than hardcode a new limit, you should increment the existing value
-	* If `request.QUERY_COUNT_WARNING_THRESHOLD` is falsy then checks are disabled for this request 
+    * Rather than hardcode a new limit, you should increment the existing value
+    * If `request.QUERY_COUNT_WARNING_THRESHOLD` is falsy then checks are disabled for this request 
 ```python
 def my_view(request, *args, **kwargs):
-	request.QUERY_COUNT_WARNING_THRESHOLD += 10
-	...
+    request.QUERY_COUNT_WARNING_THRESHOLD += 10
+    ...
 
 ```
  
@@ -492,10 +492,10 @@ from allianceutils.util import retry_fn
 # whenever a duplicate is added. can be useful for working around mysql's lack
 # of sequences
 def generate_number():
-	qs = MyModel.objects.aggregate(last_number=Max(F('card_number')))
-	next_number = (qs.get('last_card_number') or 0) + 1
-	self.card_number = card_number
-	super().save(*args, **kwargs)
+    qs = MyModel.objects.aggregate(last_number=Max(F('card_number')))
+    next_number = (qs.get('last_card_number') or 0) + 1
+    self.card_number = card_number
+    super().save(*args, **kwargs)
 retry_fn(generate_number, (IntegrityError, ), 10)
 ```
 
@@ -530,17 +530,17 @@ WEBPACK_LOADER = {
 * 0.3
     * 0.3.x
         * Fix `check_url_trailing_slash` failing with `admin.site.urls`
-	* 0.3.1
-		* Fix install failure with setuptools<20.3  
+    * 0.3.1
+        * Fix install failure with setuptools<20.3  
     * 0.3.0
-    	* Breaking Changes
-    		* Dropped support for python <3.4
-    		* Dropped support for django <1.11
-		* Added `GenericUserProfile`
-		* Added `python_to_django_date_format`
-		* Added `check_url_trailing_slash`
-		* Added `QueryCountMiddleware`
-		* Test against python 3.4, 3.5, 3.6
+        * Breaking Changes
+            * Dropped support for python <3.4
+            * Dropped support for django <1.11
+        * Added `GenericUserProfile`
+        * Added `python_to_django_date_format`
+        * Added `check_url_trailing_slash`
+        * Added `QueryCountMiddleware`
+        * Test against python 3.4, 3.5, 3.6
 * 0.2
     * 0.2.0
         * Breaking Changes
