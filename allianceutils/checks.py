@@ -20,6 +20,7 @@ def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[
                 'django.views.static.serve',
             ],
             'app_name': [
+                'admin',
                 'djdt',
             ],
         }
