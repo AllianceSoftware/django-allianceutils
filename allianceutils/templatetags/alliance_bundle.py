@@ -24,7 +24,7 @@ def _render_bundle(bundle_name, extension, config):
 
 
 @register.simple_tag
-def alliance_bundle(bundle_name, extension='js', config='DEFAULT'):
+def alliance_bundle(bundle_name, extension='', config='DEFAULT'):
     """
     A wrapper to the webpack_bundle tag that accounts for the fact that
     - in production builds there will be separate JS + CSS files
@@ -34,13 +34,14 @@ def alliance_bundle(bundle_name, extension='js', config='DEFAULT'):
     If you are only including JS without extracted CSS then use webpack_bundle, or include a placeholder CSS bundle
         (will just include a webpack stub; if you are using django-compress then overhead from this will be minimal)
     """
+    debug = getattr(settings, 'DEBUG_WEBPACK', settings.DEBUG)
     if extension == 'css':
-        if settings.DEBUG:
+        if debug:
             return _render_bundle(bundle_name, 'js', config)
         else:
             return _render_bundle(bundle_name, 'css', config)
     elif extension == 'js':
-        if settings.DEBUG:
+        if debug:
             # do nothing; the JS will have been included with the CSS already
             return ''
         else:
