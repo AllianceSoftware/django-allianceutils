@@ -1,4 +1,7 @@
+from distutils.util import strtobool
+import os
 import random
+import unittest
 
 from django.conf import settings
 from django.template import Context
@@ -33,6 +36,7 @@ link = '<link type="text/css" href="%s" rel="stylesheet" />'
 def cfg_key(mode, loader):
     return '%s-%s' % (mode, loader)
 
+is_tox = strtobool(os.getenv('TOX', '0'))
 
 def make_settings():
     stats_dev_path = Path(Path(__file__).parent, 'webpack-stats-dev.json')
@@ -87,6 +91,8 @@ class AllianceBundleTestCase(SimpleTestCase):
         self.assertEqual(output, expected)
 
     def _test_dev_loader(self, loader):
+        if is_tox and loader:
+            self.skipTest("tox doesn't use github dependencies correctly; reenable when webpack_loader PR is accepted")
         def url(filename_key):
             return stats_dev_root + stats_dev[filename_key]
 
@@ -119,6 +125,8 @@ class AllianceBundleTestCase(SimpleTestCase):
         return stats_prod_root + stats_prod[filename_key][0]
 
     def _test_prod_loader(self, loader, url):
+        if is_tox and loader:
+            self.skipTest("tox doesn't use github dependencies correctly; reenable when webpack_loader PR is accepted")
         cfg = cfg_key('prod', loader)
         self.check_tag(cfg, 'combined', 'css', link % url('combined_css'))
         self.check_tag(cfg, 'cssonly',  'css', link % url('cssonly_css'))
