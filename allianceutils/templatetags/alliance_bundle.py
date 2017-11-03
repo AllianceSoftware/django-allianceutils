@@ -17,11 +17,10 @@ except ImportError:
 register = template.Library()
 
 
-# We can't simply call render_bundle() because it has already been wrapped in @register.simply_tag
-# and we will end up doubly-escaping things
 def _render_bundle(bundle_name, extension, config):
-    bundle = _get_bundle(bundle_name, extension, config)
-    return render_as_tags(bundle)
+    # render_bundle() is already decorated with @register.simple_tag; if marked safe then mark_safe()
+    # won't double-escape so this is ok
+    return webpack_loader.templatetags.webpack_loader.render_bundle(bundle_name, extension, config)
 
 
 @register.simple_tag
