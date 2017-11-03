@@ -74,8 +74,12 @@ class AllianceBundleTestCase(SimpleTestCase):
             path = Path(settings.STATIC_ROOT, BUNDLE_DIR_NAME, details[0])
             assert path.exists()
             t = random.randint(0, 60 * 60 * 24 * 365 * 20)
-            path.set_times(mtime=t)
-            details[2] = t
+            try:
+                path.set_times(mtime=t)
+                details[2] = t
+            except PermissionError:
+                details[2] = path.mtime()
+
 
     def check_tag(self, config, bundle, extension, expected):
         tpl_str = '{{% load alliance_bundle %}}{{% alliance_bundle "{}" "{}" "{}" %}}'.format(bundle, extension, config)
