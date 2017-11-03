@@ -428,7 +428,6 @@ MEDIAFILES_LOCATION="media"
 MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
 ```
 
-### Template tags
 
 #### script_json
 
@@ -441,6 +440,7 @@ MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
 
 <script>window.__APP_SETTINGS = {{ APP_SETTINGS|script_json }};</script>
 ```
+### Template Tags
 
 #### alliance_bundle
 
@@ -473,6 +473,18 @@ MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
 
 * In production (`not settings.DEBUG`), the css tag will be a standard `<link rel="stylesheet" ...>` tag 
 * In development (`settings.DEBUG`), the css tag will be a webpack JS inclusion that contains the CSS (and inherit webpack hotloading etc)
+
+#### default_value
+
+* Sets default value(s) on the context in a template
+* This is useful because some built-in django templates raise warnings about unset variables (eg `is_popup` in the django admin template)
+* Note that some tags (eg `with`) save & restore the context state; if done inside such a template tag `default_value` will not persist when the state is restored 
+
+```html
+{% load default_value %}
+{{ default_value myvar1=99 myvar2=myvar1|upper }}
+{{ myvar1 }} {{ myvar2 }}
+```
 
 ### Util
 
@@ -528,6 +540,8 @@ WEBPACK_LOADER = {
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools 
 * 0.3
+	* 0.3.x
+		* Added `default_value`
     * 0.3.2
         * Fix `check_url_trailing_slash` failing with `admin.site.urls`
     * 0.3.1
