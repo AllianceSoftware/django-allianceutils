@@ -23,7 +23,7 @@ class TimestampWebpackLoader(WebpackLoader):
             staticpath = Path(settings.STATIC_ROOT, relpath)
             try:
                 chunk['mtime'] = staticpath.mtime()
-            except (IOError, OSError):
+            except FileNotFoundError:
                 # If using a dev build (ie webpack dev server) then the static file will not exist
                 chunk['mtime'] = None
 
@@ -55,7 +55,7 @@ class ContentHashWebpackLoader(WebpackLoader):
                     for chunk in iter(lambda: f.read(8192), b''):
                         hash.update(chunk)
                 chunk['hash'] = hash.hexdigest()[:12]
-            except (IOError, OSError):
+            except FileNotFoundError:
                 # If using a dev build (ie webpack dev server) then the static file will not exist
                 chunk['hash'] = None
 
