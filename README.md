@@ -543,7 +543,7 @@ WEBPACK_LOADER = {
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.3
-    * 0.3.x
+    * 0.3.3
         * Added `default_value`
         * Added tests
             * For `alliance_bundle` 
