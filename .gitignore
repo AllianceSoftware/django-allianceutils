@@ -2,6 +2,6 @@
 
 .tox/
 allianceutils.egg-info/
-allianceutils/tests/autodumpdata/fixtures/publication.json
-allianceutils/tests/autodumpdata/fixtures/publication.sql
+test_allianceutils/tests/autodumpdata/fixtures/publication.json
+test_allianceutils/tests/autodumpdata/fixtures/publication.sql
 

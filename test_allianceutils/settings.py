@@ -1,13 +1,9 @@
 import hashlib as _hashlib
 import os as _os
 import random as _random
-import sys as _sys
 import warnings as _warnings
 
-# import django
-
 is_ci = _os.environ.get('CI_SERVER', 'no') == 'yes'
-
 
 BASE_DIR = _os.path.dirname(__file__)
 
@@ -37,11 +33,12 @@ DATABASES = {'default': _db_vars}
 
 INSTALLED_APPS = (
     'allianceutils',
-    'allianceutils.tests.autodumpdata',
-    'allianceutils.tests.checks',
-    'allianceutils.tests.middleware',
-    'allianceutils.tests.profile_auth',
-    'allianceutils.tests.serializers',
+    'test_allianceutils',
+    'test_allianceutils.tests.autodumpdata',
+    'test_allianceutils.tests.checks',
+    'test_allianceutils.tests.middleware',
+    'test_allianceutils.tests.profile_auth',
+    'test_allianceutils.tests.serializers',
 
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -69,7 +66,7 @@ SERIALIZATION_MODULES = {
     'json': 'allianceutils.serializers.json_orminheritancefix',
 }
 
-ROOT_URLCONF = 'allianceutils.tests.urls'
+ROOT_URLCONF = 'test_allianceutils.urls'
 
 SECRET_KEY = _hashlib.sha256(str(_random.SystemRandom().getrandbits(256)).encode('ascii')).hexdigest()
 

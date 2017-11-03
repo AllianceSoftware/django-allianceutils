@@ -6,10 +6,10 @@ from django.test import SimpleTestCase
 from allianceutils.checks import check_url_trailing_slash
 
 check_urls_settings = {
-    'ROOT_URLCONF': 'allianceutils.tests.checks_slash_urls.urls',
+    'ROOT_URLCONF': 'test_allianceutils.tests.checks_slash_urls.urls',
     'MEDIA_URL': '/media/',
     'DEBUG': True, # need DEBUG otherwise static media URls aren't included
-    'INSTALLED_APPS': settings.INSTALLED_APPS + ('allianceutils.tests.checks_slash_urls',),
+    'INSTALLED_APPS': settings.INSTALLED_APPS + ('test_allianceutils.tests.checks_slash_urls',),
 }
 
 
