@@ -444,11 +444,14 @@ MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
 
 #### alliance_bundle
 
-* A wrapper to the webpack_bundle tag that accounts for the fact that
-    * in production builds there will be separate JS + CSS files
-    * in dev builds the CSS will be embedded in the webpack JS bundle
-* Assumes that each JS file is paired with a CSS file.
-    * If you are only including JS without extracted CSS then use `webpack_bundle`, or include a placeholder CSS bundle (will just include a webpack stub; if you are using `django-compress` then overhead from this will be minimal)
+* A wrapper to the [django-webpack-loader](https://github.com/ezhome/django-webpack-loader#django-webpack-loader) [render_bundle](https://github.com/ezhome/django-webpack-loader#templates) tag that helps with the fact that you normally want to embed CSS files in the <head> and JS files at the end of the <body>
+    * `settings.DEBUG_WEBPACK` (defaults to the same value as `settings.DEBUG`) controls whether `alliance_bundle` should generate production or development output 
+    * in *production* there are separate JS + CSS files
+        * CSS bundles in the <head> generate <link> tags 
+        * JS bundles at the end of <body> generate <script> tags 
+    * in *development* the CSS bundle is actually JS that contains both JS and CSS
+        * CSS bundles in the <head> generate <script> tags including both JS and CSS 
+        * JS bundles at the end of <body> do nothing
 
 * Example Usage
 
@@ -456,17 +459,15 @@ MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
 {% load alliance_bundle %}
 <html>
 <head>
-  {% alliance_bundle 'shared-bower-jqueryui' 'css' %}
-  {% alliance_bundle 'shared-bower-common' 'css' %}
-  {% alliance_bundle 'shared-styles' 'css' %}
+  {% alliance_bundle 'vendor' 'css' %}
+  {% alliance_bundle 'site' 'css' %}
 </head>
 <body>
   
   ...
   
-  {% alliance_bundle 'shared-bower-jqueryui' 'js' %}
-  {% alliance_bundle 'shared-bower-common' 'js' %}
-  {% alliance_bundle 'shared-styles' 'js' %}
+  {% alliance_bundle 'vendor' 'js' %}
+  {% alliance_bundle 'site' 'js' %}
 </body>
 </html>
 ```
@@ -519,16 +520,18 @@ FIXME
 
 ### Webpack
 
-#### TimestampWebpackLoader
+#### ContentHashWebpackLoader, TimestampWebpackLoader
 
-* Extension of WebpackLoader that appends a `?ts=(timestamp)` query string based on last modified time of chunk to serve.
+* Extensions of WebpackLoader that appends a timestamp or content hash query string based on last modified time of bundle to serve.
 * Allows static asset web server to send far future expiry headers without worrying about cache invalidation.
+* Until issue [41](https://github.com/ezhome/django-webpack-loader/pull/41) is resolved, requires the [webpack_loader_class](https://github.com/levic/django-webpack-loader/tree/webpack_loader_class) fork of `django-webpack-loader` 
 
 * Example usage
 
 ```python
 WEBPACK_LOADER = {
     'DEFAULT': {
+        # BUNDLE_DIR_NAME is relative to STATIC_ROOT and must contain the collected prod bundles
         'BUNDLE_DIR_NAME': 'dist/prod/',
         'STATS_FILE': _Path(PROJECT_DIR, 'frontend/dist/prod/webpack-stats.json'),
         'LOADER_CLASS': 'allianceutils.webpack.TimestampWebpackLoader',
@@ -538,10 +541,13 @@ WEBPACK_LOADER = {
 
 ## Changelog
 
-* Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools 
+* Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.3
-	* 0.3.x
-		* Added `default_value`
+    * 0.3.x
+        * Added `default_value`
+        * Added tests
+            * For `alliance_bundle` 
+            * For `ContentHashWebpackLoader` & `TimestampWebpackLoader`
     * 0.3.2
         * Fix `check_url_trailing_slash` failing with `admin.site.urls`
     * 0.3.1

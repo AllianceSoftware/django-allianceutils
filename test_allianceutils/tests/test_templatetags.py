@@ -46,10 +46,10 @@ class DefaultValueTestCase(SimpleTestCase):
     def test_used_default(self):
         """ default_value used """
         tpl = Template('{% load default_value %}{% default_value foo="baz" %}{{ foo }}')
-        self.assertEqual(tpl.render(Context(), 'baz'))
+        self.assertEqual(tpl.render(Context()), 'baz')
 
         tpl = Template('{% load default_value %}{% default_value foo=True %}{{ foo }}')
-        self.assertEqual(tpl.render(Context(), 'True'))
+        self.assertEqual(tpl.render(Context()), 'True')
 
     def test_multi_var(self):
         """ default_value multiple assignment """

@@ -3,9 +3,11 @@ import os as _os
 import random as _random
 import warnings as _warnings
 
+from unipath import Path as _Path
+
 is_ci = _os.environ.get('CI_SERVER', 'no') == 'yes'
 
-BASE_DIR = _os.path.dirname(__file__)
+BASE_DIR = _Path(__file__).parent
 
 _db_vars = {
     'HOST': ('MYSQL_HOST', None),
@@ -60,6 +62,8 @@ TEMPLATES = (
         'DIRS': TEMPLATE_DIRS,
     },
 )
+
+STATIC_ROOT = _Path(BASE_DIR, 'static')
 
 SERIALIZATION_MODULES = {
     'json_ordered': 'allianceutils.serializers.json_ordered',

@@ -1,50 +1,50 @@
 {
   "status": "done",
-  "publicPath": "/static/dist/production/",
+  "publicPath": "/static/webpack_dist/",
   "chunks": {
     "combined": [
       {
         "name": "combined.HASH.bundle.js",
-        "publicPath": "/static/dist/production/combined.HASH.bundle.js",
+        "publicPath": "/static/webpack_dist/combined.HASH.bundle.js",
         "path": "/absolutepath/frontend/dist/production/combined.HASH.bundle.js"
       },
       {
         "name": "combined.HASH.bundle.css",
-        "publicPath": "/static/dist/production/combined.HASH.bundle.css",
+        "publicPath": "/static/webpack_dist/combined.HASH.bundle.css",
         "path": "/absolutepath/frontend/dist/production/combined.HASH.bundle.css"
       },
       {
         "name": "combined.HASH.bundle.js.map",
-        "publicPath": "/static/dist/production/combined.HASH.bundle.js.map",
+        "publicPath": "/static/webpack_dist/combined.HASH.bundle.js.map",
         "path": "/absolutepath/frontend/dist/production/combined.HASH.bundle.js.map"
       },
       {
         "name": "combined.HASH.bundle.css.map",
-        "publicPath": "/static/dist/production/combined.HASH.bundle.css.map",
+        "publicPath": "/static/webpack_dist/combined.HASH.bundle.css.map",
         "path": "/absolutepath/frontend/dist/production/combined.HASH.bundle.css.map"
       }
     ],
     "cssonly": [
       {
         "name": "cssonly.HASH.bundle.css",
-        "publicPath": "/static/dist/production/cssonly.HASH.bundle.css",
+        "publicPath": "/static/webpack_dist/cssonly.HASH.bundle.css",
         "path": "/absolutepath/frontend/dist/production/cssonly.HASH.bundle.css"
       },
       {
         "name": "cssonly.HASH.bundle.css.map",
-        "publicPath": "/static/dist/production/cssonly.HASH.bundle.css.map",
+        "publicPath": "/static/webpack_dist/cssonly.HASH.bundle.css.map",
         "path": "/absolutepath/frontend/dist/production/cssonly.HASH.bundle.css.map"
       }
     ],
     "jsonly": [
       {
         "name": "jsonly.HASH.bundle.js",
-        "publicPath": "/static/dist/production/jsonly.HASH.bundle.js",
+        "publicPath": "/static/webpack_dist/jsonly.HASH.bundle.js",
         "path": "/absolutepath/frontend/dist/production/jsonly.HASH.bundle.js"
       },
       {
         "name": "jsonly.HASH.bundle.js.map",
-        "publicPath": "/static/dist/production/jsonly.HASH.bundle.js.map",
+        "publicPath": "/static/webpack_dist/jsonly.HASH.bundle.js.map",
         "path": "/absolutepath/frontend/dist/production/jsonly.HASH.bundle.js.map"
       }
     ]
