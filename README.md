@@ -178,7 +178,10 @@ def get_autodump_labels(app_config, fixture):
 * Load a database dumped with `mysqlquickdump`
 * See `./manage.py mysqlquickload --help` for usage details
 
+##### print_logging
 
+* Displays the current logging configuration in a hierarchical fashion
+* Requires [`logging_tree`](https://pypi.python.org/pypi/logging_tree) to be installed
 
 #### Checks
 
@@ -543,6 +546,8 @@ WEBPACK_LOADER = {
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.3
+    * 0.3.x
+        * Added `print_logging` management command
     * 0.3.3
         * Added `default_value`
         * Added tests
