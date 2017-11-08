@@ -114,7 +114,7 @@ class _GenericUserProfileQuerySet(object):
 
 class _DeferredResolveConcreteModel(object):
     """
-    When model Managers are initialised ethere is no way to know whether a model is a proxy or not;
+    When model Managers are initialised there is no way to know whether a model is a proxy or not;
     this returns the concrete model when it becomes available
     """
     def __get__(self, manager: Manager, cls: type=None) -> Manager:
@@ -180,7 +180,7 @@ class GenericUserProfileManager(BaseManager):
 
             user_to_profile = self.user_to_profile
             _original_model = model
-            _use_proxy_model = not self.use_proxy_model
+            _use_proxy_model = self.use_proxy_model
 
             def __init__(self, model: Optional[Model] = None, *args, **kwargs) -> None:
                 # We can't determine this at class construction time because _meta.concrete_model is not yet set
