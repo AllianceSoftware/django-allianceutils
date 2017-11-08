@@ -64,6 +64,7 @@ setuptools.setup(
         # keep in sync with requirements-optional.txt
         'API': ['djangorestframework'],
         'Filters': ['django-filter'],
+        'Logging': ['logging_tree'],
         'Permissions': ['rules'],
         'Webpack': ['webpack-loader'],
     },

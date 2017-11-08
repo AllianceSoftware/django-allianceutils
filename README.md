@@ -6,10 +6,10 @@ A collection of utilities for django projects.
 * [Usage](#usage)
     * [API](#api)
     * [Auth](#auth)
-    * [Commands](#commands)
     * [Decorators](#decorators)
     * [Filters](#filters)
     * [Management](#management)
+        * [Commands](#commands)
         * [Checks](#checks)
     * [Middleware](#middleware)
     * [Migrations](#migrations)
@@ -96,9 +96,29 @@ If you have no object level permissions (eg. from rules) then it will just do a 
 
 FIXME
 
-### Commands
+### Decorators
 
-#### autodumpdata
+### Filters
+
+#### MultipleFieldCharFilter
+
+Search for a string across multiple fields. Requires `django_filters`.
+
+* Usage 
+
+```python
+from allianceutils.filters import MultipleFieldCharFilter
+
+# ...
+# In your filter set (see django_filters for documentation)
+customer = MultipleFieldCharFilter(names=('customer__first_name', 'customer__last_name'), lookup_expr='icontains')
+```
+
+### Management
+
+#### Commands
+
+##### autodumpdata
 
 * Designed to more conveniently allow dumping of data from different models into different fixtures
 * Strongly advised to also use the [Serializers](#serializers)
@@ -144,7 +164,7 @@ def get_autodump_labels(app_config, fixture):
     return (original_json, original_sql)
 ```
 
-#### mysqlquickdump
+##### mysqlquickdump
 
 * Command to quickly dump a mysql database
     * Significantly faster than django fixtures
@@ -153,32 +173,15 @@ def get_autodump_labels(app_config, fixture):
 * Expects that DB structure will not change
 * See `./manage.py mysqlquickdump --help` for usage details
 
-#### mysqlquickload
+##### mysqlquickload
 
 * Load a database dumped with `mysqlquickdump`
 * See `./manage.py mysqlquickload --help` for usage details
 
-### Decorators
+##### print_logging
 
-### Filters
-
-#### MultipleFieldCharFilter
-
-Search for a string across multiple fields. Requires `django_filters`.
-
-* Usage 
-
-```python
-from allianceutils.filters import MultipleFieldCharFilter
-
-# ...
-# In your filter set (see django_filters for documentation)
-customer = MultipleFieldCharFilter(names=('customer__first_name', 'customer__last_name'), lookup_expr='icontains')
-```
-
-### Management
-
-FIXME
+* Displays the current logging configuration in a hierarchical fashion
+* Requires [`logging_tree`](https://pypi.python.org/pypi/logging_tree) to be installed
 
 #### Checks
 
@@ -543,6 +546,8 @@ WEBPACK_LOADER = {
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.3
+    * 0.3.x
+        * Added `print_logging` management command
     * 0.3.3
         * Added `default_value`
         * Added tests

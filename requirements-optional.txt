@@ -8,6 +8,7 @@ django-storages
 django-webpack-loader
 djangorestframework
 isort
+logging_tree
 mysqlclient
 
 # See https://github.com/ezhome/django-webpack-loader/pull/41
