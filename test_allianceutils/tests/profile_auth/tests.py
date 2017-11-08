@@ -1,3 +1,8 @@
+from io import StringIO
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import Client
 from django.test import override_settings
 from django.test import TestCase
@@ -27,11 +32,6 @@ class AuthTestCase(TestCase):
             user.set_password('abc123')
             user.save()
             return user
-            # return model.objects.create_user(
-            #     username=username,
-            #     email='%s@example.com' % username,
-            #     password='abc123'
-            # )
 
         self.user1 = create_user(User, 'user1')
         self.admin1 = create_user(AdminProfile, 'admin1')
@@ -164,3 +164,52 @@ class AuthTestCase(TestCase):
             response = client.get(reverse('logout'))
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, 'This is a logout page')
+
+    def _test_exception(self, exception_name, func):
+        generic_exception = getattr(GenericUserProfile, exception_name)
+        user_exception = getattr(User, exception_name)
+        self.assertTrue(issubclass(generic_exception, user_exception))
+
+        # regular models should raise subclasses of User.DoesNotExist
+        for model in (User, AdminProfile, CustomerProfile):
+            exception = getattr(model, exception_name)
+            with self.assertRaises(exception):
+                func(model._default_manager)
+            with self.assertRaises(user_exception):
+                func(model._default_manager)
+
+        # For GenericUserProfileManager behaviour will depend on use_proxy_model
+        try:
+            func(GenericUserProfile.objects)
+        except user_exception as ex:
+            self.assertIs(type(ex), user_exception)
+
+        try:
+            func(GenericUserProfile.objects_proxy)
+        except generic_exception as ex:
+            self.assertIs(type(ex), generic_exception)
+
+    def test_exception_doesnotexist(self):
+        self._test_exception('DoesNotExist', lambda mgr: mgr.get_by_natural_key('thisshoudlnotexist'))
+
+    def test_exception_multipleobjectsreturned(self):
+        self._test_exception('MultipleObjectsReturned', lambda mgr: mgr.get(username__isnull=False))
+
+    def test_superuser_create(self):
+        username = 'test_superuser_create'
+        email = username + '@example.com'
+        call_command('createsuperuser',
+            interactive=False,
+            username=username,
+            email=email,
+            #stdout=StringIO()
+        )
+
+        # validate that was created correctly
+        manager = get_user_model()._default_manager
+
+        user = manager.get(username=username)
+        self.assertEqual(user.email, email)
+
+        user = manager.get_by_natural_key(username)
+        self.assertEqual(user.email, email)
