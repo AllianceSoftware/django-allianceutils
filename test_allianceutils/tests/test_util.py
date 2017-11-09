@@ -6,8 +6,8 @@ from allianceutils.util import python_to_django_date_format
 from allianceutils.util import retry_fn
 from allianceutils.util import underscore_to_camel
 from allianceutils.util import underscoreize
-from allianceutils.util.camelize import _create_ignore_lookup
-from allianceutils.util.camelize import _debug_lookup
+from allianceutils.util.camel_case import _create_ignore_lookup
+from allianceutils.util.camel_case import _debug_lookup
 
 
 class UtilTestCase(SimpleTestCase):
@@ -69,7 +69,7 @@ class DateFormatTestCase(SimpleTestCase):
         self.assertEqual(python_to_django_date_format('%'), '%')
 
 
-class CamelizeTestCase(SimpleTestCase):
+class CamelCaseTestCase(SimpleTestCase):
 
     def test_camel_to_underscore(self):
         # TODO: double underscore & number handling correct?

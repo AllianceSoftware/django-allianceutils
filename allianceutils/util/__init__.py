@@ -1,10 +1,10 @@
 from typing import Callable
 from typing import Tuple
 
-from .camelize import camel_to_underscore
-from .camelize import camelize
-from .camelize import underscore_to_camel
-from .camelize import underscoreize
+from .camel_case import camel_to_underscore
+from .camel_case import camelize
+from .camel_case import underscore_to_camel
+from .camel_case import underscoreize
 from .date import python_to_django_date_format
 
 __all__ = [
