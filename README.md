@@ -323,14 +323,13 @@ class AdminProfile(User):
 # ------------------------------------------------------------------
 # Usually you wish to inherit default UserManager functionality
 class GenericUserProfileManager(allianceutils.models.GenericUserProfileManager, User._default_manager.__class__):
-    use_proxy_model = False
-
     @classmethod
     def user_to_profile(cls, user):
         if hasattr(user, 'customerprofile'):
             return user.customerprofile
         elif hasattr(user, 'adminprofile'):
             return user.adminprofile
+        # user.__class__ = User # this usually works but can sometimes cause problems with badly behaved 3rd party packages  
         return user
 
     @classmethod
@@ -547,6 +546,7 @@ WEBPACK_LOADER = {
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.3
     * 0.3.x
+    	* Fix `GenericUserProfile` raising the wrong model exceptions; removed `GenericUserProfileManager.use_proxy_model` 
         * Added `print_logging` management command
     * 0.3.3
         * Added `default_value`

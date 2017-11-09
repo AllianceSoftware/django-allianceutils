@@ -13,7 +13,7 @@ _db_vars = {
     'HOST': ('MYSQL_HOST', None),
     'USER': ('MYSQL_USER', None),
     'PASSWORD': ('MYSQL_PASSWORD', None),
-    'NAME': ('MYSQL_DATABASE', 'alliancedjangoutils'),
+    'NAME': ('MYSQL_DATABASE', 'alliance_django_utils'),
 }
 _db_vars = {var: _os.environ.get(env_var, default) for var, (env_var, default) in _db_vars.items()}
 _db_vars = {key: value for key, value in _db_vars.items() if value}
