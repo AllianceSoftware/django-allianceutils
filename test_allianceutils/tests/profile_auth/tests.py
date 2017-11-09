@@ -50,7 +50,7 @@ class AuthTestCase(TestCase):
     @staticmethod
     def expected_class(profile, use_proxy):
         expected = profile.__class__
-        if profile is User and use_proxy:
+        if type(profile) is User and use_proxy:
             expected = GenericUserProfile
         return expected
 
@@ -59,7 +59,7 @@ class AuthTestCase(TestCase):
         Iterating over users instantiates the correct profile type (original User model)
         """
         with self.assertNumQueries(1):
-            qs = GenericUserProfile.objects.all().filter(id__gt=0).filter(id__isnull=False)
+            qs = GenericUserProfile.objects_noproxy.all().filter(id__gt=0).filter(id__isnull=False)
             for fetched in qs:
                 self.assertEqual(self.expected_class(self.profiles[fetched.id], use_proxy=False), fetched.__class__)
             self.assertEqual(qs.count(), len(self.profiles))
@@ -69,7 +69,7 @@ class AuthTestCase(TestCase):
         Iterating over users instantiates the correct profile type (proxied User model)
         """
         with self.assertNumQueries(1):
-            qs = GenericUserProfile.objects.all().filter(id__gt=0).filter(id__isnull=False)
+            qs = GenericUserProfile.objects_proxy.all().filter(id__gt=0).filter(id__isnull=False)
             for fetched in qs:
                 self.assertEqual(self.expected_class(self.profiles[fetched.id], use_proxy=True), fetched.__class__)
             self.assertEqual(qs.count(), len(self.profiles))
@@ -80,7 +80,7 @@ class AuthTestCase(TestCase):
         """
         for id, record in self.profiles.items():
             with self.assertNumQueries(1):
-                fetched = GenericUserProfile.objects.get(pk=id)
+                fetched = GenericUserProfile.objects_noproxy.get(pk=id)
             self.assertEqual(self.expected_class(self.profiles[fetched.id], use_proxy=False), fetched.__class__)
 
     def test_profile_get_proxy(self):
@@ -89,16 +89,21 @@ class AuthTestCase(TestCase):
         """
         for id, record in self.profiles.items():
             with self.assertNumQueries(1):
-                fetched = GenericUserProfile.objects.get(pk=id)
+                fetched = GenericUserProfile.objects_proxy.get(pk=id)
             self.assertEqual(self.expected_class(self.profiles[fetched.id], use_proxy=True), fetched.__class__)
 
     def test_inherit_user_manager(self):
         """
         Manager should inherit from the base model manager
         """
-        manager = GenericUserProfile.objects
-        user = manager.create_user(username='user100', email='user100@example.com', password='abc123')
+        manager = User.objects
+        user = manager.create_user(username='user99', email='user99@example.com', password='abc123')
         self.assertEqual(user.__class__, User)
+        self.assertIsNotNone(manager.get_by_natural_key('user99'))
+
+        manager = GenericUserProfile.objects_noproxy
+        user = manager.create_user(username='user100', email='user100@example.com', password='abc123')
+        self.assertEqual(user.__class__, GenericUserProfile)
         self.assertIsNotNone(manager.get_by_natural_key('user100'))
 
         manager = GenericUserProfile.objects_proxy
@@ -170,24 +175,24 @@ class AuthTestCase(TestCase):
         user_exception = getattr(User, exception_name)
         self.assertTrue(issubclass(generic_exception, user_exception))
 
-        # regular models should raise subclasses of User.DoesNotExist
-        for model in (User, AdminProfile, CustomerProfile):
+        tests = (
+            (User, User.objects),
+            (AdminProfile, AdminProfile.objects),
+            (CustomerProfile, CustomerProfile.objects),
+            (GenericUserProfile, GenericUserProfile.objects_noproxy),
+            (GenericUserProfile, GenericUserProfile.objects_proxy),
+        )
+
+        for model, manager in tests:
             exception = getattr(model, exception_name)
+
+            # models should always raise the correct exception
             with self.assertRaises(exception):
-                func(model._default_manager)
+                func(manager)
+
+            # which should also always be a subclass of user_exception
             with self.assertRaises(user_exception):
-                func(model._default_manager)
-
-        # For GenericUserProfileManager behaviour will depend on use_proxy_model
-        try:
-            func(GenericUserProfile.objects)
-        except user_exception as ex:
-            self.assertIs(type(ex), user_exception)
-
-        try:
-            func(GenericUserProfile.objects_proxy)
-        except generic_exception as ex:
-            self.assertIs(type(ex), generic_exception)
+                func(manager)
 
     def test_exception_doesnotexist(self):
         self._test_exception('DoesNotExist', lambda mgr: mgr.get_by_natural_key('thisshoudlnotexist'))

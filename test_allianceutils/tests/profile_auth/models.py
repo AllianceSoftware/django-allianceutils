@@ -49,13 +49,24 @@ class GenericUserProfileManager(allianceutils.models.GenericUserProfileManager, 
         )
 
 
-class ProxyUserProfileManager(GenericUserProfileManager):
-    use_proxy_model = True
+class NoProxyUserProfileManager(GenericUserProfileManager):
+    @classmethod
+    def user_to_profile(cls, user):
+        user = super().user_to_profile(user)
+        if isinstance(user, (CustomerProfile, AdminProfile)):
+            return user
+        # this is a bit experimental
+        user.__class__ = User
+        return user
 
 
 class GenericUserProfile(User):
-    objects = GenericUserProfileManager()
-    objects_proxy = ProxyUserProfileManager()
+    objects_noproxy = NoProxyUserProfileManager()
+    objects_proxy = GenericUserProfileManager()
+
+
+    # DoesNotExist = User.DoesNotExist
+    # MultipleObjectsReturned = User.MultipleObjectsReturned
 
     class Meta:
         proxy = True

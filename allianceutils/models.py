@@ -119,16 +119,7 @@ class _DeferredResolveConcreteModel(object):
     """
     def __get__(self, manager: Manager, cls: type=None) -> Manager:
         if manager._concrete_model is None:
-            if manager.use_proxy_model:
-                concrete_model = manager._original_model
-            else:
-                concrete_model = manager._original_model._meta.concrete_model
-                if concrete_model is None:
-                    # we don't have a concrete model yet
-                    return manager._original_model
-
-            manager._concrete_model = concrete_model
-
+            manager._concrete_model = manager._original_model
         return manager._concrete_model
 
     def __set__(self, manager: Manager, model: Model):
@@ -142,17 +133,18 @@ class GenericUserProfileManager(BaseManager):
     """
 
     """ Set this in descendant classes to pass the proxy model rather than the concrete model to user_to_profile() """
-    #use_proxy_model = False    # Until we've decided what the most common case is, this has to be set explicitly
-
     model = _DeferredResolveConcreteModel()
 
     def __init__(self) -> None:
-        assert hasattr(self, 'use_proxy_model'), 'Must specify use_proxy_model on GenericUserProfileManager'
-
         # We have to jump through some hoops because the QuerySet creation is hardcoded in multiple
         # places in BaseManager -- eg _clone() -- so we can't simply add extra constructor params,
         # and the we don't even know what model we're going to be attached to until contribute_to_class()
         super().__init__()
+
+        # wipe the default queryset class to make sure it's not used before
+        # contribute_to_class() sets it to the class we actually want
+        self._original_queryset_class = self._queryset_class
+        self._queryset_class = None
 
     def get_queryset(self, *args, **kwargs) -> QuerySet:
         qs = super().get_queryset(*args, **kwargs)
@@ -165,7 +157,7 @@ class GenericUserProfileManager(BaseManager):
         #   Error when calling the metaclass bases metaclass conflict: the metaclass of a derived class
         #   must be a (non-strict) subclass of the metaclasses of all its bases
         #
-        # Instead we have to dynamically create a new QuerySet class (this only happens once on model init)
+        # Instead we have to dynamically create a new QuerySet class (this happens once at Model class creation)
 
         # Sanity check: if this doesn't pass then we're probably extending something that wasn't created
         # using BaseManager.from_queryset(); need extra tests to check that this works
@@ -176,24 +168,20 @@ class GenericUserProfileManager(BaseManager):
         assert not hasattr(self._queryset_class, '_user_to_profile')
 
         # Only now do we know what queryset we're supposed to be extending
-        class GenericUserProfileQuerySet(_GenericUserProfileQuerySet, self._queryset_class):
+        class GenericUserProfileQuerySet(_GenericUserProfileQuerySet, self._original_queryset_class):
 
             user_to_profile = self.user_to_profile
             _original_model = model
-            _use_proxy_model = self.use_proxy_model
 
             def __init__(self, model: Optional[Model] = None, *args, **kwargs) -> None:
                 # We can't determine this at class construction time because _meta.concrete_model is not yet set
                 # We also can't add any parameters to the constructor because self._clone() hardcodes the creation
                 #  of a new queryset so we have to ensure that we only dereference the proxy model at most once
                 # This will do the wrong thing if you use multiple inheritance from a GenericUserProfileManager; don't do that
-                if not self._use_proxy_model and model._meta.proxy:
-                    # # self._dereference_proxy_model = False
-                    # if model._meta.proxy:
-                    model = model._meta.concrete_model
                 super().__init__(model=model, *args, **kwargs)
                 self._iterable_class = _GenericUserProfileIterable
 
+        # Replace the normal _queryset_class with a new one
         self._queryset_class = GenericUserProfileQuerySet
 
         super().contribute_to_class(model, name)
