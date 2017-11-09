@@ -548,11 +548,11 @@ WEBPACK_LOADER = {
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.3
     * 0.3.x
-    	* Fix `GenericUserProfile` raising the wrong model exceptions; removed `GenericUserProfileManager.use_proxy_model` 
-        * Added `print_logging` management command
+        * Add `print_logging` management command
+        * Fix `GenericUserProfile` raising the wrong model exceptions; removed `GenericUserProfileManager.use_proxy_model` 
     * 0.3.3
-        * Added `default_value`
-        * Added tests
+        * Add `default_value`
+        * Add tests
             * For `alliance_bundle` 
             * For `ContentHashWebpackLoader` & `TimestampWebpackLoader`
     * 0.3.2
@@ -563,17 +563,17 @@ WEBPACK_LOADER = {
         * Breaking Changes
             * Dropped support for python <3.4
             * Dropped support for django <1.11
-        * Added `GenericUserProfile`
-        * Added `python_to_django_date_format`
-        * Added `check_url_trailing_slash`
-        * Added `QueryCountMiddleware`
+        * Add `GenericUserProfile`
+        * Add `python_to_django_date_format`
+        * Add `check_url_trailing_slash`
+        * Add `QueryCountMiddleware`
         * Test against python 3.4, 3.5, 3.6
 * 0.2
     * 0.2.0
         * Breaking Changes
             * The interface for `get_autodump_labels` has changed 
-        * Added autodumpdata SQL output format
-        * Added `mysqlquickdump` options `--model` and `--explicit` 
+        * Add autodumpdata SQL output format
+        * Add `mysqlquickdump` options `--model` and `--explicit` 
         * Update to work with webpack_loader 0.5
 * 0.1
     * 0.1.6
@@ -584,12 +584,12 @@ WEBPACK_LOADER = {
     * 0.1.4
         * Fix bad versioning in previous release
     * 0.1.3
-        * Added autodumpdata test cases
-        * Added autodumpdata `--stdout`, `--output` options
+        * Add autodumpdata test cases
+        * Add autodumpdata `--stdout`, `--output` options
         * Fix autodumpdata failing if `settings.SERIALIZATION_MODULES` not defined
     * 0.1.2
-        * Added test cases, documentation
+        * Add test cases, documentation
     * 0.1.1
-        * Added `StaticStorage`, `MediaStorage`
+        * Add `StaticStorage`, `MediaStorage`
     * 0.1.0
         * Initial release
