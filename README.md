@@ -242,6 +242,7 @@ user = CurrentUserMiddleware.get_user()
     * Add `allianceutils.middleware.CurrentUserMiddleware` to `MIDDLEWARE`.
     * Uses the `warnings` module to raise a warning; by default this is suppressed by django
         * To ensure `QueryCountWarning` is never suppressed  
+
 ```python
 warnings.simplefilter('always', allianceutils.middleware.QueryCountWarning)
 ```
@@ -249,6 +250,7 @@ warnings.simplefilter('always', allianceutils.middleware.QueryCountWarning)
 * To increase the query count limit for a given request, you can increase `request.QUERY_COUNT_WARNING_THRESHOLD`
     * Rather than hardcode a new limit, you should increment the existing value
     * If `request.QUERY_COUNT_WARNING_THRESHOLD` is falsy then checks are disabled for this request 
+
 ```python
 def my_view(request, *args, **kwargs):
     request.QUERY_COUNT_WARNING_THRESHOLD += 10
@@ -449,11 +451,11 @@ MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
 * A wrapper to the [django-webpack-loader](https://github.com/ezhome/django-webpack-loader#django-webpack-loader) [render_bundle](https://github.com/ezhome/django-webpack-loader#templates) tag that helps with the fact that you normally want to embed CSS files in the <head> and JS files at the end of the <body>
     * `settings.DEBUG_WEBPACK` (defaults to the same value as `settings.DEBUG`) controls whether `alliance_bundle` should generate production or development output 
     * in *production* there are separate JS + CSS files
-        * CSS bundles in the <head> generate <link> tags 
-        * JS bundles at the end of <body> generate <script> tags 
+        * CSS bundles in the `<head>` generate `<link>` tags 
+        * JS bundles at the end of <body> generate `<script>` tags 
     * in *development* the CSS bundle is actually JS that contains both JS and CSS
-        * CSS bundles in the <head> generate <script> tags including both JS and CSS 
-        * JS bundles at the end of <body> do nothing
+        * CSS bundles in the `<head>` generate `<script>` tags including both JS and CSS 
+        * JS bundles at the end of `<body>` do nothing
 
 * Example Usage
 
