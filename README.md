@@ -493,6 +493,50 @@ MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
 
 ### Util
 
+#### camelize
+
+* Better version of [djangorestframework-camel-case](https://github.com/vbabiy/djangorestframework-camel-case)
+    * DRF-CC camel cases every single key in the data tree.
+* These functions allow you to indicate that certain keys are data, not field names
+
+
+```python
+tree = {
+    "first_name": "Mary",
+    "last_name": "Smith",
+    "servers": {
+        "server_west.mycompany.com": {
+            'user_accounts': {
+                'mary_smith': {
+                    'home_dir': '/home/mary_smith',
+                },
+            },
+        },
+    },
+}
+# the keys at tree['servers'] and tree['servers']['serve_west.mycompany.com']['user_accounts'] will not be camel cased
+output_tree = allianceutils.util.camelize(tree, ignore=['servers', 'servers.*.user_accounts'])
+output_treet == {
+    "firstName": "Mary",
+    "lastName": "Smith",
+    "servers": {
+        "server_west.mycompany.com": {
+            'userAccounts': {
+                'mary_smith': {
+                    'home_dir': '/home/mary_smith',
+                },
+            },
+        },
+    },
+}
+
+```
+
+* `allianceutils.util.camelize(data, ignores)` - underscore case => camel case a json tree of data
+* `allianceutils.util.underscorize(data, ignores)` - camel case => underscore case a json tree of data
+* `allianceutils.util.camel_to_underscore(str)` - underscore case => camel case a string 
+* `allianceutils.util.underscore_to_camel(str)` - camel case => underscore case a string
+
 #### python_to_django_date_format
 
 Converts a python [strftime/strptime](https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior) datetime format string into a []django template/PHP](https://docs.djangoproject.com/en/dev/ref/templates/builtins/#std:templatefilter-date) date format string
@@ -548,6 +592,7 @@ WEBPACK_LOADER = {
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.3
     * 0.3.x
+        * Add `camelize` and `underscorize`
         * Add `print_logging` management command
         * Fix `GenericUserProfile` raising the wrong model exceptions; removed `GenericUserProfileManager.use_proxy_model` 
     * 0.3.3
