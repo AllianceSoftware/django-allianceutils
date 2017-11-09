@@ -12,7 +12,7 @@ from typing import Tuple
 
 _first_cap_re = re.compile('(.)([A-Z][a-z]+)')
 _all_cap_re = re.compile('([a-z0-9])([A-Z])')
-_re_underscore = re.compile(r'(?!^)_([a-z])')
+_re_underscore = re.compile(r'(?!^)(?<!_)_([a-z])')
 
 _empty_dict = {} # we use this a lot in here
 
@@ -177,6 +177,8 @@ def _transform_data(data, transform_key: Callable, ignore_lookup: Dict):
 def underscore_to_camel(key: str) -> str:
     """
     Turn underscores into camel case
+
+    Double underscores will be left alone
 
     :param key: underscore-case string
     :return: camel-case string

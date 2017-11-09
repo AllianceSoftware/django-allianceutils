@@ -72,39 +72,40 @@ class DateFormatTestCase(SimpleTestCase):
 class CamelCaseTestCase(SimpleTestCase):
 
     def test_camel_to_underscore(self):
-        # TODO: double underscore & number handling correct?
         tests = {
             'aBCD': 'a_bcd',
             'HTTPFoo': 'http_foo',
             'Zoo23FooBar': 'zoo23_foo_bar',
             'AbcDEFGhiJklM': 'abc_def_ghi_jkl_m',
+            'Aa': 'aa',
             '__ab__cDef__': '__ab__c_def__',
 
             # Numbers:
-            # Is a less clear whether the following items have the correct behaviour;
-            # don't rely on this, it may change in future!
-            'AZ4AYaB': 'az4_a_ya_b',  # this probably is wrong, for consistency it should be az4a_ya_b
+            # This behaviour may change in future
+            'AZ4AYaB': 'az4_a_ya_b',  # should this be az4a_ya_b instead?
             'AZA1aB': 'aza1a_b',
+            '1B': '1_b',
         }
         for test_in, test_out in tests.items():
             self.assertEqual(camel_to_underscore(test_in), test_out)
 
     def test_underscore_to_camel(self):
-        # TODO: double underscore & number handling correct?
         tests = {
             '_a1_eggs': '_a1Eggs',
             'HTTP_foo': 'HTTPFoo',
             'b_a_cd_efg_h': 'bACdEfgH',
-            '__foo': '_Foo',
+            '__foo': '__foo',
             'bar__': 'bar__',
-            '__ab_cd__ef_gh__': '_AbCd_EfGh__',
+            '__ab_cd__ef_gh__': '__abCd__efGh__',
+            'a___b': 'a___b',
 
             # Numbers:
             # This behaviour may change in future
+            '1_b': '1B',
             'a_4b': 'a_4b',
             'aa_4b': 'aa_4b',
             'a_a_4b': 'aA_4b',
-            '__ab1c_4d6h_g5_k': '_Ab1c_4d6hG5K',
+            '__ab1c_4d6h_g5_k': '__ab1c_4d6hG5K',
         }
         for test_in, test_out in tests.items():
             self.assertEqual(underscore_to_camel(test_in), test_out)
