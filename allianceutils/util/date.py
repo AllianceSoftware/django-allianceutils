@@ -48,15 +48,3 @@ def python_to_django_date_format(python_format: str) -> str:
     Convert python date formatting string to django date formatting string
     """
     return _date_format_re.sub(_date_format_replace, python_format)
-
-
-def retry_fn(fn: Callable, allowable_exceptions: Tuple, retry_count: int=5):
-    """
-    Call fn, retrying if exception type in allowable_exceptions is raised up to retry_count times
-    """
-    for i in range(0, retry_count):
-        try:
-            return fn()
-        except allowable_exceptions as ex:
-            if i == retry_count - 1:
-                raise

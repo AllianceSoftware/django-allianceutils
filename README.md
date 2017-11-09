@@ -242,6 +242,7 @@ user = CurrentUserMiddleware.get_user()
     * Add `allianceutils.middleware.CurrentUserMiddleware` to `MIDDLEWARE`.
     * Uses the `warnings` module to raise a warning; by default this is suppressed by django
         * To ensure `QueryCountWarning` is never suppressed  
+
 ```python
 warnings.simplefilter('always', allianceutils.middleware.QueryCountWarning)
 ```
@@ -249,6 +250,7 @@ warnings.simplefilter('always', allianceutils.middleware.QueryCountWarning)
 * To increase the query count limit for a given request, you can increase `request.QUERY_COUNT_WARNING_THRESHOLD`
     * Rather than hardcode a new limit, you should increment the existing value
     * If `request.QUERY_COUNT_WARNING_THRESHOLD` is falsy then checks are disabled for this request 
+
 ```python
 def my_view(request, *args, **kwargs):
     request.QUERY_COUNT_WARNING_THRESHOLD += 10
@@ -449,11 +451,11 @@ MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
 * A wrapper to the [django-webpack-loader](https://github.com/ezhome/django-webpack-loader#django-webpack-loader) [render_bundle](https://github.com/ezhome/django-webpack-loader#templates) tag that helps with the fact that you normally want to embed CSS files in the <head> and JS files at the end of the <body>
     * `settings.DEBUG_WEBPACK` (defaults to the same value as `settings.DEBUG`) controls whether `alliance_bundle` should generate production or development output 
     * in *production* there are separate JS + CSS files
-        * CSS bundles in the <head> generate <link> tags 
-        * JS bundles at the end of <body> generate <script> tags 
+        * CSS bundles in the `<head>` generate `<link>` tags 
+        * JS bundles at the end of <body> generate `<script>` tags 
     * in *development* the CSS bundle is actually JS that contains both JS and CSS
-        * CSS bundles in the <head> generate <script> tags including both JS and CSS 
-        * JS bundles at the end of <body> do nothing
+        * CSS bundles in the `<head>` generate `<script>` tags including both JS and CSS 
+        * JS bundles at the end of `<body>` do nothing
 
 * Example Usage
 
@@ -490,6 +492,50 @@ MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
 ```
 
 ### Util
+
+#### camelize
+
+* Better version of [djangorestframework-camel-case](https://github.com/vbabiy/djangorestframework-camel-case)
+    * DRF-CC camel cases every single key in the data tree.
+* These functions allow you to indicate that certain keys are data, not field names
+
+
+```python
+tree = {
+    "first_name": "Mary",
+    "last_name": "Smith",
+    "servers": {
+        "server_west.mycompany.com": {
+            'user_accounts': {
+                'mary_smith': {
+                    'home_dir': '/home/mary_smith',
+                },
+            },
+        },
+    },
+}
+# the keys at tree['servers'] and tree['servers']['serve_west.mycompany.com']['user_accounts'] will not be camel cased
+output_tree = allianceutils.util.camelize(tree, ignore=['servers', 'servers.*.user_accounts'])
+output_treet == {
+    "firstName": "Mary",
+    "lastName": "Smith",
+    "servers": {
+        "server_west.mycompany.com": {
+            'userAccounts': {
+                'mary_smith': {
+                    'home_dir': '/home/mary_smith',
+                },
+            },
+        },
+    },
+}
+
+```
+
+* `allianceutils.util.camelize(data, ignores)` - underscore case => camel case a json tree of data
+* `allianceutils.util.underscorize(data, ignores)` - camel case => underscore case a json tree of data
+* `allianceutils.util.camel_to_underscore(str)` - underscore case => camel case a string 
+* `allianceutils.util.underscore_to_camel(str)` - camel case => underscore case a string
 
 #### python_to_django_date_format
 
@@ -546,11 +592,12 @@ WEBPACK_LOADER = {
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.3
     * 0.3.x
-    	* Fix `GenericUserProfile` raising the wrong model exceptions; removed `GenericUserProfileManager.use_proxy_model` 
-        * Added `print_logging` management command
+        * Add `camel_case`
+        * Add `print_logging` management command
+        * Fix `GenericUserProfile` raising the wrong model exceptions; removed `GenericUserProfileManager.use_proxy_model` 
     * 0.3.3
-        * Added `default_value`
-        * Added tests
+        * Add `default_value`
+        * Add tests
             * For `alliance_bundle` 
             * For `ContentHashWebpackLoader` & `TimestampWebpackLoader`
     * 0.3.2
@@ -561,17 +608,17 @@ WEBPACK_LOADER = {
         * Breaking Changes
             * Dropped support for python <3.4
             * Dropped support for django <1.11
-        * Added `GenericUserProfile`
-        * Added `python_to_django_date_format`
-        * Added `check_url_trailing_slash`
-        * Added `QueryCountMiddleware`
+        * Add `GenericUserProfile`
+        * Add `python_to_django_date_format`
+        * Add `check_url_trailing_slash`
+        * Add `QueryCountMiddleware`
         * Test against python 3.4, 3.5, 3.6
 * 0.2
     * 0.2.0
         * Breaking Changes
             * The interface for `get_autodump_labels` has changed 
-        * Added autodumpdata SQL output format
-        * Added `mysqlquickdump` options `--model` and `--explicit` 
+        * Add autodumpdata SQL output format
+        * Add `mysqlquickdump` options `--model` and `--explicit` 
         * Update to work with webpack_loader 0.5
 * 0.1
     * 0.1.6
@@ -582,12 +629,12 @@ WEBPACK_LOADER = {
     * 0.1.4
         * Fix bad versioning in previous release
     * 0.1.3
-        * Added autodumpdata test cases
-        * Added autodumpdata `--stdout`, `--output` options
+        * Add autodumpdata test cases
+        * Add autodumpdata `--stdout`, `--output` options
         * Fix autodumpdata failing if `settings.SERIALIZATION_MODULES` not defined
     * 0.1.2
-        * Added test cases, documentation
+        * Add test cases, documentation
     * 0.1.1
-        * Added `StaticStorage`, `MediaStorage`
+        * Add `StaticStorage`, `MediaStorage`
     * 0.1.0
         * Initial release
