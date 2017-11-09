@@ -579,7 +579,7 @@ WEBPACK_LOADER = {
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.3
-    * 0.3.x
+    * 0.3.4
         * Add `camel_case`
         * Add `print_logging` management command
         * Fix `GenericUserProfile` raising the wrong model exceptions; removed `GenericUserProfileManager.use_proxy_model` 
