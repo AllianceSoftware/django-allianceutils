@@ -432,18 +432,6 @@ MEDIAFILES_LOCATION="media"
 MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
 ```
 
-
-#### script_json
-
-* Dump a python object into json for embedding in a script tag
-
-* Usage
-
-```html
-{% load script_json %}
-
-<script>window.__APP_SETTINGS = {{ APP_SETTINGS|script_json }};</script>
-```
 ### Template Tags
 
 #### alliance_bundle
@@ -595,6 +583,7 @@ WEBPACK_LOADER = {
         * Add `camel_case`
         * Add `print_logging` management command
         * Fix `GenericUserProfile` raising the wrong model exceptions; removed `GenericUserProfileManager.use_proxy_model` 
+        * Mark `script_json` for future removal
     * 0.3.3
         * Add `default_value`
         * Add tests

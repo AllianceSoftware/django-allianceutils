@@ -1,11 +1,12 @@
-
 import json
+import warnings
 
 from django import template
 from django.utils.html import escapejs
 from django.utils.safestring import mark_safe
 
 register = template.Library()
+
 
 @register.filter
 def script_json(value):
@@ -17,4 +18,5 @@ def script_json(value):
         var myVar = {{ myVariable|script_json }};
     </script>
     """
+    warnings.warn('script_json is going to be removed; use the escapejson package instead', PendingDeprecationWarning)
     return mark_safe('JSON.parse("%s")' % escapejs(json.dumps(value)))
