@@ -591,8 +591,8 @@ WEBPACK_LOADER = {
 ## Changelog
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
-* 0.4.x
-    * 0.4.x
+* 0.4
+    * 0.4.0
         * Breaking Changes
             * The interface for `get_autodump_labels` has changed
         * Add `checks.check_autodumpdata` 
