@@ -3,8 +3,10 @@ set -o pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.inc"
 
+require_virtualenv
+
 if [[ "$1" = "--check-only" ]] ; then
-	CHECK_ONLY="--check-only"
+	check_only="--check-only"
 	shift
 else
     # Insist on an explicit target if we're going to be modifying files
@@ -14,28 +16,27 @@ else
 	fi
 fi
 
-# first try symlink in this dir
-ISORT="$(dirname "${BASH_SOURCE[0]}")/isort"
+# first try a symlink in this dir
+isort_cmd="$(dirname "${BASH_SOURCE[0]}")/isort"
 
 # then the current virtualenv
-if ! [ -x "$ISORT" ] ; then
-	ISORT="$VIRTUAL_ENV/bin/isort"
+if ! [ -x "$isort_cmd" ] ; then
+	isort_cmd="$VIRTUAL_ENV/bin/isort"
 fi
 
 # then whatever the OS has available
-if ! [ -x "$ISORT" ] ; then
-	ISORT="$(which isort || true)"
+if ! [ -x "$isort_cmd" ] ; then
+	isort_cmd="$(which isort || true)"
 fi
 
-if ! [ -x $ISORT ] ; then
+if ! [ -x "$isort_cmd" ] ; then
 	echo "Can't find isort; this may not work trying to commit from a GUI" >&2
 	echo "You can try symlinking isort in the $(dirname "${BASH_SOURCE[0]}") directory" >&2
 	exit 1
 fi
 
-"$ISORT" \
-	--settings-path "$SOURCE_ROOT" \
+"$isort_cmd" \
+    --settings-path "$project_dir" \
 	--recursive \
-	--project allianceutils \
-	$CHECK_ONLY \
-	"${@:-$SOURCE_ROOT}"
+	$check_only \
+	"${@:-$base_dir}"
