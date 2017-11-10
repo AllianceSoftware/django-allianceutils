@@ -4,16 +4,12 @@ set -o pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.inc"
 
 IFS=$'\n'
-files_py=( $( git diff --cached --name-only --diff-filter=ACM | ( egrep '\.py$' || true ) ) )
+files=( $( git diff --cached --name-only --diff-filter=ACM ) )
 unset IFS
 
-if [[ "${#files_py[@]}" -gt 0 ]] ; then
-	"$repo_dir/bin/lint.sh" "${files_py[@]}"
-fi
+"$repo_dir/bin/lint.sh" "${files[@]}"
 
-files=( $( git diff --cached --name-only --diff-filter=ACM ) )
-
-for file in "${files_py[@]}" ; do
+for file in "${files[@]}" ; do
 	if [[ $file =~ (SECRET_KEY) ]] ; then
 		echo "Secret keys should not be committed: ${file}" >&2
 		exit 1

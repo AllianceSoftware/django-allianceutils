@@ -1,35 +1,15 @@
 import os
 
+from django.apps import AppConfig
 from django.apps import apps
 from django.conf import settings
 from django.core import serializers
 from django.core.management import call_command
 from django.core.management.base import AppCommand
 from django.core.management.base import CommandError
-from django.utils.six import string_types
 
-
-def get_autodump_labels(app_config, fixture):
-    """
-    Takes an app config and returns ('app_label.model_label' strings, 'app_label_model_label' strings)
-    describing models to dump for a given fixture, with first array in json and 2nd array in sql
-    :param app_config: django app config
-    :param fixture: fixture name
-    :return: ([strings,], [strings,])
-    """
-    app_models = []
-    app_models_sql = []
-
-    for model in app_config.get_models():
-        if hasattr(model, 'fixtures_autodump') and fixture in getattr(model, 'fixtures_autodump'):
-            app_models.append(model._meta.model_name)
-        if hasattr(model, 'fixtures_autodump_sql') and fixture in getattr(model, 'fixtures_autodump_sql'):
-            app_models_sql.append(model._meta.model_name)
-
-    app_models = ["%s.%s" % (app_config.label, model) for model in app_models]
-    app_models_sql = ["%s.%s" % (app_config.label, model) for model in app_models_sql]
-
-    return (app_models, app_models_sql)
+from allianceutils.util.autodump import AutodumpModelFormats
+from allianceutils.util.autodump import get_autodump_labels
 
 
 class Command(AppCommand):
@@ -130,19 +110,20 @@ class Command(AppCommand):
 
         return super(Command, self).handle(*app_labels, **options)
 
-    def handle_app_config(self, app_config, **options):
+    def handle_app_config(self, app_config: AppConfig, **options):
+        fixture_models = get_autodump_labels(app_config)
+
+        # check for pre-0.4.0 code that had a different interface
         try:
-            f = app_config.module.models.get_autodump_labels
-        except AttributeError:
-            f = get_autodump_labels
+            assert not app_config.module.models.get_autodump_labels,\
+                "The interface of autodumpdata has changed " \
+                "(%s.models.get_autodump_labels needs to be moved into to the AppConfig). " \
+                "See alliance-django-utils README. " % app_config.label
+        except (AttributeError, ImportError):
+            pass
 
-        models_to_dump = f(app_config, options['fixture'])
-        
-        # check for pre-0.2.0 code that had a different interface
-        assert not isinstance(models_to_dump[0], string_types), "The interface of autodumpdata had changed. See README in alliance-django-utils for reference."
-
-        app_models, app_models_sql = models_to_dump
-        if app_models or app_models_sql:
+        models = fixture_models.get(options['fixture'], AutodumpModelFormats())
+        if models.all():
             self.app_counter += 1
             if (options['stdout'] or options['output']) and self.app_counter > 1:
                 # we can't just count the number of app_labels because many don't have any relevant models
@@ -166,9 +147,9 @@ class Command(AppCommand):
                 except FileExistsError:
                     pass
 
-            if app_models:
+            if models.json:
                 call_command('dumpdata',
-                    *app_models,
+                    *models.json,
                     use_natural_foreign_keys=True,
                     use_natural_primary_keys=True,
                     format=options['format'],
@@ -176,8 +157,8 @@ class Command(AppCommand):
                     output=output
                 )
 
-            if app_models_sql:
-                app_models_sql_tables = [apps.get_model(app_model)._meta.db_table for app_model in app_models_sql]
+            if models.sql:
+                app_models_sql_tables = [apps.get_model(app_model)._meta.db_table for app_model in models.sql]
                 call_command('mysqlquickdump',
                      model=app_models_sql_tables,
                      dump=output_sql,
@@ -185,7 +166,7 @@ class Command(AppCommand):
 
             # give verbose output if not outputting to stdout
             if options['show_info']:
-                if app_models:
-                    self.stdout.write('Wrote to %s: %s' % (output, ' '.join(app_models)))
-                if app_models_sql:
-                    self.stdout.write('Wrote to %s: %s' % (output_sql, ' '.join(app_models_sql)))
+                if models.json:
+                    self.stdout.write('Wrote to %s: %s' % (output, ' '.join(models.json)))
+                if models.sql:
+                    self.stdout.write('Wrote to %s: %s' % (output_sql, ' '.join(models.sql)))

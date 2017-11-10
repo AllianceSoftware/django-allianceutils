@@ -142,27 +142,40 @@ class Customer(models.Model):
     fixtures_autodump_sql = ['fast']
 ```
 
-* To add autodump metadata to models that are part of core django, add the following code to one of your apps
+* To add autodump metadata to models that are part of core django or third party models:
     * This can be particularly useful for dumping django group permissions (which you typically want to send to a live server) separately from test data
 
 ```python
 # This will take the default fixture dumping config for this app and add the core auth.group and authtools.user
-# tables to the groups and users fixtures respectively 
-def get_autodump_labels(app_config, fixture):
-    import allianceutils.management.commands.autodumpdata
-    extras = {
-        'groups': [
-            'auth.group',
-        ],
-        'users': [
-            'authtools.user',
-        ],
-    }
-    original_json, original_sql = allianceutils.management.commands.autodumpdata.get_autodump_labels(app_config, fixture)
-    for fixture in extras:
-        original_json[fixture] = original_json.get(fixture, []) + extras[fixture]
-    return (original_json, original_sql)
+# tables to the groups and users fixtures respectivelyi
+ 
+from django.apps import AppConfig
+
+from allianceutils.util.autodump import AutodumpAppConfigMixin
+from allianceutils.util.autodump import AutodumpModelFormats
+
+class MyAppConfig(AutodumpAppConfigMixin, AppConfig):
+    name = 'myapp'
+    verbose_name = "My App"
+
+    def get_autodump_labels(self):
+        return self.autodump_labels_merge(
+            {
+                'group': AutodumpModelFormats(
+                	json=[
+						'auth.Group',
+					],
+					sql=[
+						# ...
+					],
+				),
+            },
+            super().get_autodump_labels()
+        )
 ```
+
+* Additionally, `allianceutils.checks.check_autodumpdata()` is available as a check to warn about tables that are not part of any autodumpdata fixture
+    * For tables that you want the check to ignore, add to a placeholder fixture (eg `ignore`) in `get_autodump_labels` 
 
 ##### mysqlquickdump
 
@@ -578,6 +591,11 @@ WEBPACK_LOADER = {
 ## Changelog
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
+* 0.4.x
+    * 0.4.x
+        * Breaking Changes
+            * The interface for `get_autodump_labels` has changed
+        * Add `checks.check_autodumpdata` 
 * 0.3
     * 0.3.4
         * Add `camel_case`
