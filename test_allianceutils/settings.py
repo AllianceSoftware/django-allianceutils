@@ -37,7 +37,6 @@ INSTALLED_APPS = (
     'allianceutils',
     'test_allianceutils',
     'test_allianceutils.tests.autodumpdata',
-    'test_allianceutils.tests.checks',
     'test_allianceutils.tests.middleware',
     'test_allianceutils.tests.profile_auth',
     'test_allianceutils.tests.serializers',
