@@ -23,13 +23,14 @@ class TempJSONFile(object):
     def __exit__(self, exc_type, exc_value, traceback):
         try:
             os.unlink(self.filename)
-        except:
+        except OSError:
             pass
-        # might also be an .sql file
-        try:
-            os.unlink(self.filename.replace('.json', '.sql'))
-        except:
-            pass
+        finally:
+            # there might also be an .sql file
+            try:
+                os.unlink(self.filename.replace('.json', '.sql'))
+            except OSError:
+                pass
 
 
 class TestAutoDumpData(TransactionTestCase):
