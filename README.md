@@ -449,14 +449,15 @@ MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
 
 #### alliance_bundle
 
-* A wrapper to the [django-webpack-loader](https://github.com/ezhome/django-webpack-loader#django-webpack-loader) [render_bundle](https://github.com/ezhome/django-webpack-loader#templates) tag that helps with the fact that you normally want to embed CSS files in the <head> and JS files at the end of the <body>
+* A wrapper to the [django-webpack-loader](https://github.com/ezhome/django-webpack-loader#django-webpack-loader) [render_bundle](https://github.com/ezhome/django-webpack-loader#templates) tag that helps with the fact that you normally want to embed CSS files in the `<head>` and JS files at the end of the `<body>` to prevent the browser blocking on JS downloads
     * `settings.DEBUG_WEBPACK` (defaults to the same value as `settings.DEBUG`) controls whether `alliance_bundle` should generate production or development output 
     * in *production* there are separate JS + CSS files
         * CSS bundles in the `<head>` generate `<link>` tags 
         * JS bundles at the end of <body> generate `<script>` tags 
-    * in *development* the CSS bundle is actually JS that contains both JS and CSS
+    * in *development* the CSS bundle is actually JS that contains both JS and CSS (this allows webpack to do hot-loading of CSS)
         * CSS bundles in the `<head>` generate `<script>` tags including both JS and CSS 
         * JS bundles at the end of `<body>` do nothing
+    * You may want to handle jQuery differently: because django admin injects inline JS that depends on jQuery you may need to include both jquery CSS and JS in the `<head>`
 
 * Example Usage
 
