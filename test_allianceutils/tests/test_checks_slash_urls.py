@@ -46,6 +46,8 @@ class TestUrls(SimpleTestCase):
             '^noslash1$',
             '^noslash2$',
             '^noslash3$',
+            '^api/noslash$',
+            '^api/noslash/(?P<pk>[^/.]+)$',
         ]
         self.assertEqual(sorted(errors), sorted(expected))
 
@@ -58,5 +60,7 @@ class TestUrls(SimpleTestCase):
         expected = [
             '^slash1/$',
             '^slash2/$',
+            '^api/slash/$',
+            '^api/slash/(?P<pk>[^/.]+)/$',
         ]
         self.assertEqual(sorted(errors), sorted(expected))
