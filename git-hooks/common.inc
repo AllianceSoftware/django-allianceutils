@@ -8,7 +8,7 @@ realpath=$( command -v realpath >/dev/null 2>&1 ) || function realpath() {
 self_path=$( realpath $(dirname "${BASH_SOURCE[0]}") )
 source "$self_path/../bin/common.inc"
 
-commit_categories='build|docs|feature|fix|refactor|style|sys|test|WIP'
+commit_categories='build|doc|feature|fix|refactor|style|sys|test|WIP'
 commit_categories_bare='build|WIP'
 
 # git doesn't invoke commit-msg for merges -- unless you have a conflict in
