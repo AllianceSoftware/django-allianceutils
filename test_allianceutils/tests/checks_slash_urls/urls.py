@@ -27,10 +27,12 @@ urlpatterns = [
 urlpatterns.extend(static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT))
 
 # Check DRF router-generated URLs
-router = routers.SimpleRouter(trailing_slash=True)
+router = routers.DefaultRouter(trailing_slash=True)
+router.include_format_suffixes = False
 router.register(r'api/slash', FooViewSet)
 urlpatterns.extend(router.urls)
 
-router = routers.SimpleRouter(trailing_slash=False)
+router = routers.DefaultRouter(trailing_slash=False)
+router.include_format_suffixes = False
 router.register(r'api/noslash', FooViewSet)
 urlpatterns.extend(router.urls)
