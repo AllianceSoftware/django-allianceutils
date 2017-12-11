@@ -226,7 +226,15 @@ class MyAppConfig(AppConfig):
             * `app_name` - app name (only works for `include()` patterns). Defaults to `['djdt']` (django debug toolbar)
             * `namespace` - pattern defines a namespace
             * `lookup_str` - string defining view to use. Defaults to `['django.views.static.serve']`
-        * Note that if you skip a resolver it will also skip checks on everything inside that resolver  
+        * Note that if you skip a resolver it will also skip checks on everything inside that resolver
+* If using Django REST Framework's [`DefaultRouter`](http://www.django-rest-framework.org/api-guide/routers/#defaultrouter) then you need to turn off `include_format_suffixes`:
+
+```
+router = routers.DefaultRouter(trailing_slash=True)
+router.include_format_suffixes = False
+router.register(r'myurl', MyViewSet)
+urlpatterns += router.urls
+```
 
 ### Middleware
 
