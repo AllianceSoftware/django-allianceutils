@@ -127,8 +127,15 @@ class GenericDjangoViewsetPermissions(BasePermission):
 
         action = getattr(viewset, 'action', None)
 
-        # Handles OPTION requests
-        if action is None:
+        # Handles OPTIONS requests
+        # Doing an OPTIONS call directly will result in an action of 'metadata'
+        # See http://www.django-rest-framework.org/api-guide/metadata/
+        # The BrowsableAPIRenderer will also check permissions to decide whether
+        # to show the 'OPTIONS' button - in this case the action is None. It
+        # appears that the default behaviour for OPTIONS should be no authentication
+        # in the context of CORS.
+        # See https://github.com/encode/django-rest-framework/issues/5616
+        if request.method == 'OPTIONS':
             return True
 
         user = request.user
@@ -149,6 +156,9 @@ class GenericDjangoViewsetPermissions(BasePermission):
 
     def has_object_permission(self, request, viewset, obj):
         action = viewset.action
+        # Handles OPTIONS requests
+        if request.method == 'OPTIONS':
+            return True
         perms = self.get_permissions_for_action(action, viewset)
         user = request.user
         return user.has_perms(perms, obj)
