@@ -375,7 +375,32 @@ class GenericUserProfile(User):
     * `user_to_profile()` can use any logic you wish
     * `select_related_profiles()` should include all relevant profiles
 * If `settings.AUTH_USER_MODEL is set to GenericUserProfile` then `AuthenticationMiddleware` will cause `request.user` to contain the appropriate profile with no extra queries  
-    * Due to a django limitation, if `AUTH_USER_MODEL` is set then you cannot use `django.contrib.auth.models.User`, you must create your own `User` table (usually based on `AbstractUser`)  
+    * Due to a django limitation, if `AUTH_USER_MODEL` is set then you cannot use `django.contrib.auth.models.User`, you must create your own `User` table (usually based on `AbstractUser`)
+    
+#### raise_validation_errors
+
+* The `raise_validation_errors` context manager enables cleaner code for constructing validation
+    * [Django documentation]() recommends raising a `ValidationError` when you encounter a problem
+    * This creates a poor user experience: ideally as many errors should be shown to the user at once so that they don't have to make repeated form submissions to resolve errors one at a time
+* `raise_validation_errors` accepts a function to wrap
+    * The context manager returns a `ValidationError` subclass with an `add_error` function that follows the same rules as `django.forms.forms.BaseForm.add_error`
+    * If the wrapped function raises a `ValidationError` then this will be merged into the
+    * If the wrapped function raises any other exception then this will not be intercepted and the context block will not be executed 
+    * If code in the context block raises an exception (including a `ValidationError`) then this will take precedence over the context block raising its own `ValidationError`. In other words, you probably want to use `ve.add_error()` instead of manually raising ` ValidationError` 
+
+```
+    def clean(self):
+        with allianceutils.models.raise_validation_errors(super().clean) as ve:
+            if some_condition:
+                ve.add_error(None, 'model error message')
+            if other_condition:
+                ve.add_error('fieldname', 'field-specific error message')
+            if other_condition:
+                ve.add_error(None, {
+                    'fieldname1': field-specific error message',
+                    'fieldname2': field-specific error message',
+                })
+```  
 
 ### Serializers
 
@@ -607,6 +632,7 @@ WEBPACK_LOADER = {
     * 0.4.dev
        * Breaking Changes
            * Specify behaviour of numbers in underscore/camel case conversion (was undefined before) 
+        * Add `raise_validation_errors`
     * 0.4.0
         * Breaking Changes
            * The interface for `get_autodump_labels` has changed
