@@ -12,7 +12,7 @@ from typing import Tuple
 
 _first_cap_re = re.compile('(.)([A-Z][a-z]+)')
 _all_cap_re = re.compile('([a-z0-9])([A-Z])')
-_re_underscore = re.compile(r'(?!^)(?<!_)_([a-z])')
+_re_underscore = re.compile(r'(?!^)(?<!_)_([^_])')
 
 _empty_dict = {} # we use this a lot in here
 
