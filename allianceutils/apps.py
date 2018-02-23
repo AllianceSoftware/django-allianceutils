@@ -4,8 +4,7 @@ from allianceutils.util.autodump import AutodumpAppConfigMixin
 from allianceutils.util.autodump import AutodumpModelFormats
 
 __all__ = [
-    'AutodumpAppConfigMixin',
-    'DjangoSiteConfig',
+    'AllianceUtilsAppConfig',
 ]
 
 
