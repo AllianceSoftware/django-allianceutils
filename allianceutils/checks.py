@@ -78,7 +78,7 @@ def warning_autodumpdata_missing(model: models.Model):
     Create a missing autodumpdata definition warning
     """
     return Warning('Missing autodump definition',
-        hint='see fixtures_autodump in README',
+        hint='see fixtures_autodump in alliance-django-utils README',
         obj=model,
         id=ID_WARNING_AUTODUMP_MISSING,
     )
@@ -140,7 +140,7 @@ def check_autodumpdata(app_configs: Sequence[AppConfig], **kwargs):
     for model in known_models.values():
         process_model(model)
 
-    # find models that weren't konwn
+    # find models that weren't known
     errors_missing = set(known_models.keys()).difference(valid_models).difference(proxy_models)
     errors_missing = [
         warning_autodumpdata_missing(known_models[model_label])

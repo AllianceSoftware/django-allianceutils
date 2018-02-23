@@ -21,11 +21,11 @@ class Command(django.core.management.base.BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--database', action='store', dest='database',
             default=django.db.DEFAULT_DB_ALIAS,
-            help='Database to load into (default: %(default)s)')
+            help='Database to dump from (default: %(default)s)')
 
         parser.add_argument('--dump', action='store', dest='dump_file',
             default='data.sql',
-            help='Database dump to load (default: %(default)s)')
+            help='Database dump to save to (default: %(default)s)')
 
         parser.add_argument('--model', action='append', dest='dump_tables',
                         default=[],
