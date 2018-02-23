@@ -81,8 +81,7 @@ class CamelCaseTestCase(SimpleTestCase):
             '__ab__cDef__': '__ab__c_def__',
 
             # Numbers:
-            # This behaviour may change in future
-            'AZ4AYaB': 'az4_a_ya_b',  # should this be az4a_ya_b instead?
+            'AZ4AYaB': 'az4_a_ya_b',
             'AZA1aB': 'aza1a_b',
             '1B': '1_b',
             'test9': 'test9',

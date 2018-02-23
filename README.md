@@ -526,7 +526,7 @@ tree = {
 }
 # the keys at tree['servers'] and tree['servers']['serve_west.mycompany.com']['user_accounts'] will not be camel cased
 output_tree = allianceutils.util.camelize(tree, ignore=['servers', 'servers.*.user_accounts'])
-output_treet == {
+output_tree == {
     "firstName": "Mary",
     "lastName": "Smith",
     "servers": {
@@ -609,7 +609,7 @@ WEBPACK_LOADER = {
            * Specify behaviour of numbers in underscore/camel case conversion (was undefined before) 
     * 0.4.0
         * Breaking Changes
-            * The interface for `get_autodump_labels` has changed
+           * The interface for `get_autodump_labels` has changed
         * Add `checks.check_autodumpdata` 
 * 0.3
     * 0.3.4
