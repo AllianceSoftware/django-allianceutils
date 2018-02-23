@@ -380,13 +380,15 @@ class GenericUserProfile(User):
 #### raise_validation_errors
 
 * The `raise_validation_errors` context manager enables cleaner code for constructing validation
-    * [Django documentation]() recommends raising a `ValidationError` when you encounter a problem
-    * This creates a poor user experience: ideally as many errors should be shown to the user at once so that they don't have to make repeated form submissions to resolve errors one at a time
+    * [Django documentation](https://docs.djangoproject.com/en/dev/ref/models/instances/#django.db.models.Model.clean) recommends raising a `ValidationError` when you encounter a problem
+    * This creates a poor user experience if there are multiple errors: the user only sees the first error and has to resubmit a form multiple times to fix problems
 * `raise_validation_errors` accepts a function to wrap
     * The context manager returns a `ValidationError` subclass with an `add_error` function that follows the same rules as `django.forms.forms.BaseForm.add_error`
-    * If the wrapped function raises a `ValidationError` then this will be merged into the
+    * If the wrapped function raises a `ValidationError` then this will be merged into the `ValidationError` returned by the context manager
     * If the wrapped function raises any other exception then this will not be intercepted and the context block will not be executed 
-    * If code in the context block raises an exception (including a `ValidationError`) then this will take precedence over the context block raising its own `ValidationError`. In other words, you probably want to use `ve.add_error()` instead of manually raising ` ValidationError` 
+	* At the end of a block,
+        * If code in the context block raised an exception (including a `ValidationError`) then this will not be caught
+        * If `ValidationError` the context manager returned has any errors (either from `ve.add_error()` or from the wrapped function) then this will be raised 
 
 ```
     def clean(self):
@@ -400,6 +402,12 @@ class GenericUserProfile(User):
                     'fieldname1': field-specific error message',
                     'fieldname2': field-specific error message',
                 })
+            if something_bad:
+                raise RuntimeError('Oh no!') 
+            
+            # at the end of the context, ve will be raised if it contains any errors
+            #   - unless an exception was raised in the block (RuntimeError example above) in which case
+            #     the raised exception will take precedence
 ```  
 
 ### Serializers
