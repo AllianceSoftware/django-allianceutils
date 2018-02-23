@@ -162,13 +162,13 @@ class MyAppConfig(AutodumpAppConfigMixin, AppConfig):
         return self.autodump_labels_merge(
             {
                 'group': AutodumpModelFormats(
-                	json=[
-						'auth.Group',
-					],
-					sql=[
-						# ...
-					],
-				),
+                    json=[
+                        'auth.Group',
+                    ],
+                    sql=[
+                        # ...
+                    ],
+                ),
             },
             super().get_autodump_labels()
         )
