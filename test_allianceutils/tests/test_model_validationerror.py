@@ -158,10 +158,25 @@ class ValidationErrorCase(SimpleTestCase):
             ve1 = _ExtendedValidationError(in1)
             ve2 = _ExtendedValidationError(in2)
 
-            ve = ve1.merge(ve2)
+            ve = ve1.merged(ve2)
             self.assertValidationErrorMatch(ve, out)
             self.assertIsNot(ve, ve1)
             self.assertIsNot(ve, ve2)
+
+            ve = _ExtendedValidationError(ve1)
+            ve.merge(ve2)
+            self.assertValidationErrorMatch(ve, out)
+            self.assertIsNot(ve, ve1)
+            self.assertIsNot(ve, ve2)
+
+    def test_merge_deep_copy(self):
+        """
+        merged validation errors should not share underlying data structures
+        """
+        ve1 = _ExtendedValidationError({'foo': ['bar']})
+        ve2 = _ExtendedValidationError({})
+        ve = ve1.merged(ve2)
+        self.assertIsNot(ve.error_dict['foo'], ve1.error_dict['foo'])
 
     def test_add_error(self):
         ve = _ExtendedValidationError(None)
@@ -317,3 +332,27 @@ class ValidationErrorCase(SimpleTestCase):
                 raise ValueError('ValueError2!')
         self.assertFalse(x)
         self.assertEqual(str(raise_context.exception), 'ValueError1!')
+
+    def test_capture_validation_error(self):
+        """
+        capture_validation_error behaviour
+        """
+
+        # normal ValidationError
+        with self.assertRaises(ValidationError) as raise_context:
+            with raise_validation_errors() as ve:
+                with ve.capture_validation_error():
+                    raise ValidationError({'foo': 'hello world'})
+                ve.add_error('foo', 'bar')
+        self.assertEqual(raise_context.exception.message_dict, {'foo': ['hello world', 'bar']})
+
+        # non-ValidationError raised
+        with self.assertRaises(ValueError):
+            with raise_validation_errors() as ve:
+                with ve.capture_validation_error():
+                    raise ValueError('dont catch me')
+
+        # nothing raised
+        with raise_validation_errors() as ve:
+            with ve.capture_validation_error():
+                pass

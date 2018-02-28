@@ -408,7 +408,23 @@ class GenericUserProfile(User):
             # at the end of the context, ve will be raised if it contains any errors
             #   - unless an exception was raised in the block (RuntimeError example above) in which case
             #     the raised exception will take precedence
-```  
+```
+
+* Sometimes you already have functions that may raise a `ValidationError` and `add_error()` will not help
+    * The `capture_validation_error()` context manager solves this problem
+    * Note that due to the way context managers work, each potential `ValidationError` needs its own with `capture_validation_error` context 
+
+```
+    def clean(self):
+        with allianceutils.models.raise_validation_errors() as ve:
+             with ve.capture_validation_error():
+                 self.func1()
+			 with ve.capture_validation_error():
+                 self.func2()
+			 with ve.capture_validation_error():
+                 raise ValidationError('bad things')
+			# all raised ValidationErrors will be collected, merged and raised at the end of this block
+```   
 
 ### Serializers
 

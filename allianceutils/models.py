@@ -127,9 +127,16 @@ class _ExtendedValidationError(ValidationError):
         if field is not None:
             error = _ExtendedValidationError({field: error})
 
+        self.merge(error)
+
+    def merge(self, error: ValidationError):
+        """
+        Merge another ValidationError into this one
+        """
+
         # we need to copy self in order to avoid recursive self-references
         self_copy = _ExtendedValidationError(self)
-        new_ve = self_copy.merge(error)
+        new_ve = self_copy.merged(error)
 
         # now copy the details from the new ValidationError into this one
         self.__dict__.clear()
@@ -153,7 +160,6 @@ class _ExtendedValidationError(ValidationError):
 
         # list of validation errors to merge
         to_merge = [self, errors]
-
 
         # we need to promote one or more both to a dict-type ValidationError
         if any(hasattr(ve, 'error_dict') for ve in to_merge):
@@ -224,6 +230,22 @@ class _ExtendedValidationError(ValidationError):
         ValidationError(['foo'])
         """
         return getattr(self, 'message', None) == _NO_VALIDATION_ERROR
+
+    def capture_validation_error(self):
+        return _ExtendedValidationErrorCaptureContext(self)
+
+
+class _ExtendedValidationErrorCaptureContext:
+    def __init__(self, ve: _ExtendedValidationError):
+        self.ve = ve
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is not None and issubclass(exc_type, ValidationError):
+            self.ve.merge(exc_val)
+            return True
 
 
 class raise_validation_errors:
