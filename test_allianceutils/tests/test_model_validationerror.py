@@ -65,6 +65,9 @@ class ValidationErrorCase(SimpleTestCase):
             self.assertEqual(is_empty, ve._is_empty(), 'test case failed: %s' % repr(message))
 
     def test_merge(self):
+        """
+        Can merge ValidationErrors
+        """
 
         def cast_to_list(x):
             if isinstance(x, list):
@@ -95,9 +98,9 @@ class ValidationErrorCase(SimpleTestCase):
         processed_test_cases = [
             # (input1, input2, output)
             (
-                None,
-                {'field': 'foo'}, {'field': ['foo'],
-                NON_FIELD_ERRORS: [None]},
+                None, # None is not the same as _NO_VALIDATION_ERROR
+                {'field': 'foo'},
+                {'field': ['foo'], NON_FIELD_ERRORS: [None]},
             ),
             (
                 None,
@@ -214,6 +217,9 @@ class ValidationErrorCase(SimpleTestCase):
         pass
 
     def test_raise_validation_errors(self):
+        """
+        Basic operation of raise_validation_errors()
+        """
 
         test_cases = (
             # wrapped_function, add_error args|None, expected ValidationError contents|None
