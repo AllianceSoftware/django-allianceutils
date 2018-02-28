@@ -227,12 +227,13 @@ class _ExtendedValidationError(ValidationError):
 
 
 class raise_validation_errors:
-    def __init__(self, func):
+    def __init__(self, func=None):
         self.func = func
 
     def __enter__(self):
         try:
-            self.func()
+            if self.func is not None:
+                self.func()
             self.ve = _ExtendedValidationError(_NO_VALIDATION_ERROR)
         except ValidationError as ve:
             self.ve = _ExtendedValidationError(ve)

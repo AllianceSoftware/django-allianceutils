@@ -382,7 +382,7 @@ class GenericUserProfile(User):
 * The `raise_validation_errors` context manager enables cleaner code for constructing validation
     * [Django documentation](https://docs.djangoproject.com/en/dev/ref/models/instances/#django.db.models.Model.clean) recommends raising a `ValidationError` when you encounter a problem
     * This creates a poor user experience if there are multiple errors: the user only sees the first error and has to resubmit a form multiple times to fix problems
-* `raise_validation_errors` accepts a function to wrap
+* `raise_validation_errors` accepts an (optional) function to wrap
     * The context manager returns a `ValidationError` subclass with an `add_error` function that follows the same rules as `django.forms.forms.BaseForm.add_error`
     * If the wrapped function raises a `ValidationError` then this will be merged into the `ValidationError` returned by the context manager
     * If the wrapped function raises any other exception then this will not be intercepted and the context block will not be executed 

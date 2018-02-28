@@ -290,6 +290,18 @@ class ValidationErrorCase(SimpleTestCase):
                         raise exception
                 self.assertEqual(str(raise_context.exception), str(exception))
 
+    def test_raise_validation_errors_no_func(self):
+        """
+        raise_validation_errors works without a function to wrap
+        """
+        with raise_validation_errors() as ve:
+            pass
+
+        with self.assertRaises(ValidationError) as raise_context:
+            with raise_validation_errors() as ve:
+                ve.add_error('hello', 'world')
+        self.assertEqual(raise_context.exception.message_dict, {'hello': ['world']})
+
     def test_raise_validation_errors_non_validation_error(self):
         """
         If you raise something that's not a ValidationError in the wrapped function then
