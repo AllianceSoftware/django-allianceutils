@@ -1,6 +1,9 @@
+from typing import Callable
+from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import Union
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -105,10 +108,12 @@ class _ExtendedValidationError(ValidationError):
     """
     Extended version of ValidationError for use with raise_validation_errors()
 
-    Internal behaviour is slightly different in that a
+    Internal behaviour is slightly different in that it may contain no errors at all
     """
 
-    def add_error(self, field, error):
+    ErrorType = Union[str, ValidationError]
+
+    def add_error(self, field: Optional[str], error: Union[ErrorType, List[ErrorType], Dict[str, List[ErrorType]]]):
         """
         This has the same behaviour as BaseForm.add_error()
         """
@@ -206,7 +211,7 @@ class _ExtendedValidationError(ValidationError):
 
         return new_ve
 
-    def _is_empty(self):
+    def _is_empty(self) -> bool:
         """
         Does this actually have any validation errors recorded?
 
@@ -231,7 +236,7 @@ class _ExtendedValidationError(ValidationError):
         """
         return getattr(self, 'message', None) == _NO_VALIDATION_ERROR
 
-    def capture_validation_error(self):
+    def capture_validation_error(self) -> '_ExtendedValidationErrorCaptureContext':
         return _ExtendedValidationErrorCaptureContext(self)
 
 
@@ -249,10 +254,10 @@ class _ExtendedValidationErrorCaptureContext:
 
 
 class raise_validation_errors:
-    def __init__(self, func=None):
+    def __init__(self, func: Optional[Callable]=None):
         self.func = func
 
-    def __enter__(self):
+    def __enter__(self) -> _ExtendedValidationError:
         try:
             if self.func is not None:
                 self.func()
