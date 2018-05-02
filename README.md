@@ -526,7 +526,7 @@ tree = {
 }
 # the keys at tree['servers'] and tree['servers']['serve_west.mycompany.com']['user_accounts'] will not be camel cased
 output_tree = allianceutils.util.camelize(tree, ignore=['servers', 'servers.*.user_accounts'])
-output_treet == {
+output_tree == {
     "firstName": "Mary",
     "lastName": "Smith",
     "servers": {
@@ -544,8 +544,11 @@ output_treet == {
 
 * `allianceutils.util.camelize(data, ignores)` - underscore case => camel case a json tree of data
 * `allianceutils.util.underscorize(data, ignores)` - camel case => underscore case a json tree of data
-* `allianceutils.util.camel_to_underscore(str)` - underscore case => camel case a string 
+* `allianceutils.util.camel_to_underscore(str)` - underscore case => camel case a string
 * `allianceutils.util.underscore_to_camel(str)` - camel case => underscore case a string
+* It is assumed that words will not begin with numbers:
+    * `zoo_foo99_bar` is okay
+    * `zoo_foo_99bar` will result in an irreversible transformation (`zooFoo99bar` => `zoo_foo99_bar`) 
 
 #### python_to_django_date_format
 
@@ -601,9 +604,12 @@ WEBPACK_LOADER = {
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.4
+    * 0.4.dev
+       * Breaking Changes
+           * Specify behaviour of numbers in underscore/camel case conversion (was undefined before) 
     * 0.4.0
         * Breaking Changes
-            * The interface for `get_autodump_labels` has changed
+           * The interface for `get_autodump_labels` has changed
         * Add `checks.check_autodumpdata` 
 * 0.3
     * 0.3.4

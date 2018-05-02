@@ -81,10 +81,14 @@ class CamelCaseTestCase(SimpleTestCase):
             '__ab__cDef__': '__ab__c_def__',
 
             # Numbers:
-            # This behaviour may change in future
-            'AZ4AYaB': 'az4_a_ya_b',  # should this be az4a_ya_b instead?
+            'AZ4AYaB': 'az4_a_ya_b',
             'AZA1aB': 'aza1a_b',
             '1B': '1_b',
+            'test9': 'test9',
+            'test9foo': 'test9foo',
+            'test9Foo': 'test9_foo',
+            'test9FooBar3Baz': 'test9_foo_bar3_baz',
+
         }
         for test_in, test_out in tests.items():
             self.assertEqual(camel_to_underscore(test_in), test_out)
@@ -101,11 +105,17 @@ class CamelCaseTestCase(SimpleTestCase):
 
             # Numbers:
             # This behaviour may change in future
+            # it is not possible for all of these to be reversible
+            # to be safe, don't begin 'words' with numbers and things should work as expected
             '1_b': '1B',
-            'a_4b': 'a_4b',
-            'aa_4b': 'aa_4b',
-            'a_a_4b': 'aA_4b',
-            '__ab1c_4d6h_g5_k': '__ab1c_4d6hG5K',
+            'a_4b': 'a4b',
+            'aa_4b': 'aa4b',
+            'a_a_4b': 'aA4b',
+            '__ab1c_4d6h_g5_k': '__ab1c4d6hG5K',
+            'test9foo': 'test9foo',
+            'test_9foo': 'test9foo',
+            'test9_foo': 'test9Foo',
+            'test_9_foo': 'test9Foo',
         }
         for test_in, test_out in tests.items():
             self.assertEqual(underscore_to_camel(test_in), test_out)
