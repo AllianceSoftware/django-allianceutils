@@ -255,6 +255,8 @@ class _ExtendedValidationErrorCaptureContext:
 
 class raise_validation_errors:
     def __init__(self, func: Optional[Callable]=None):
+        if func is not None and not callable(func):
+            raise TypeError('raise_validation_errors func is not callable')
         self.func = func
 
     def __enter__(self) -> _ExtendedValidationError:
