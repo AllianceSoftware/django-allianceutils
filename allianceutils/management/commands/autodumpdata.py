@@ -148,20 +148,25 @@ class Command(AppCommand):
                     pass
 
             if models.json:
-                call_command('dumpdata',
+                call_command(
+                    'dumpdata',
                     *models.json,
                     use_natural_foreign_keys=True,
                     use_natural_primary_keys=True,
                     format=options['format'],
                     indent=2,
-                    output=output
+                    output=output,
+                    verbosity=options['verbosity']
                 )
 
             if models.sql:
                 app_models_sql_tables = [apps.get_model(app_model)._meta.db_table for app_model in models.sql]
-                call_command('mysqlquickdump',
-                     model=app_models_sql_tables,
-                     dump=output_sql,
+                call_command(
+                    'mysqlquickdump',
+                    stderr=self.stderr,
+                    model=app_models_sql_tables,
+                    dump=output_sql,
+                    verbosity=options['verbosity']
                 )
 
             # give verbose output if not outputting to stdout

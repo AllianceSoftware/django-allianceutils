@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import shutil
@@ -49,13 +50,22 @@ class TestAutoDumpData(TransactionTestCase):
             {"model": "autodumpdata.publication", "fields": {"isbn": "1122334455"}},
         ]
 
+    def call_command_autodumpdata(self, **kwargs):
+        from allianceutils.management.commands.autodumpdata import Command
+        output_buffer = io.StringIO()
+        try:
+            call_command(Command(stdout=output_buffer), verbosity=0, **kwargs)
+        except Exception:
+            output_buffer.seek(0)
+            print(output_buffer.read())
+            raise
+
     def test_fixture_no_model(self):
         """
         Test autodump with no valid models
         """
-        from django.core.management import call_command
         with TempJSONFile() as filename:
-            call_command('autodumpdata', fixture='foobar', output=filename)
+            self.call_command_autodumpdata(fixture='foobar', output=filename)
             with open(filename, 'r') as f:
                 self.assertEqual('', f.read())
             self.assertEqual(os.path.exists(filename.replace('.json', '.sql')), False)
@@ -65,7 +75,7 @@ class TestAutoDumpData(TransactionTestCase):
         Test autodump normal (+ SQL dump) to explicit filename
         """
         with TempJSONFile() as filename:
-            call_command('autodumpdata', fixture='publication', output=filename)
+            self.call_command_autodumpdata(fixture='publication', output=filename)
     
             # check json output
             with open(filename, 'r') as f:
@@ -86,8 +96,8 @@ class TestAutoDumpData(TransactionTestCase):
             shutil.rmtree(os.path.join(os.path.dirname(__file__), 'fixtures'))
         except FileNotFoundError:
             pass
-        call_command('autodumpdata', fixture='publication')
-        call_command('autodumpdata', fixture='publication')
+        self.call_command_autodumpdata(fixture='publication')
+        self.call_command_autodumpdata(fixture='publication')
 
     @override_settings(SERIALIZATION_MODULES=[])
     def test_no_settings(self):
@@ -95,4 +105,4 @@ class TestAutoDumpData(TransactionTestCase):
         Test autodump with no SERIALIZATION_MODULES defined
         """
         with TempJSONFile() as filename:
-            call_command('autodumpdata', fixture='publication', output=filename)
+            self.call_command_autodumpdata(fixture='publication', output=filename)

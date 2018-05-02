@@ -1,4 +1,4 @@
-from io import StringIO
+import io
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -203,12 +203,18 @@ class AuthTestCase(TestCase):
     def test_superuser_create(self):
         username = 'test_superuser_create'
         email = username + '@example.com'
-        call_command('createsuperuser',
-            interactive=False,
-            username=username,
-            email=email,
-            #stdout=StringIO()
-        )
+        stdout = io.StringIO()
+        try:
+            call_command('createsuperuser',
+                interactive=False,
+                username=username,
+                email=email,
+                stdout=stdout
+            )
+        except Exception:
+            stdout.seek(0)
+            print(stdout.read())
+            raise
 
         # validate that was created correctly
         manager = get_user_model()._default_manager
