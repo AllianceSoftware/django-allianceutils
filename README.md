@@ -653,7 +653,7 @@ WEBPACK_LOADER = {
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.4
-    * 0.4.dev
+    * 0.4.1
        * Breaking Changes
            * Specify behaviour of numbers in underscore/camel case conversion (was undefined before) 
         * Add `raise_validation_errors`
