@@ -8,6 +8,7 @@ class LoginRequiredView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['user'] = {
+            'id': self.request.user.id,
             'username': self.request.user.username,
             'class': self.request.user.__class__.__name__,
         }

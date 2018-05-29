@@ -46,7 +46,10 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
 )
 
-AUTH_USER_MODEL = 'profile_auth.GenericUserProfile'
+AUTH_USER_MODEL = 'profile_auth.User'
+AUTHENTICATION_BACKENDS = [
+    'allianceutils.auth.backends.ProfileModelBackend',
+]
 
 MIDDLEWARE = ()
 

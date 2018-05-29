@@ -313,24 +313,45 @@ class MyModel(NoDeleteModel):
 ```  
 
 #### GenericUserProfile
+Allows you to iterate over a `User` table and have it return the corresponding `Profile` records without generating extra queries
 
-Allows you to iterate over a `User` table and have it return the corresponding `UserProfile` records without any extra queries
-
-Example:
+Minimal example:
 
 ```python
 # ------------------------------------------------------------------
 # base User model 
-class UserManager(django.contrib.auth.models.UserManager):
-    def get_by_natural_key(self, username):
-        return self.get(username=username)
 
+# If you're using django auth instead of authtools, you can just use
+# GenericUserProfileManager instead of having to make your own manager class
+class UserManager(GenericUserProfileManagerMixin, authtools.models.UserManager):
+    pass
 
-class User(django.contrib.auth.models.AbstractUser):
+class User(GenericUserProfile, authtools.models.AbstractEmailUser):
     objects = UserManager()
+    profiles = UserManager(select_related_profiles=True)
+    
+    # these are the tables that should be select_related()/prefetch_related()
+    # to minimise queries
+    related_profile_tables = [
+        'customerprofile',
+        'adminprofile',
+    ]
 
     def natural_key(self):
-        return (self.username,)
+        return (self.email,)
+        
+    # the default implementation will iterate through the related profile tables
+    # and return the first profile it can find. If you have custom logic for
+    # choosing the profile for a user then you can do that here
+    #
+    # You would normally not access this directly but instead use the`.profile`
+    # property that caches the return value of `get_profile()` and works
+    # correctly for both user and profile records  
+	def get_profile(self) -> Model:
+		# custom logic
+		if datetime.now() > datetime.date(2000,1,1):
+			return self
+		return super().get_profile()
 
 
 # ------------------------------------------------------------------
@@ -342,40 +363,49 @@ class CustomerProfile(User):
 class AdminProfile(User):
     admin_details = models.CharField(max_length=191)
 
-
 # ------------------------------------------------------------------
-# Usually you wish to inherit default UserManager functionality
-class GenericUserProfileManager(allianceutils.models.GenericUserProfileManager, User._default_manager.__class__):
-    @classmethod
-    def user_to_profile(cls, user):
-        if hasattr(user, 'customerprofile'):
-            return user.customerprofile
-        elif hasattr(user, 'adminprofile'):
-            return user.adminprofile
-        # user.__class__ = User # this usually works but can sometimes cause problems with badly behaved 3rd party packages  
-        return user
+# Usage:
 
-    @classmethod
-    def select_related_profiles(cls, queryset):
-        return queryset.select_related(
-            'customerprofile',
-            'adminprofile',
-        )
+# a list of User records
+users = list(User.objects.all())
 
-class GenericUserProfile(User):
-    objects = GenericUserProfileManager()
+# a list of Profile records: 1 query
+# If a user has no profile then you get the original User record back
+profiles = list(User.profiles.all())
 
-    class Meta:
-        proxy = True
+# we can explicitly perform the transform on the queryset
+profiles = list(User.objects.select_related_profiles().all())
+
+# joining to profile tables: 1 query
+# This assumes that RetailLocation.company.manager is a FK ref to the user table
+# The syntax is a bit different because we can't modify the query generation
+# in an unrelated table 
+qs = RetailLocation.objects.all()
+qs = User.objects.select_related_profiles(qs, 'company__manager')
+location_managers = list((loc, loc.company.manager.profile) for loc in qs.all())
+```
+
+* There is also an authentication backend that will load profiles instead of just User records
+* If the `User` model has no `get_profile()` method then this backend is equivalent to the built-in django `django.contrib.auth.backends.ModelBackend`
+
+```python
+# ------------------------------------------------------------------
+# Profile authentication middleware
+AUTH_USER_MODEL = 'my_site.User'
+AUTHENTICATION_BACKENDS = [
+    'allianceutils.auth.backends.ProfileModelBackend',
+]
+
+
+def my_view(request):
+	# standard django AuthenticationMiddleware will call the authentication backend
+	profile = request.user  
+	return HttpResponse('Current user is ' + profile.username)
 
 ```
 
-* `GenericUserProfileManager` class cannot know when being constructed what `Model` it will be attached to so you must manually define any model manager(s) you wish to inherit from  
-* If `use_proxy_model` is `False` then the underlying `User` model will be returned from queries instead of the proxy model
-    * `user_to_profile()` can use any logic you wish
-    * `select_related_profiles()` should include all relevant profiles
-* If `settings.AUTH_USER_MODEL is set to GenericUserProfile` then `AuthenticationMiddleware` will cause `request.user` to contain the appropriate profile with no extra queries  
-    * Due to a django limitation, if `AUTH_USER_MODEL` is set then you cannot use `django.contrib.auth.models.User`, you must create your own `User` table (usually based on `AbstractUser`)
+* Limitations:
+    * Profile iteration does not work with `.values()` or `.values_list()`
     
 #### raise_validation_errors
 
@@ -653,8 +683,10 @@ WEBPACK_LOADER = {
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.4
+    * 0.4.dev
+        * `GenericUserProfileManagerMixin` rewritten; interface has changed, now works correctly
     * 0.4.1
-       * Breaking Changes
+        * Breaking Changes
            * Specify behaviour of numbers in underscore/camel case conversion (was undefined before) 
         * Add `raise_validation_errors`
     * 0.4.0
