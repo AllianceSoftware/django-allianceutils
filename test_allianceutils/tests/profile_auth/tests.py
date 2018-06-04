@@ -1,18 +1,24 @@
 import io
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AbstractBaseUser
 from django.core.management import call_command
+from django.forms import IntegerField
 from django.test import Client
 from django.test import override_settings
 from django.test import TestCase
+from django.test.utils import isolate_apps
 from django.urls import reverse
 from django.utils.http import urlencode
 
+from allianceutils.auth.models import GenericUserProfile
+from allianceutils.auth.models import ID_ERROR_PROFILE_RELATED_TABLES
+
 from .models import AdminProfile
 from .models import CustomerProfile
-from .models import GenericUserProfile
 from .models import User
+from .models import UserFKImmediateModel
+from .models import UserFKIndirectModel
 
 
 @override_settings(
@@ -20,7 +26,7 @@ from .models import User
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.contrib.auth.middleware.AuthenticationMiddleware',
     ],
-    PASSWORD_HASHERS = (
+    PASSWORD_HASHERS=(
         'django.contrib.auth.hashers.UnsaltedSHA1PasswordHasher',
     )
 )
@@ -47,50 +53,150 @@ class AuthTestCase(TestCase):
             self.admin2.id: self.admin2,
         }
 
-    @staticmethod
-    def expected_class(profile, use_proxy):
-        expected = profile.__class__
-        if type(profile) is User and use_proxy:
-            expected = GenericUserProfile
-        return expected
+        # also create referrer records
+        # to keep things simple we use the same PKs as FKs
+        # for profile_id in self.profiles:
+        #     UserFKImmediateModel(pk=profile_id, fk=profile_id).save()
+        #     UserFKIndirectModel(pk=profile_id, fk=profile_id).save()
 
-    def test_profile_iterate_noproxy(self):
+    # number of queries if select_related() has been called to include profile tables
+    SELECT_QUERY_COUNT = 1
+
+    # number of queries of prefetch_related() has been called to include profile tables
+    PREFETCH_QUERY_COUNT = 3
+
+    def get_profile_query_count(self, user) -> int:
         """
-        Iterating over users instantiates the correct profile type (original User model)
+        Return the number of expected queries to lookup a User's Profile if uncached
+        """
+        query_counts = {
+            CustomerProfile: 1,
+            AdminProfile: 2,
+            User: 2,
+        }
+        return query_counts[type(self.profiles[user.id])]
+
+    def test_iterate_user(self):
+        """
+        Iterating over users instantiates the correct type
         """
         with self.assertNumQueries(1):
-            qs = GenericUserProfile.objects_noproxy.all().filter(id__gt=0).filter(id__isnull=False)
+            qs = User.objects.all().filter(id__gt=0).filter(id__isnull=False)
             for fetched in qs:
-                self.assertEqual(self.expected_class(self.profiles[fetched.id], use_proxy=False), fetched.__class__)
+                with self.subTest(username=fetched.username):
+                    self.assertEqual(User, type(fetched))
             self.assertEqual(qs.count(), len(self.profiles))
 
-    def test_profile_iterate_proxy(self):
+    def test_iterate_user_profile(self):
         """
-        Iterating over users instantiates the correct profile type (proxied User model)
+        Iterating over users still allows us to (inefficiently) get profiles
+        """
+        qs = User.objects.all().filter(id__gt=0).filter(id__isnull=False)
+        for fetched in qs:
+            with self.subTest(username=fetched.username):
+                self.assertEqual(User, type(fetched))
+                with self.assertNumQueries(self.get_profile_query_count(fetched)):
+                    profile = fetched.profile
+                    self.assertEqual(type(self.profiles[fetched.id]), type(profile))
+
+                    # should be cached
+                    with self.assertNumQueries(0):
+                        profile = fetched.profile
+                        self.assertEqual(type(self.profiles[fetched.id]), type(profile))
+
+        self.assertEqual(qs.count(), len(self.profiles))
+
+    def test_iterate_profile(self):
+        """
+        Iterating over profiles instantiates the correct type
         """
         with self.assertNumQueries(1):
-            qs = GenericUserProfile.objects_proxy.all().filter(id__gt=0).filter(id__isnull=False)
+            # chain some random filters together
+            qs = User.profiles.filter(id__gt=0).filter(id__isnull=False).all()
             for fetched in qs:
-                self.assertEqual(self.expected_class(self.profiles[fetched.id], use_proxy=True), fetched.__class__)
+                with self.subTest(username=fetched.username):
+                    self.assertEqual(type(self.profiles[fetched.id]), type(fetched))
+
+                    profile = fetched.profile
+                    self.assertEqual(type(self.profiles[fetched.id]), type(fetched))
+
             self.assertEqual(qs.count(), len(self.profiles))
 
-    def test_profile_get_noproxy(self):
+    def test_get_user(self):
         """
-        Fetching an individual record instantiates the correct profile (original user model)
+        Fetching an individual user instantiates the correct type
         """
-        for id, record in self.profiles.items():
-            with self.assertNumQueries(1):
-                fetched = GenericUserProfile.objects_noproxy.get(pk=id)
-            self.assertEqual(self.expected_class(self.profiles[fetched.id], use_proxy=False), fetched.__class__)
+        for user_id, original_profile in self.profiles.items():
+            with self.subTest(username=original_profile.username):
+                with self.assertNumQueries(1):
+                    fetched = User.objects.get(pk=user_id)
+                    self.assertEqual(User, type(fetched))
 
-    def test_profile_get_proxy(self):
+                with self.assertNumQueries(1):
+                    fetched = User.objects.all()[0]
+                    self.assertEqual(User, type(fetched))
+
+    def test_get_profile(self):
         """
-        Fetching an individual record instantiates the correct profile (proxied user model)
+        Fetching an individual profile instantiates the correct type
         """
-        for id, record in self.profiles.items():
-            with self.assertNumQueries(1):
-                fetched = GenericUserProfile.objects_proxy.get(pk=id)
-            self.assertEqual(self.expected_class(self.profiles[fetched.id], use_proxy=True), fetched.__class__)
+        for user_id, original_profile in self.profiles.items():
+            with self.subTest(username=original_profile.username):
+                with self.assertNumQueries(1):
+                    fetched = User.profiles.get(pk=user_id)
+                    self.assertEqual(type(original_profile), type(fetched))
+
+                with self.assertNumQueries(1):
+                    fetched = User.profiles.all().filter(pk=user_id)[0]
+                    self.assertEqual(type(original_profile), type(fetched))
+
+    def test_get_profile_profile(self):
+        """
+        User().profile.profile.profile... works
+        """
+        for user_id, original_profile in self.profiles.items():
+            manager_query_counts = (
+                (User.objects,                    User, self.get_profile_query_count(original_profile)),
+                (User.profiles,                   type(original_profile), 0),
+            )
+
+            if type(original_profile) != User:
+                manager_query_counts += (
+                    (type(original_profile).objects, type(original_profile), 0),
+                    (type(original_profile).profiles, type(original_profile), 0),
+                )
+
+            for manager, expected_fetched_type, profile_lookup_query_count in manager_query_counts:
+                with self.subTest(username=original_profile.username, model=manager.model.__name__, manager=manager.name):
+                    # fetch record with no profile lookup
+                    with self.assertNumQueries(1):
+                        fetched = manager.get(pk=user_id)
+                        self.assertEqual(expected_fetched_type, type(fetched))
+
+                    # repeated profile lookups
+                    with self.assertNumQueries(profile_lookup_query_count):
+                        profile = fetched.profile.profile.profile.profile
+                        self.assertEqual(type(original_profile), type(profile))
+
+                    # repeated profile lookups, should be cached
+                    with self.assertNumQueries(0):
+                        profile = fetched.profile.profile.profile.profile
+                        self.assertEqual(type(original_profile), type(profile))
+
+                    # fetch record with no profile lookup (alternate method)
+                    with self.assertNumQueries(1):
+                        fetched = manager.filter(pk=user_id)[0]
+                        self.assertEqual(expected_fetched_type, type(fetched))
+
+                    # repeated profile lookups, should be cached
+                    with self.assertNumQueries(profile_lookup_query_count):
+                        profile = fetched.profile.profile.profile.profile
+                        self.assertEqual(type(original_profile), type(profile))
+
+                    # repeated profile lookups, should be cached
+                    with self.assertNumQueries(0):
+                        profile = fetched.profile.profile.profile.profile
+                        self.assertEqual(type(original_profile), type(profile))
 
     def test_inherit_user_manager(self):
         """
@@ -98,17 +204,17 @@ class AuthTestCase(TestCase):
         """
         manager = User.objects
         user = manager.create_user(username='user99', email='user99@example.com', password='abc123')
-        self.assertEqual(user.__class__, User)
+        self.assertEqual(type(user), User)
         self.assertIsNotNone(manager.get_by_natural_key('user99'))
 
-        manager = GenericUserProfile.objects_noproxy
+        manager = User.objects
         user = manager.create_user(username='user100', email='user100@example.com', password='abc123')
-        self.assertEqual(user.__class__, GenericUserProfile)
+        self.assertEqual(type(user), User)
         self.assertIsNotNone(manager.get_by_natural_key('user100'))
 
-        manager = GenericUserProfile.objects_proxy
+        manager = User.profiles
         user = manager.create_user(username='user101', email='user101@example.com', password='abc123')
-        self.assertEqual(user.__class__, GenericUserProfile)
+        self.assertEqual(type(user), User)
         self.assertIsNotNone(manager.get_by_natural_key('user101'))
 
     def test_login(self):
@@ -118,35 +224,36 @@ class AuthTestCase(TestCase):
         client = Client()
 
         for user in (self.user1, self.admin1, self.customer1):
-            # protected page should redirect to login page
-            response = client.get(
-                path=reverse('profile_auth:login_required'),
-                follow=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertContains(response, 'This is a login page')
+            with self.subTest(username=user.username):
+                # protected page should redirect to login page
+                response = client.get(
+                    path=reverse('profile_auth:login_required'),
+                    follow=True)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'This is a login page')
 
-            login_page_url = response.redirect_chain[-1][0]
+                login_page_url = response.redirect_chain[-1][0]
 
-            # login page should fail with a bad password
-            response = client.post(
-                path=login_page_url,
-                data={'username': user.username, 'password': 'badpassword'})
-            self.assertEqual(response.status_code, 200)
-            self.assertContains(response, 'This is a login page')
+                # login page should fail with a bad password
+                response = client.post(
+                    path=login_page_url,
+                    data={'username': user.username, 'password': 'badpassword'})
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'This is a login page')
 
-            # login page should succeed with a good password
-            response = client.post(
-                path=login_page_url,
-                data={'username': user.username, 'password': 'abc123'},
-                follow=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertContains(response, 'This is a protected page')
-            self.assertContains(response, 'Username is %s' % user.username)
+                # login page should succeed with a good password
+                response = client.post(
+                    path=login_page_url,
+                    data={'username': user.username, 'password': 'abc123'},
+                    follow=True)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'This is a protected page')
+                self.assertContains(response, 'Username is %s' % user.username)
 
-            # logout for the next user
-            response = client.get(reverse('logout'))
-            self.assertEqual(response.status_code, 200)
-            self.assertContains(response, 'This is a logout page')
+                # logout for the next user
+                response = client.get(reverse('logout'))
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'This is a logout page')
 
     def test_middleware(self):
         """
@@ -155,23 +262,25 @@ class AuthTestCase(TestCase):
         client = Client()
 
         for user in (self.user1, self.admin1, self.customer1):
-            # login page should succeed
-            response = client.post(
-                path=reverse('login') + '?' + urlencode({'next': reverse('profile_auth:login_required')}),
-                data={'username': user.username, 'password': 'abc123'},
-                follow=True)
-            self.assertEqual(response.status_code, 200)
-            self.assertContains(response, 'This is a protected page')
-            self.assertContains(response, 'Username is %s' % user.username)
-            self.assertContains(response, 'User class is %s' % user.__class__.__name__)
+            with self.subTest(username=user.username):
+                # login page should succeed
+                response = client.post(
+                    path=reverse('login') + '?' + urlencode({'next': reverse('profile_auth:login_required')}),
+                    data={'username': user.username, 'password': 'abc123'},
+                    follow=True)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'This is a protected page')
+                self.assertEqual(response.context['user']['id'], user.id)
+                self.assertEqual(response.context['user']['username'], user.username)
+                self.assertEqual(response.context['user']['class'], type(user).__name__)
 
-            # logout for the next user
-            response = client.get(reverse('logout'))
-            self.assertEqual(response.status_code, 200)
-            self.assertContains(response, 'This is a logout page')
+                # logout for the next user
+                response = client.get(reverse('logout'))
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'This is a logout page')
 
     def _test_exception(self, exception_name, func):
-        generic_exception = getattr(GenericUserProfile, exception_name)
+        generic_exception = getattr(User, exception_name)
         user_exception = getattr(User, exception_name)
         self.assertTrue(issubclass(generic_exception, user_exception))
 
@@ -179,8 +288,8 @@ class AuthTestCase(TestCase):
             (User, User.objects),
             (AdminProfile, AdminProfile.objects),
             (CustomerProfile, CustomerProfile.objects),
-            (GenericUserProfile, GenericUserProfile.objects_noproxy),
-            (GenericUserProfile, GenericUserProfile.objects_proxy),
+            (User, User.objects),
+            (User, User.profiles),
         )
 
         for model, manager in tests:
@@ -195,7 +304,7 @@ class AuthTestCase(TestCase):
                 func(manager)
 
     def test_exception_doesnotexist(self):
-        self._test_exception('DoesNotExist', lambda mgr: mgr.get_by_natural_key('thisshoudlnotexist'))
+        self._test_exception('DoesNotExist', lambda mgr: mgr.get_by_natural_key('thisshouldnotexist'))
 
     def test_exception_multipleobjectsreturned(self):
         self._test_exception('MultipleObjectsReturned', lambda mgr: mgr.get(username__isnull=False))
@@ -224,3 +333,141 @@ class AuthTestCase(TestCase):
 
         user = manager.get_by_natural_key(username)
         self.assertEqual(user.email, email)
+
+    def test_fk_immediate(self):
+        for user_id, original_profile in self.profiles.items():
+            with self.subTest(username=original_profile.username):
+                # can assign any User or subclass to the FK
+                referrer = UserFKImmediateModel(fk_id=user_id)
+                referrer.save()
+
+                # when reloaded, returns the user class
+                with self.assertNumQueries(1):
+                    referrer = UserFKImmediateModel.objects.get(pk=referrer.id)
+                with self.assertNumQueries(1):
+                    fetched_user = referrer.fk
+                self.assertIs(User, type(fetched_user))
+
+                # extra queries to get the profile
+                with self.assertNumQueries(self.get_profile_query_count(fetched_user)):
+                    profile = fetched_user.profile
+                self.assertIs(type(original_profile), type(profile))
+
+    def test_fk_indirect(self):
+        for user_id, original_profile in self.profiles.items():
+            with self.subTest(username=original_profile.username):
+                # can assign any User or subclass to the FK
+                referrer_middle = UserFKImmediateModel(fk_id=user_id)
+                referrer_middle.save()
+
+                referrer = UserFKIndirectModel(fk_id=referrer_middle.id)
+                referrer.save()
+
+                # when reloaded, returns the user class
+                with self.assertNumQueries(1):
+                    referrer = UserFKIndirectModel.objects.get(pk=referrer.id)
+                with self.assertNumQueries(2):
+                    fetched_user = referrer.fk.fk
+                self.assertIs(User, type(fetched_user))
+
+                # extra queries to get the profile
+                with self.assertNumQueries(self.get_profile_query_count(fetched_user)):
+                    profile = fetched_user.profile
+                self.assertIs(type(original_profile), type(profile))
+
+    def test_select_prefetch_related(self):
+        for user_id, original_profile in self.profiles.items():
+            with self.subTest(username=original_profile.username):
+                referrer_middle = UserFKImmediateModel(fk_id=user_id)
+                referrer_middle.save()
+
+                referrer = UserFKIndirectModel(fk_id=referrer_middle.id)
+                referrer.save()
+
+                def select_related(qs):
+                    return User.objects.select_related_profiles(qs, 'fk__fk')
+
+                def prefetch_related(qs):
+                    return User.objects.prefetch_related_profiles(qs, 'fk__fk')
+
+                operation_query_counts = (
+                    # (lookup func, query count for SELECT, query count to get profile)
+                    (lambda qs: qs.select_related('fk__fk')     .get(pk=referrer.id), 1, self.get_profile_query_count(original_profile)),
+                    (lambda qs: select_related(qs)              .get(pk=referrer.id), 1, 0),
+                    (lambda qs: qs.prefetch_related('fk__fk')   .get(pk=referrer.id), 3, self.get_profile_query_count(original_profile)),
+                    (lambda qs: prefetch_related(qs)            .get(pk=referrer.id), 5, 0),
+                )
+
+                for i, (op_func, select_query_count, profile_query_count) in enumerate(operation_query_counts):
+                    with self.subTest(i):
+                        with self.assertNumQueries(select_query_count):
+                            referrer = op_func(UserFKIndirectModel.objects)
+                        with self.assertNumQueries(0):
+                            fetched_user = referrer.fk.fk
+                        self.assertIs(User, type(fetched_user))
+
+                        with self.assertNumQueries(profile_query_count):
+                            profile = fetched_user.profile
+                        with self.assertNumQueries(0):
+                            profile = profile.profile.profile
+                        self.assertIs(type(original_profile), type(profile))
+
+    def test_select_prefetch_related_profile(self):
+        # select/prefetch_related_profiles() on User means no extra queries
+        # select/prefetch_related_profiles() on something that's already a profile is a nooop
+
+        model_tests = (
+            # (model, query count for select_related(), query count for prefetch_related())
+            (User, self.SELECT_QUERY_COUNT, self.PREFETCH_QUERY_COUNT),
+            (AdminProfile, 1, 1),
+            (CustomerProfile, 1, 1),
+        )
+
+        for model, select_query_count, prefetch_query_count in model_tests:
+            with self.subTest(model=model.__name__):
+                with self.assertNumQueries(select_query_count):
+                    profiles = [u.profile for u in model.objects.select_related_profiles()]
+
+                with self.assertNumQueries(prefetch_query_count):
+                    profiles = [u.profile for u in model.objects.prefetch_related_profiles()]
+
+    @isolate_apps('test_allianceutils.tests.profile_auth')
+    def test_missing_related_profile_tables(self):
+        class BadUserModel(GenericUserProfile, AbstractBaseUser):
+            f = IntegerField()
+
+            def get_full_name(self):
+                return self.username
+
+            def get_short_name(self):
+                return self.username
+
+        class GoodUserModel(GenericUserProfile, AbstractBaseUser):
+            f = IntegerField()
+
+            def get_full_name(self):
+                return self.username
+
+            def get_short_name(self):
+                return self.username
+
+            related_profile_tables = []
+
+        errors_bad_user = BadUserModel.check()
+        errors_good_user = GoodUserModel.check()
+
+        self.assertEqual([err.id for err in errors_bad_user], [ID_ERROR_PROFILE_RELATED_TABLES, ID_ERROR_PROFILE_RELATED_TABLES])
+        self.assertEqual(errors_good_user, [])
+
+    def test_values(self):
+        # You're not allowed to call values on a profile list
+        qs = User.profiles.select_related_profiles()
+        with self.assertRaises(ValueError):
+            qs.values()
+
+        with self.assertRaises(ValueError):
+            qs.values_list()
+
+    def test_count(self):
+        # we don't do anything special with aggregate queries; they should work as normal
+        self.assertEqual(User.profiles.count(), len(self.profiles))

@@ -15,8 +15,6 @@ from django.db.models import Manager
 from django.db.models import Model
 from django.db.models import Q
 from django.db.models import QuerySet
-from django.db.models.manager import BaseManager
-from django.db.models.query import ModelIterable
 
 
 def add_group_permissions(group_id: int, codenames: List[str]):
@@ -98,6 +96,7 @@ class NoDeleteModel(Model):
     class Meta:
         abstract = True
 
+# -------------------------------------------------------------------------------------------------------------------
 
 # We need a placeholder to indicate that a ValidationError actually has no error; we use this
 class _NO_VALIDATION_ERROR:
@@ -274,110 +273,4 @@ class raise_validation_errors:
             if not self.ve._is_empty():
                 raise self.ve
 
-
-# ---------------------------------------------------------------------------------------------------------------------
-
-
-class _GenericUserProfileIterable(ModelIterable):
-    """
-    The iterator that transforms user records into profiles
-    """
-    def __iter__(self) -> Iterable[Model]:
-        for user in super().__iter__():
-            yield self.queryset.user_to_profile(user)
-
-
-class _GenericUserProfileQuerySet(object):
-    """
-    This is used to protect against GenericUserProfileQuerySet appearing multiple times in the queryset ancestor list
-    """
-    pass
-
-
-class _DeferredResolveConcreteModel(object):
-    """
-    When model Managers are initialised there is no way to know whether a model is a proxy or not;
-    this returns the concrete model when it becomes available
-    """
-    def __get__(self, manager: Manager, cls: type=None) -> Manager:
-        if manager._concrete_model is None:
-            manager._concrete_model = manager._original_model
-        return manager._concrete_model
-
-    def __set__(self, manager: Manager, model: Model):
-        manager._original_model = model
-        manager._concrete_model = None
-
-
-class GenericUserProfileManager(BaseManager):
-    """
-    Polymorphic manager that uses user_to_profile() to
-    """
-
-    """ Set this in descendant classes to pass the proxy model rather than the concrete model to user_to_profile() """
-    model = _DeferredResolveConcreteModel()
-
-    def __init__(self) -> None:
-        # We have to jump through some hoops because the QuerySet creation is hardcoded in multiple
-        # places in BaseManager -- eg _clone() -- so we can't simply add extra constructor params,
-        # and the we don't even know what model we're going to be attached to until contribute_to_class()
-        super().__init__()
-
-        # wipe the default queryset class to make sure it's not used before
-        # contribute_to_class() sets it to the class we actually want
-        self._original_queryset_class = self._queryset_class
-        self._queryset_class = None
-
-    def get_queryset(self, *args, **kwargs) -> QuerySet:
-        qs = super().get_queryset(*args, **kwargs)
-        return self.select_related_profiles(qs)
-
-    def contribute_to_class(self, model: Model, name):
-        # It is only now that we can know what model we were attached to and what QuerySet we should extend
-        #
-        # We can't use multiple inheritance because we get the error:
-        #   Error when calling the metaclass bases metaclass conflict: the metaclass of a derived class
-        #   must be a (non-strict) subclass of the metaclasses of all its bases
-        #
-        # Instead we have to dynamically create a new QuerySet class (this happens once at Model class creation)
-
-        # Sanity check: if this doesn't pass then we're probably extending something that wasn't created
-        # using BaseManager.from_queryset(); need extra tests to check that this works
-        assert not isinstance(self._queryset_class, _GenericUserProfileQuerySet), \
-            'GenericUserProfileQuerySet can only appear once in the ancestor list'
-
-        assert hasattr(self, '_queryset_class')
-        assert not hasattr(self._queryset_class, '_user_to_profile')
-
-        # Only now do we know what queryset we're supposed to be extending
-        class GenericUserProfileQuerySet(_GenericUserProfileQuerySet, self._original_queryset_class):
-
-            user_to_profile = self.user_to_profile
-            _original_model = model
-
-            def __init__(self, model: Optional[Model] = None, *args, **kwargs) -> None:
-                # We can't determine this at class construction time because _meta.concrete_model is not yet set
-                # We also can't add any parameters to the constructor because self._clone() hardcodes the creation
-                #  of a new queryset so we have to ensure that we only dereference the proxy model at most once
-                # This will do the wrong thing if you use multiple inheritance from a GenericUserProfileManager; don't do that
-                super().__init__(model=model, *args, **kwargs)
-                self._iterable_class = _GenericUserProfileIterable
-
-        # Replace the normal _queryset_class with a new one
-        self._queryset_class = GenericUserProfileQuerySet
-
-        super().contribute_to_class(model, name)
-
-    @classmethod
-    def user_to_profile(cls, user: Model) -> Model:
-        """
-        Takes a User record and returns the relevant associated Profile object
-        """
-        raise NotImplementedError('GenericUserProfileManagers need to implement user_to_profile()')
-
-    @classmethod
-    def select_related_profiles(cls, queryset: QuerySet) -> QuerySet:
-        """
-        Takes a queryset and adds select_related() to that user_to_profile() doens't trigger extra queries
-        """
-        raise NotImplementedError('GenericUserProfileManagers need to implement select_related_profiles()')
+# -------------------------------------------------------------------------------------------------------------------
