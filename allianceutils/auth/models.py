@@ -66,10 +66,13 @@ class GenericUserProfileQuerySet(QuerySet):
         (each dict would have different fields, would lead to subtle bugs)
 
         This might also be caused if _iterable_class is overwritten with something that
-        does not extend GenericUserProfileIterable (also a dev mistake)
+        does not extend GenericUserProfileIterable (also a dev mistake).
+
+        This is not a hard restriction and is only intended to catch developer mistakes; this constraint may
+        be relaxed in future when the need arises.
         """
         if self._do_iterate_profiles and not issubclass(self._iterable_class, GenericUserProfileIterable):
-            raise ValueError('Bad _iterable_class (did you try to use values() or values_list() with profiles()?)')
+            raise ValueError('Bad _iterable_class. (Trying to use values()/values_list() with profiles()? This has not been implemented yet)')
 
     def _clone(self, **kwargs):
         qs = super()._clone(**kwargs)
