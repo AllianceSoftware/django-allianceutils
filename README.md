@@ -683,7 +683,7 @@ WEBPACK_LOADER = {
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.4
-    * 0.4.dev
+    * 0.4.2
         * `GenericUserProfileManagerMixin` rewritten; interface has changed, now works correctly
     * 0.4.1
         * Breaking Changes
