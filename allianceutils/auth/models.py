@@ -40,7 +40,7 @@ class GenericUserProfileQuerySet(QuerySet):
 
     def profiles(self) -> QuerySet:
         """
-        Return a queryset that will when iterated will yield User profiles instead of User records
+        Return a queryset that when iterated will yield User profiles instead of User records
         """
         qs = self.all()
         qs._do_iterate_profiles = True
