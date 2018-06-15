@@ -40,6 +40,7 @@ INSTALLED_APPS = (
     'test_allianceutils.tests.profile_auth',
     'test_allianceutils.tests.serializers',
     'test_allianceutils.tests.checks_db_constraints',
+    'test_allianceutils.tests.document_reverse_accessors',
 
     'django_db_constraints',
 
