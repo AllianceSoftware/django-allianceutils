@@ -76,11 +76,13 @@ class Command(BaseCommand):
                 for node in ast.walk(tree):
                     if isinstance(node, ast.ClassDef) and node.name in fields_by_model.keys():
                         # add comments after the last known model attribute
-                        lineno = list(filter(self.is_model_attribute, node.body))[-1].lineno
-                        patches[lineno] = [
-                            self.create_comment(field)
-                            for field in sorted(fields_by_model[node.name], key=lambda f: f.get_accessor_name())
-                        ]
+                        model_attributes = list(filter(self.is_model_attribute, node.body))
+                        if len(model_attributes) > 0:
+                            lineno = model_attributes[-1].lineno
+                            patches[lineno] = [
+                                self.create_comment(field)
+                                for field in sorted(fields_by_model[node.name], key=lambda f: f.get_accessor_name())
+                            ]
 
                 # mash em up
                 for lineno, lines in patches.items():
