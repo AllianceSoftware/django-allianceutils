@@ -1,4 +1,5 @@
 from django.apps import apps
+from django.apps import AppConfig
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from isort import SortImports
@@ -36,7 +37,7 @@ class OptionalAppCommand(BaseCommand):
     def get_default_app_configs(self):
         return filter(self.is_internal_app, apps.get_app_configs())
 
-    def is_internal_app(self, app_config):
+    def is_internal_app(self, app_config: AppConfig):
         """
         Use isort's way of determining whether an app is "first party" or otherwise
         """
@@ -45,7 +46,7 @@ class OptionalAppCommand(BaseCommand):
         # 'isort:skip_file'
         return SortImports(file_contents='').place_module(app_config.__module__) == 'FIRSTPARTY'
 
-    def handle_app_config(self, app_config, **options):
+    def handle_app_config(self, app_config: AppConfig, **options):
         """
         Perform the command's actions for app_config, an AppConfig instance
         corresponding to an application label given on the command line.

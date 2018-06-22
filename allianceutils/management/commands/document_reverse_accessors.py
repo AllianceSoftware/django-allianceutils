@@ -3,8 +3,13 @@ import difflib
 import inspect
 from itertools import groupby
 import re
+from typing import Iterable
+from typing import Type
+from typing import Union
 
 from django.apps import apps
+from django.db.models import Model
+from django.db.models.fields.reverse_related import ForeignObjectRel
 
 from .base import OptionalAppCommand
 
@@ -67,7 +72,7 @@ class Command(OptionalAppCommand):
         }
         return fields_by_model_by_source_file
 
-    def generate_comments(self, fields_by_model_by_source_file):
+    def generate_comments(self, fields_by_model_by_source_file: dict):
         output = {}
         for (source_file, fields_by_model) in fields_by_model_by_source_file.items():
             with open(source_file, 'r') as source_code:
@@ -97,13 +102,13 @@ class Command(OptionalAppCommand):
                 output[source_file] = source_lines
         return output
 
-    def resolve_name_or_attr(self, func):
+    def resolve_name_or_attr(self, func: Union[ast.Attribute, ast.Name]):
         if isinstance(func, ast.Attribute):
             return func.attr
         else:
             return func.id
 
-    def is_model_attribute(self, statement):
+    def is_model_attribute(self, statement: ast.stmt):
         """
         Guess that the statement is a model field attribute by assuming so if
         it's a function call and the function ends with 'Field'
@@ -112,7 +117,7 @@ class Command(OptionalAppCommand):
             isinstance(statement.value, ast.Call) and \
             re.match(r'(ForeignKey|\w+Field)', self.resolve_name_or_attr(statement.value.func))
 
-    def create_comment(self, field):
+    def create_comment(self, field: ForeignObjectRel):
         return self.COMMENT_FORMAT.format(
             field.get_accessor_name(),
             field.remote_field.model.__module__,
@@ -120,13 +125,13 @@ class Command(OptionalAppCommand):
             field.remote_field.name,
         )
 
-    def preview_output(self, output):
+    def preview_output(self, output: dict):
         for source_file, lines in output.items():
             with open(source_file, 'r') as source_code:
                 diff = difflib.unified_diff(source_code.readlines(), lines, fromfile=source_file, tofile=source_file)
                 self.stdout.writelines(diff)
 
-    def apply_output(self, output):
+    def apply_output(self, output: dict):
         for source_file, lines in output.items():
             with open(source_file, 'w') as source_code:
                 source_code.writelines(lines)
