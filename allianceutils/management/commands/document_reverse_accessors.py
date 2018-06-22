@@ -90,8 +90,10 @@ class Command(OptionalAppCommand):
                             ]
 
                 # mash em up
+                offset = 0
                 for lineno, lines in patches.items():
-                    source_lines[lineno:lineno] = ['\n'] + lines
+                    source_lines[lineno+offset:lineno+offset] = ['\n'] + lines
+                    offset += len(lines) + 1
                 output[source_file] = source_lines
         return output
 
