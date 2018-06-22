@@ -9,7 +9,7 @@ from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
-    COMMENT_REGEX = '    # \w+ -> [\w\.]+$'
+    COMMENT_REGEX = '^    # \w+ -> [\w\.]+$'
     COMMENT_FORMAT = '    # {} -> {}.{}.{}\n'
 
     help = "Document reverse accessors on models."
