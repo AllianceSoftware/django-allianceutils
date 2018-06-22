@@ -48,10 +48,9 @@ class Command(BaseCommand):
             for model, model_fields in groupby(sorted(related_fields, key=lambda f: f.model.__name__), key=lambda f: f.model)
         }
 
-        get_source_file = lambda model: inspect.getsourcefile(model)
         models_by_source_file = {
             source_file: list(models)
-            for source_file, models in groupby(sorted(fields_by_model.keys(), key=get_source_file), key=get_source_file)
+            for source_file, models in groupby(sorted(fields_by_model.keys(), key=inspect.getsourcefile), key=inspect.getsourcefile)
         }
 
         fields_by_model_by_source_file = {
