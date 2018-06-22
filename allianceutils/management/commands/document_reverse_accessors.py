@@ -21,10 +21,11 @@ class Command(OptionalAppCommand):
 
     def handle(self, *app_labels, **options):
         if len(app_labels) > 0:
-            models = []
-            for app_label in app_labels:
-                app_config = apps.get_app_config(app_label)
-                models += app_config.get_models()
+            models = [
+                model
+                for app_label in app_labels
+                for model in apps.get_app_config(app_label).get_models()
+            ]
         else:
             models = [
                 model
