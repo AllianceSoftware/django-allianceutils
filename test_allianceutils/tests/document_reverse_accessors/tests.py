@@ -9,22 +9,25 @@ class TestDocumentReverseAccessors(TestCase):
     def test_command_preview_output(self):
         out = StringIO()
         call_command('document_reverse_accessors', 'document_reverse_accessors', '-p', stdout=out)
-        self.assertIn('''\
-@@ -3,6 +3,8 @@
+        self.assertTrue(re.sub(r'^ $', '', out.getvalue(), flags=re.MULTILINE).endswith('''\
+@@ -5,7 +5,9 @@
 
  class Person(models.Model):
-     name = models.CharField(max_length=255)
+     name = db.models.CharField(max_length=255)
+-    # non_existent -> test_allianceutils.tests.document_reverse_accessors.models.NonExistent.model_field
++
 +    # auditors -> test_allianceutils.tests.document_reverse_accessors.models.Task.auditor
 +    # reviewers -> test_allianceutils.tests.document_reverse_accessors.models.Task.reviewer
      # task_set -> test_allianceutils.tests.document_reverse_accessors.models.Task.person
 
-
-@@ -11,6 +13,7 @@
-     person = models.ForeignKey('Person', on_delete=models.CASCADE)
+     non_field_attribute = True
+@@ -23,6 +25,8 @@
      reviewer = models.ForeignKey('Person', on_delete=models.CASCADE, related_name='reviewers')
      auditor = models.ForeignKey('Person', on_delete=models.CASCADE, related_name='auditors')
-+    # items -> test_allianceutils.tests.document_reverse_accessors.models.TaskItem.task
 
++    # items -> test_allianceutils.tests.document_reverse_accessors.models.TaskItem.task
++
 
  class TaskItem(models.Model):
-''', re.sub(r'^ $', '', out.getvalue(), flags=re.MULTILINE))
+     name = models.CharField(max_length=255)
+'''))
