@@ -25,8 +25,12 @@ class Command(BaseCommand):
                 app_config = apps.get_app_config(app_label)
                 models += app_config.get_models()
         else:
-            # todo: exclude 3rd party & core models
-            models = apps.get_models()
+            app_configs = filter(self.is_internal_app, apps.get_app_configs())
+            models = [
+                model
+                for app_config in app_configs
+                for model in app_config.get_models()
+            ]
 
         fields_by_model_by_source_file = self.determine_fields_by_model_by_file(models)
         output = self.generate_comments(fields_by_model_by_source_file)
@@ -36,7 +40,16 @@ class Command(BaseCommand):
         else:
             self.apply_output(output)
 
-    def determine_fields_by_model_by_file(self, models):
+    def is_internal_app(self, app_config):
+        """
+        Use isort's way of determining whether an app is "first party" or otherwise
+        """
+        # SortImports is not instantiated correctly for use with place_module()
+        # unless file_contents is passed with something that is not None or
+        # 'isort:skip_file'
+        return SortImports(file_contents='').place_module(app_config.__module__) == 'FIRSTPARTY'
+
+    def determine_fields_by_model_by_file(self, models: Iterable[Type[Model]]):
         related_fields = [
             field
             for model in models
