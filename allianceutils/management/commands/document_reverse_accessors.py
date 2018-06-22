@@ -9,6 +9,9 @@ from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
+    COMMENT_REGEX = '    # \w+ -> [\w\.]+$'
+    COMMENT_FORMAT = '    # {} -> {}.{}.{}\n'
+
     help = "Document reverse accessors on models."
 
     def add_arguments(self, parser):
@@ -67,7 +70,7 @@ class Command(BaseCommand):
                 source_lines = [
                     line
                     for line in source_code.readlines()
-                    if not re.match('    # \w+ -> [\w\.]+$', line)
+                    if not re.match(self.COMMENT_REGEX, line)
                 ]
                 patches = {}
                 tree = ast.parse(''.join(source_lines))
@@ -87,7 +90,7 @@ class Command(BaseCommand):
         return output
 
     def create_comment(self, field):
-        return '    # {} -> {}.{}.{}\n'.format(
+        return self.COMMENT_FORMAT.format(
             field.get_accessor_name(),
             field.remote_field.model.__module__,
             field.remote_field.model.__name__,
