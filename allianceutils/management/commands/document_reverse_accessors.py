@@ -75,8 +75,8 @@ class Command(BaseCommand):
                 tree = ast.parse(''.join(source_lines))
                 for node in ast.walk(tree):
                     if isinstance(node, ast.ClassDef) and node.name in fields_by_model.keys():
-                        # get the line number of the last assignment which is probably a model definition
-                        lineno = list(filter(lambda exp: isinstance(exp, ast.Assign), node.body))[-1].lineno
+                        # add comments after the last known model attribute
+                        lineno = list(filter(self.is_model_attribute, node.body))[-1].lineno
                         patches[lineno] = [
                             self.create_comment(field)
                             for field in sorted(fields_by_model[node.name], key=lambda f: f.get_accessor_name())
@@ -87,6 +87,21 @@ class Command(BaseCommand):
                     source_lines[lineno:lineno] = ['\n'] + lines
                 output[source_file] = source_lines
         return output
+
+    def resolve_name_or_attr(self, func):
+        if isinstance(func, ast.Attribute):
+            return func.attr
+        else:
+            return func.id
+
+    def is_model_attribute(self, statement):
+        """
+        Guess that the statement is a model field attribute by assuming so if
+        it's a function call and the function ends with 'Field'
+        """
+        return isinstance(statement, ast.Assign) and \
+            isinstance(statement.value, ast.Call) and \
+            re.match(r'(ForeignKey|\w+Field)', self.resolve_name_or_attr(statement.value.func))
 
     def create_comment(self, field):
         return self.COMMENT_FORMAT.format(
