@@ -84,7 +84,7 @@ class Command(BaseCommand):
 
                 # mash em up
                 for lineno, lines in patches.items():
-                    source_lines[lineno:lineno] = lines
+                    source_lines[lineno:lineno] = ['\n'] + lines
                 output[source_file] = source_lines
         return output
 
