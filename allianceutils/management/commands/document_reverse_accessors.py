@@ -5,30 +5,30 @@ from itertools import groupby
 import re
 
 from django.apps import apps
-from django.core.management.base import BaseCommand
+
+from .base import OptionalAppCommand
 
 
-class Command(BaseCommand):
+class Command(OptionalAppCommand):
     COMMENT_REGEX = '^    # \w+ -> [\w\.]+$'
     COMMENT_FORMAT = '    # {} -> {}.{}.{}\n'
 
     help = "Document reverse accessors on models."
 
     def add_arguments(self, parser):
-        parser.add_argument('app_label', nargs='*')
+        super().add_arguments(parser)
         parser.add_argument('-p', '--preview', dest='preview', action='store_true', default=False, help='Preview the output in patch format')
 
-    def handle(self, *args, **options):
-        if len(options['app_label']) > 0:
+    def handle(self, *app_labels, **options):
+        if len(app_labels) > 0:
             models = []
-            for app_label in options['app_label']:
+            for app_label in app_labels:
                 app_config = apps.get_app_config(app_label)
                 models += app_config.get_models()
         else:
-            app_configs = filter(self.is_internal_app, apps.get_app_configs())
             models = [
                 model
-                for app_config in app_configs
+                for app_config in self.get_default_app_configs()
                 for model in app_config.get_models()
             ]
 
@@ -39,15 +39,6 @@ class Command(BaseCommand):
             self.preview_output(output)
         else:
             self.apply_output(output)
-
-    def is_internal_app(self, app_config):
-        """
-        Use isort's way of determining whether an app is "first party" or otherwise
-        """
-        # SortImports is not instantiated correctly for use with place_module()
-        # unless file_contents is passed with something that is not None or
-        # 'isort:skip_file'
-        return SortImports(file_contents='').place_module(app_config.__module__) == 'FIRSTPARTY'
 
     def determine_fields_by_model_by_file(self, models: Iterable[Type[Model]]):
         related_fields = [
