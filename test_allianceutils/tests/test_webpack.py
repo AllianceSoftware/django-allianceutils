@@ -74,7 +74,7 @@ def make_settings():
     return webpack_loader_settings
 
 
-@unittest.skipIf(webpack_loader is None, 'webpack_loader not installed')
+@unittest.skipIf(webpack_loader is None, 'webpack_loader not installed, skipping tests')
 @override_settings(**make_settings())
 class AllianceBundleTestCase(SimpleTestCase):
 

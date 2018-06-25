@@ -1,3 +1,4 @@
+import io
 import subprocess
 
 import django.apps
@@ -80,7 +81,18 @@ class Command(django.core.management.base.BaseCommand):
             self.stdout.write('%s %s\n' % (self.style.NOTICE('Executing'), ' '.join(cmd)))
 
         with open(sql_file, 'wb') as f:
-            returncode = subprocess.call(cmd, stdout=f, stderr=self.stderr)
+            # in django >=2.0 the stderr wrapper don't have a fileno() attribute
+            # see https://stackoverflow.com/a/48392466/6653190
+            # unwrap stderr until we find something that supports fileno()
+            wrapped_stderr = self.stderr
+            fileno = None
+            while fileno is None and hasattr(wrapped_stderr, '_out'):
+                wrapped_stderr = wrapped_stderr._out
+                try:
+                    fileno = wrapped_stderr.fileno()
+                except io.UnsupportedOperation:
+                    pass
+            returncode = subprocess.call(cmd, stdout=f, stderr=wrapped_stderr)
             if returncode != 0:
                 self.stdout.write(self.style.ERROR('Error executing mysqldump (return code %s)\n' % returncode))
 

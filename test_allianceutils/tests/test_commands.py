@@ -10,7 +10,7 @@ except ImportError:
     logging_tree = None
 
 
-@unittest.skipIf(logging_tree is None, 'logging_tree is not installed')
+@unittest.skipIf(logging_tree is None, 'logging_tree is not installed, skipping tests')
 class PrintLoggingTestCase(SimpleTestCase):
 
     def test_print_logging(self):

@@ -1,6 +1,8 @@
 import os
 import tempfile
+import unittest
 
+import django
 from django.core import management
 from django.test import TransactionTestCase
 
@@ -78,6 +80,8 @@ class TestNaturalKeysAndInheritance(TransactionTestCase):
         """
         self.dump_and_load()
 
+    @unittest.skipIf(django.VERSION >= (2, 0),
+        "django 2.0 allows natural_primary_keys=True, natural_foreign_keys=False which makes no sense and doesn't work, skipping test")
     def test_primary(self):
         """
         Test json_orminheritancefix natural PK
@@ -94,5 +98,7 @@ class TestNaturalKeysAndInheritance(TransactionTestCase):
         """
         Test json_orminheritancefix natural PK, FK
         """
-        self.dump_and_load(natural_primary_keys=True,
-                           natural_foreign_keys=True)
+        self.dump_and_load(
+            natural_primary_keys=True,
+            natural_foreign_keys=True
+        )
