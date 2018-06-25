@@ -1,6 +1,6 @@
 # hard (runtime) dependencies
 # keep this in sync with setup.py
-unipath
+# (none)
 
 # dependencies for tox testing
 django-filter

@@ -56,11 +56,11 @@ class TestUrls(SimpleTestCase):
         self.assertEqual(errors, [])
 
     def assertUrlErrors(self, errors, expected):
-        # In django 2.0+, regex url patterns containing '/' are .describe()d as r'\/'
         # In django <2.0, regex url patterns containing '/' are .describe()d as r'/'
-        # This assumes expected is django <2.0 format and normalises to whatever version is being run
+        # In django 2.0+, regex url patterns containing '/' are *sometimes* .describe()d as r'\/'
+        # we just strip out any r'\/' sequences to resolve this madness
         if django.VERSION >= (2, 0):
-            expected = [x.replace('/', r'\/') for x in expected]
+            errors = [x.replace(r'\/', r'/') for x in errors]
         self.assertEqual(
             sorted(errors),
             sorted(expected)

@@ -1,9 +1,9 @@
 import hashlib
+from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.parse import urlunsplit
 
 from django.conf import settings
-from unipath import Path
 from webpack_loader.loader import WebpackLoader
 
 

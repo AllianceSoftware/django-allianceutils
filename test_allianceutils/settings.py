@@ -1,9 +1,8 @@
 import hashlib as _hashlib
 import os as _os
+from pathlib import Path as _Path
 import random as _random
 import warnings as _warnings
-
-from unipath import Path as _Path
 
 is_ci = _os.environ.get('CI_SERVER', 'no') == 'yes'
 
