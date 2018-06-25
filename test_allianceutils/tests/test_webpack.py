@@ -10,6 +10,11 @@ from django.test import override_settings
 from django.test import SimpleTestCase
 from unipath import Path
 
+try:
+    import webpack_loader
+except ImportError:
+    webpack_loader = None
+
 # data that is in the webpack
 stats_dev_root = 'http://0.0.0.0:3011/'
 stats_dev = {
@@ -69,6 +74,7 @@ def make_settings():
     return webpack_loader_settings
 
 
+@unittest.skipIf(webpack_loader is None, 'webpack_loader not installed')
 @override_settings(**make_settings())
 class AllianceBundleTestCase(SimpleTestCase):
 

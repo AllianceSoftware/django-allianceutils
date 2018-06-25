@@ -1,9 +1,16 @@
 from io import StringIO
+import unittest
 
 from django.core.management import call_command
 from django.test import SimpleTestCase
 
+try:
+    import logging_tree
+except ImportError:
+    logging_tree = None
 
+
+@unittest.skipIf(logging_tree is None, 'logging_tree is not installed')
 class PrintLoggingTestCase(SimpleTestCase):
 
     def test_print_logging(self):

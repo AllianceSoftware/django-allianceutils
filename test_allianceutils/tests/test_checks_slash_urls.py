@@ -5,6 +5,11 @@ from django.test import SimpleTestCase
 
 from allianceutils.checks import check_url_trailing_slash
 
+try:
+    import rest_framework
+except ImportError:
+    rest_framework = None
+
 check_urls_settings = {
     'ROOT_URLCONF': 'test_allianceutils.tests.checks_slash_urls.urls',
     'MEDIA_URL': '/media/',
@@ -43,12 +48,15 @@ class TestUrls(SimpleTestCase):
         """
         errors = self.get_errors(expect_trailing_slash=True)
         expected = [
-            '^noslash1$',
-            '^noslash2$',
-            '^noslash3$',
-            '^api/noslash$',
-            '^api/noslash/(?P<pk>[^/.]+)$',
+            r'^noslash1$',
+            r'^noslash2$',
+            r'^noslash3$',
         ]
+        if rest_framework:
+            expected += [
+                r'^api/noslash$',
+                r'^api/noslash/(?P<pk>[^/.]+)$',
+            ]
         self.assertEqual(sorted(errors), sorted(expected))
 
     @override_settings(**check_urls_settings)
@@ -58,9 +66,12 @@ class TestUrls(SimpleTestCase):
         """
         errors = self.get_errors(expect_trailing_slash=False)
         expected = [
-            '^slash1/$',
-            '^slash2/$',
-            '^api/slash/$',
-            '^api/slash/(?P<pk>[^/.]+)/$',
+            r'^slash1/$',
+            r'^slash2/$',
         ]
+        if rest_framework:
+            expected += [
+                r'^api/slash/$',
+                r'^api/slash/(?P<pk>[^/.]+)/$',
+            ]
         self.assertEqual(sorted(errors), sorted(expected))

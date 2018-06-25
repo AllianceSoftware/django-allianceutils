@@ -3,9 +3,7 @@ from django.conf.urls import include
 from django.conf.urls import url
 from django.conf.urls.static import static
 from django.contrib import admin
-from rest_framework import routers
 
-from test_allianceutils.tests.checks_slash_urls.views import FooViewSet
 from test_allianceutils.tests.checks_slash_urls.views import null_view
 
 urlpatterns = [
@@ -26,13 +24,20 @@ urlpatterns = [
 
 urlpatterns.extend(static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT))
 
-# Check DRF router-generated URLs
-router = routers.DefaultRouter(trailing_slash=True)
-router.include_format_suffixes = False
-router.register(r'api/slash', FooViewSet)
-urlpatterns.extend(router.urls)
+try:
+    from rest_framework import routers
+except ImportError:
+    pass
+else:
+    from test_allianceutils.tests.checks_slash_urls.views_drf import FooViewSet
 
-router = routers.DefaultRouter(trailing_slash=False)
-router.include_format_suffixes = False
-router.register(r'api/noslash', FooViewSet)
-urlpatterns.extend(router.urls)
+    # Check DRF router-generated URLs
+    router = routers.DefaultRouter(trailing_slash=True)
+    router.include_format_suffixes = False
+    router.register(r'api/slash', FooViewSet)
+    urlpatterns.extend(router.urls)
+
+    router = routers.DefaultRouter(trailing_slash=False)
+    router.include_format_suffixes = False
+    router.register(r'api/noslash', FooViewSet)
+    urlpatterns.extend(router.urls)
