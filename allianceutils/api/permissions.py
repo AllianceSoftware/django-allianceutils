@@ -20,10 +20,9 @@ class SimpleDjangoObjectPermissions(BasePermission):
         return request.user.has_perm(view.permission_required)
 
     def has_object_permission(self, request, view, obj):
-        assert(not (request.user.has_perm(view.permission_required, obj) and
-                    request.user.has_perm(view.permission_required)),
-               "Object level and global permissions shouldn't both return True"
-               )
+        assert (not (request.user.has_perm(view.permission_required, obj) and
+            request.user.has_perm(view.permission_required))), \
+            "Object level and global permissions shouldn't both return True"
         return request.user.has_perm(view.permission_required, obj) or request.user.has_perm(view.permission_required)
 
 
