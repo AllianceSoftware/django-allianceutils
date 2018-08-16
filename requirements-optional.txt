@@ -4,6 +4,7 @@
 # (only django, but the verison is chosen by the tox environment)
 
 # dependencies for tox testing
+django-db-constraints
 django-filter
 django-storages
 djangorestframework
