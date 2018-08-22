@@ -26,16 +26,15 @@ else:
 # W001 not used
 # W002 not used
 # W003 not used
+ID_ERROR_PROFILE_RELATED_TABLES = 'allianceutils.E001'
+ID_ERROR_DB_CONSTRAINTS = 'allianceutils.E002'
+ID_ERROR_ADMINS = 'allianceutils.E003'
 ID_WARNING_TRAILING_SLASH = 'allianceutils.W004'
 ID_WARNING_AUTODUMP_MISSING = 'allianceutils.W005'
 ID_WARNING_AUTODUMP_PROXY = 'allianceutils.W006'
 ID_WARNING_GIT = 'allianceutils.W007'
 ID_WARNING_GIT_HOOKS = 'allianceutils.W008'
-ID_WARNING_DB_CONSTRAINTS = 'allianceutils.W009'
-
-ID_ERROR_PROFILE_RELATED_TABLES = 'allianceutils.E001'
-ID_ERROR_GIT_HOOKS = 'allianceutils.E002'
-ID_ERROR_ADMINS = 'allianceutils.E003'
+ID_ERROR_GIT_HOOKS = 'allianceutils.E008'
 
 
 def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[str, Iterable[str]]={}):
@@ -276,44 +275,42 @@ def check_admins(app_configs: Iterable[AppConfig], **kwargs):
 def check_db_constraints(app_configs: Iterable[AppConfig], **kwargs):
     """
     If using django-db-constraints, constraint identifiers can be supplied
-    that are longer than the max identifier length for Postgres (63 bytes).
-    Check that any such constraints are globally unique when truncated to this length.
-    :param app_configs:
-    :param kwargs:
-    :return:
+    that are longer than the max identifier length for Postgres
+    (63 bytes, see https://stackoverflow.com/a/8218026/6653190) or MySQL
+    (64 BMP unicode characters, see https://dev.mysql.com/doc/refman/8.0/en/identifiers.html).
+    Check that any such constraints are globally unique when truncated to the smaller (Postgres) limit.
     """
     if app_configs is None:
         app_configs = apps.app_configs
     else:
         app_configs = {app_config.label: app_config for app_config in app_configs}
 
-    identifier_max_length = 63
+    NAMEDATALEN = 63
 
     def _truncate_constraint_name(_name):
-        return _name.encode('utf-8')[:identifier_max_length]
+        return _name.encode('utf-8')[:NAMEDATALEN]
 
     known_constraints = defaultdict(list)
     for app_config in app_configs.values():
         for model in app_config.get_models():
             if hasattr(model._meta, 'db_constraints'):
                 for constraint_name in model._meta.db_constraints.keys():
-                    known_constraints[_truncate_constraint_name(constraint_name)].append(model)
+                    known_constraints[_truncate_constraint_name(constraint_name)].append((model, constraint_name))
 
-    warnings = []
-    for truncated_name, _models in known_constraints.items():
-        if len(_models) > 1:
-            models_string = ', '.join('%s.%s' % (model._meta.app_label, model.__name__) for model in _models)
-            truncated_name_decoded = truncated_name.decode('utf-8', 'replace')
-            warnings.append(
-                Warning(
-                    'These models have a duplicate DB constraint when truncated: %s' % truncated_name_decoded,
-                    hint='Ensure Meta.db_constraints for models %s are unique when truncated to %s characters' % (
-                        models_string,
-                        identifier_max_length,
-                    ),
+    errors = []
+    for truncated_name, model_constraints in known_constraints.items():
+        if len(model_constraints) == 1:
+            continue
+        _models = ['%s.%s' % (model._meta.app_label, model.__name__) for model, _ in model_constraints]
+        models_string = ', '.join(_models)
+        for _model, constraint_name in model_constraints:
+            errors.append(
+                Error(
+                    '%s constraint %s is not unique' % (_model._meta.label, constraint_name),
+                    hint='Constraint truncates to %s' % truncated_name.decode('utf-8', 'replace'),
                     obj=models_string,
-                    id=ID_WARNING_DB_CONSTRAINTS,
+                    id=ID_ERROR_DB_CONSTRAINTS,
                 )
             )
 
-    return warnings
+    return errors
