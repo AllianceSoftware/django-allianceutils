@@ -1,26 +1,23 @@
 {
   "status": "done",
   "publicPath": "http://0.0.0.0:3011/",
-  "chunks": {
+  "entrypoints": {
     "combined": [
       {
         "name": "combined.bundle.js",
-        "publicPath": "http://0.0.0.0:3011/combined.bundle.js",
-        "path": "/absolutepath/frontend/dist/development/combined.bundle.js"
+        "contentHash": "abc123"
       }
     ],
     "cssonly": [
       {
         "name": "cssonly.bundle.js",
-        "publicPath": "http://0.0.0.0:3011/cssonly.bundle.js",
-        "path": "/absolutepath/frontend/dist/development/cssonly.bundle.js"
+        "contentHash": "abc123"
       }
     ],
     "jsonly": [
       {
         "name": "jsonly.bundle.js",
-        "publicPath": "http://0.0.0.0:3011/jsonly.bundle.js",
-        "path": "/absolutepath/frontend/dist/development/jsonly.bundle.js"
+        "contentHash": "abc123"
       }
     ]
   }

@@ -65,6 +65,5 @@ setuptools.setup(
         'Filters': ['django-filter'],
         'Logging': ['logging_tree'],
         'Permissions': ['rules'],
-        'Webpack': ['webpack-loader'],
     },
 )

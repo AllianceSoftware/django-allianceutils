@@ -1,76 +1,160 @@
-import hashlib
-from pathlib import Path
-from urllib.parse import urlsplit
-from urllib.parse import urlunsplit
-
-from django.conf import settings
-from webpack_loader.loader import WebpackLoader
+import time
+import json
+from typing import Dict, Optional
+from typing import Sequence
 
 
-class _CacheBustWebpackLoader(WebpackLoader):
-    def get_query_cache_param(self, path: Path) -> (str, str):
+def get_chunk_tags(chunks: Dict, attrs: str):
+    """
+    Get tags for
+    :param chunks:
+    :param attrs:
+    :return:
+    """
+    tags = []
+    for chunk in chunks:
+        resource_type = chunk['resource_type']
+        url = chunk['url']
+        if resource_type == 'js':
+            tags.append(f'<script type="text/javascript" src="{url}" {attrs}></script>')
+        if resource_type == 'css':
+            tags.append(f'<link type="text/css" href="{url}" rel="stylesheet" {attrs}/>')
+    return tags
+
+
+class WebpackEntryPointLoader():
+
+    extensions_by_resource_type = {
+        'js': ('js', 'js.gz'),
+        'css': ('css', 'css.gz'),
+    }
+
+    config: Dict
+
+    def __init__(self, config: Dict):
+        self.config = config
+
+    def load_stats(self) -> Dict:
         """
-        Get the cache-busting query URL params
-        returns a tuple of (query param name, query param value)
+        Example of valid json file strucures:
+        When compiling:
+
+        {
+          "status": "compiling",
+        }
+
+        Error:
+        {
+          "status": "error",
+          "resource": "/path/to/file.js",
+          "error": "ModuleBuildError",
+          "message": "Module build failed <snip>"
+        }
+
+        Compiled:
+        {
+          "status": "done",
+          "entrypoints": {
+            "admin": [
+              {
+                "name": "runtime.bundle.js",
+                "contentHash": "e2b781da02d36dad3aff"
+              },
+              {
+                "name": "vendor.bundle.js",
+                "contentHash": "774c52f57ce30a5e1382"
+              },
+              {
+                "name": "common.bundle.js",
+                "contentHash": "639269b921c8cf869c5f"
+              },
+              {
+                "name": "common.bundle.css",
+                "contentHash": "d60a0fa36613ea58a23d"
+              }
+              {
+                "name": "admin.bundle.js",
+                "contentHash": "c78fb252d4e00207afef"
+              },
+            ],
+            "app": [
+              {
+                "name": "runtime.bundle.js",
+                "contentHash": "e2b781da02d36dad3aff"
+              },
+              {
+                "name": "vendor.bundle.js",
+                "contentHash": "774c52f57ce30a5e1382"
+              },
+              {
+                "name": "common.bundle.js",
+                "contentHash": "639269b921c8cf869c5f"
+              },
+              {
+                "name": "common.bundle.css",
+                "contentHash": "d60a0fa36613ea58a23d"
+              },
+              {
+                "name": "app.bundle.js",
+                "contentHash": "806fc65dbad8a4dbb1cc"
+              },
+            ]
+          },
+          "publicPath": "http://hostname/"
+        }
+        :return: Dict
         """
-        raise NotImplementedError()
+        with open(self.config['STATS_FILE'], encoding="utf-8") as f:
+            stats = json.load(f)
+            if stats['status'] not in ['error', 'compiling', 'done']:
+                raise ValueError('Badly formatted stats file received')
+            return stats
 
-    def get_chunk_url(self, chunk):
-        url = super().get_chunk_url(chunk)
+    def get_resource_type(self, chunk: Dict) -> Optional[str]:
+        for resource_type, extensions in self.extensions_by_resource_type.items():
+            if chunk['name'].endswith(extensions):
+                return resource_type
+        return None
 
-        if '_cache_bust_value' not in chunk:
-            url_parts = urlsplit(url)
-            if url_parts.scheme or url_parts.netloc:
-                # this is a URL, not a file path: don't do anything
-                chunk['_cache_bust_value'] = None
-            else:
-                # we don't use the absolute path (chunk['path']) because if the production stats file is
-                # built on a different machine then it is probably invalid; instead we assume it's in
-                # STATIC_ROOT/BUNDLE_DIR_NAME/chunkname
-                relpath = Path(self.config['BUNDLE_DIR_NAME'], chunk['name'])
+    def get_chunk_url(self, public_path: str, chunk: Dict) -> str:
+        name = chunk['name']
+        hash = chunk['contentHash']
+        query = '' if not hash else f'?{hash}'
+        return f'{public_path}{name}{query}'
 
-                assert settings.STATIC_ROOT is not None
+    def filter_chunks(self, public_path: str, chunks: Sequence[Dict], required_resource_type:str) -> Sequence[Dict]:
+        if required_resource_type not in self.extensions_by_resource_type:
+            valid_resource_types = ', '.join(self.extensions_by_resource_type.keys())
+            raise ValueError(f'Invalid chunk type {required_resource_type}. Must be one of: {valid_resource_types}')
+        for chunk in chunks:
+            resource_type = self.get_resource_type(chunk)
+            if required_resource_type == resource_type:
+                yield {
+                    'url': self.get_chunk_url(public_path, chunk),
+                    'resource_type': resource_type,
+                    **chunk,
+                }
 
-                staticpath = Path(settings.STATIC_ROOT, relpath)
+    def get_chunks_for_entry_point(self, entry_point_name:str, resource_type:str) -> Sequence[Dict]:
+        stats = self.load_stats()
 
-                # TODO: Should we catch FileNotFoundError and ignore instead?
-                chunk['_cache_bust_value'] = self.get_query_cache_param(staticpath)
+        if stats['status'] == 'compiling':
+            while stats['status'] == 'compiling':
+                time.sleep(0.1)
+                stats = self.load_stats()
 
-        if chunk['_cache_bust_value']:
-            url_parts = urlsplit(url)
-            query = '{}{}{}={}'.format(
-                url_parts.query,
-                '' if url_parts.query == '' else '&',
-                chunk['_cache_bust_value'][0],
-                chunk['_cache_bust_value'][1]
-            )
-            url = urlunsplit(url_parts._replace(query=query))
+        if stats['status'] == 'error':
+            error = f"""
+            {stats['error']} in {stats['resource']}
 
-        return url
+            {stats['message']}
+            """
+            raise ValueError(error)
 
+        entry_point = stats['entrypoints'].get(entry_point_name)
+        if not entry_point:
+            known_entry_points = ', '.join(stats['entrypoints'].keys())
+            raise ValueError(f'Invalid entry point {entry_point_name}. Known entry points: {known_entry_points}')
+        public_path = stats['publicPath']
 
-class TimestampWebpackLoader(_CacheBustWebpackLoader):
-    """
-    Extension of WebpackLoader that appends a ?ts=(timestamp) query string based on last modified time of chunk to serve
-    Allows static asset web server to send far future expiry headers without worrying about cache invalidation
-
-    Set WEBPACK_LOADER['DEFAULT']['LOADER_CLASS'] in django settings to use this
-    """
-
-    def get_query_cache_param(self, path):
-        return 'ts', path.mtime()
-
-
-class ContentHashWebpackLoader(_CacheBustWebpackLoader):
-    """
-    Extension of WebpackLoader that appends a ?hash=(hash) query string based on hash of chunk to serve
-    Allows static asset web server to send far future expiry headers without worrying about cache invalidation
-
-    Set WEBPACK_LOADER['DEFAULT']['LOADER_CLASS'] in django settings to use this
-    """
-    def get_query_cache_param(self, path):
-        hasher = hashlib.md5()
-        with open(path, 'rb') as f:
-            for chunk in iter(lambda: f.read(8192), b''):
-                hasher.update(chunk)
-        return 'hash', hasher.hexdigest()[:12]
+        return self.filter_chunks(public_path, entry_point, resource_type)
