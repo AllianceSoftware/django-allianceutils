@@ -144,15 +144,19 @@ class Customer(models.Model):
 
 * To add autodump metadata to models that are part of core django or third party models:
     * This can be particularly useful for dumping django group permissions (which you typically want to send to a live server) separately from test data
+* `allianceutils.checks.check_autodumpdata()` is available as a check to warn about tables that are not part of any autodumpdata fixture
+    * If you have extra tables you want to ignore in `check_autodumpdata`, use `make_check_autodumpdata`
 
 ```python
 # This will take the default fixture dumping config for this app and add the core auth.group and authtools.user
-# tables to the groups and users fixtures respectivelyi
+# tables to the groups and users fixtures respectively
  
 from django.apps import AppConfig
+from django.core.checks import Tags
 
 from allianceutils.util.autodump import AutodumpAppConfigMixin
 from allianceutils.util.autodump import AutodumpModelFormats
+from allianceutils.util.checks import DEFAULT_AUTODUMP_CHECK_IGNORE
 
 class MyAppConfig(AutodumpAppConfigMixin, AppConfig):
     name = 'myapp'
@@ -172,10 +176,16 @@ class MyAppConfig(AutodumpAppConfigMixin, AppConfig):
             },
             super().get_autodump_labels()
         )
-```
+        
+    def ready(self):
+		check_autodumpdata = make_check_autodumpdata(ignore_labels=DEFAULT_AUTODUMP_CHECK_IGNORE + [
+            'some_app',
+            'another_app.my_model',
+            'another_app.your_model',
+        ])
 
-* Additionally, `allianceutils.checks.check_autodumpdata()` is available as a check to warn about tables that are not part of any autodumpdata fixture
-    * For tables that you want the check to ignore, add to a placeholder fixture (eg `ignore`) in `get_autodump_labels` 
+        register(check=check_autodumpdata, tags=Tags.models)
+```
 
 ##### mysqlquickdump
 
@@ -688,6 +698,7 @@ WEBPACK_LOADER = {
             * drop support for python 3.4, 3.5
         * django 2.1 support
         * remove `unipath` dependency
+        * Added `checks.make_check_autodumpdata`, simplified mechanism to ignore missing autodumpdata warnings
 * 0.4
     * 0.4.2
         * `GenericUserProfileManagerMixin` rewritten; interface has changed, now works correctly

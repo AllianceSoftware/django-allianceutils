@@ -1,12 +1,16 @@
+from typing import Dict
 from typing import Iterable
 from typing import Mapping
 from typing import Sequence
+from typing import Set
+from typing import Type
 
 import django
 from django.apps import apps
 from django.apps.config import AppConfig
 from django.core.checks import Warning
 from django.db import models
+from django.db.models import Model
 from django.urls import get_resolver
 
 from .management.commands.autodumpdata import get_autodump_labels
@@ -116,67 +120,103 @@ def warning_autodumpdata_proxy(model: models.Model):
     )
 
 
-def check_autodumpdata(app_configs: Sequence[AppConfig], **kwargs):
+def make_check_autodumpdata(ignore_labels: Iterable[str]):
     """
-    Warn about models that don't have a fixtures_autodump or fixtures_autodump_sql attribute;
-    see allianceutils.management.commands.autodumpdata
+    Return a function that checks for models with missing autodumpdata definitions
+
+    Args:
+        ignore_labels:
+
+    Returns:
+        check function for use with django system checks
     """
+    ignore_labels = set(ignore_labels)
 
-    if app_configs is None:
-        app_configs = apps.app_configs
-    else:
-        app_configs = {app_config.label: app_config for app_config in app_configs}
-    check_app_labels = set(app_configs)
+    def check_autodumpdata(app_configs: Sequence[AppConfig], **kwargs):
+        """
+        Warn about models that don't have a fixtures_autodump or fixtures_autodump_sql attribute;
+        see allianceutils.management.commands.autodumpdata
+        """
 
-    known_models = {}
-    proxy_models = set()
-    recursed_models = set()
-    valid_models = set()
+        if app_configs is None:
+            app_configs = apps.app_configs
+        else:
+            app_configs = {app_config.label: app_config for app_config in app_configs}
+        check_app_labels = set(app_configs.keys())
 
-    # find known models
-    for app_config in app_configs.values():
-        known_models.update({
-            model._meta.label: model
-            for model
-            in app_config.get_models()
-        })
+        candidate_models: Dict[str, Type[Model]] = {}
+        valid_models: Set[str] = set()
 
-    # mark models that have fixtures_autodump details
-    for app_config in app_configs.values():
-        for fixture, autodump_models in get_autodump_labels(app_config).items():
-            valid_models.update(autodump_models.all())
+        # find candidate models
+        for app_config in app_configs.values():
+            candidate_models.update({
+                model._meta.label: model
+                for model
+                in app_config.get_models()
+                if model._meta.app_label not in ignore_labels and model._meta.label not in ignore_labels
+            })
 
-    proxy_models = set([label for label, model in known_models.items() if model._meta.proxy])
+        # mark models that have fixtures_autodump details
+        for app_config in app_configs.values():
+            for fixture, autodump_models in get_autodump_labels(app_config).items():
+                valid_models.update(autodump_models.all())
 
-    def process_model(model):
-        label = model._meta.label
+        # mark ignored apps/models
+        # for app_config in app_configs.values():
+        #     for model in app_config.get_models():
+        #         if model._meta.app_label in ignore_labels or model._meta.label in ignore_labels:
+        #             valid_models.add(model._meta.label)
 
-        # only process each model once
-        if model in recursed_models:
-            return
-        recursed_models.add(model)
+        proxy_models: Set[str] = set([label for label, model in candidate_models.items() if model._meta.proxy])
 
-        # many:many relationship are included implicitly by dumpdata
+        # many:many relationships are included implicitly by dumpdata from the table they're declared on,
+        # so mark these as okay.
+        # Known issue: If you are only looking at one app_config then it will not see implict inclusions from
+        # other apps
+        # The implicit inclusion is not transitive (we don't need to recurse into the included tables)
+        implicit_models = set()
+        for model_label in valid_models:
+            try:
+                model = candidate_models[model_label]
+            except KeyError:
+                continue
+            for field in model._meta.get_fields(include_hidden=True): # need to include hidden to get automatically created through models
+                try:
+                    if field.is_relation and field.many_to_many:
+                        through = field.remote_field.through
+                        implicit_models.add(through._meta.label)
+                except AttributeError:
+                    pass
 
-    for model in known_models.values():
-        process_model(model)
+        # TODO: how should GenericForeignKeys be handled?
 
-    # find models that weren't known
-    errors_missing = set(known_models.keys()).difference(valid_models).difference(proxy_models)
-    errors_missing = [
-        warning_autodumpdata_missing(known_models[model_label])
-        for model_label
-        in sorted(errors_missing)
-        if known_models[model_label]._meta.app_label in check_app_labels
-    ]
+        # find models that were missing autodumpdata definitions
+        errors_missing = set(candidate_models.keys()) \
+            .difference(valid_models) \
+            .difference(proxy_models) \
+            .difference(implicit_models)
+        errors_missing = [
+            warning_autodumpdata_missing(candidate_models[model_label])
+            for model_label
+            in sorted(errors_missing)
+            if candidate_models[model_label]._meta.app_label in check_app_labels
+        ]
 
-    errors_proxy = []
-    # proxy models should not explicitly define fixture details
-    for model_label in sorted(proxy_models):
-        model = known_models[model_label]
-        proxied_model = model._meta.proxy_for_model
-        if getattr(model, 'fixtures_autodump', None) is not getattr(proxied_model, 'fixtures_autodump', None) or \
-            getattr(model, 'fixtures_autodump_sql', None) is not getattr(proxied_model, 'fixtures_autodump_sql', None):
-            errors_proxy.append(warning_autodumpdata_proxy(model))
+        errors_proxy = []
+        # proxy models should not explicitly define fixture details
+        for model_label in sorted(proxy_models):
+            model = candidate_models[model_label]
+            proxied_model = model._meta.proxy_for_model
+            if getattr(model, 'fixtures_autodump', None) is not getattr(proxied_model, 'fixtures_autodump', None) or \
+                    getattr(model, 'fixtures_autodump_sql', None) is not getattr(proxied_model, 'fixtures_autodump_sql', None):
+                errors_proxy.append(warning_autodumpdata_proxy(model))
 
-    return errors_missing + errors_proxy
+        return errors_missing + errors_proxy
+
+    return check_autodumpdata
+
+
+DEFAULT_AUTODUMP_CHECK_IGNORE = [
+    'silk',
+]
+check_autodumpdata = make_check_autodumpdata(DEFAULT_AUTODUMP_CHECK_IGNORE)
