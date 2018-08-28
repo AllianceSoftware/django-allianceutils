@@ -685,7 +685,8 @@ WEBPACK_LOADER = {
 * 0.5
     * 0.5.dev
         * Breaking Changes    
-            * django 2.1 support, drop support for python 3.4
+            * drop support for python 3.4, 3.5
+        * django 2.1 support
         * remove `unipath` dependency
 * 0.4
     * 0.4.2
