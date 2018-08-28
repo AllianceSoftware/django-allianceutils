@@ -1,7 +1,6 @@
 from typing import Dict
 from typing import Iterable
 from typing import Mapping
-from typing import Sequence
 from typing import Set
 from typing import Type
 
@@ -30,7 +29,7 @@ ID_WARNING_AUTODUMP_PROXY = 'allianceutils.W006'
 
 def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[str, Iterable[str]]={}):
 
-    def _check_url_trailing_slash(app_configs: Sequence[AppConfig], **kwargs):
+    def _check_url_trailing_slash(app_configs: Iterable[AppConfig], **kwargs):
         # We ignore app_configs; so does django core check_url_settings()
         # Consider where ROOT_URLCONF points app A urlpatterns which include() app B urlpatterns
         # which define a URL to view in app C -- which app was the one that owned the URL?
@@ -132,7 +131,7 @@ def make_check_autodumpdata(ignore_labels: Iterable[str]):
     """
     ignore_labels = set(ignore_labels)
 
-    def check_autodumpdata(app_configs: Sequence[AppConfig], **kwargs):
+    def check_autodumpdata(app_configs: Iterable[AppConfig], **kwargs):
         """
         Warn about models that don't have a fixtures_autodump or fixtures_autodump_sql attribute;
         see allianceutils.management.commands.autodumpdata
