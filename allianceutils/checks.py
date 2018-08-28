@@ -2,14 +2,19 @@ from typing import Iterable
 from typing import Mapping
 from typing import Sequence
 
+import django
 from django.apps import apps
 from django.apps.config import AppConfig
-from django.conf.urls import RegexURLResolver
 from django.core.checks import Warning
 from django.db import models
 from django.urls import get_resolver
 
 from .management.commands.autodumpdata import get_autodump_labels
+
+if django.VERSION >= (2, 0):
+    from django.urls import URLResolver
+else:
+    from django.conf.urls import RegexURLResolver as URLResolver
 
 # W001 not used
 # W002 not used
@@ -39,15 +44,24 @@ def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[
         }
         _ignore_attrs.update(ignore_attrs)
 
-        def check_resolver(resolver: RegexURLResolver, depth: int=0):
+        def check_resolver(resolver: URLResolver, depth: int=0):
             warnings = []
             for url_pattern in resolver.url_patterns:
 
                 # look
-                if any(getattr(url_pattern, attr, None) in vals for attr, vals in _ignore_attrs.items()):
+                if any(
+                        getattr(url_pattern, attr, None) in vals or getattr(getattr(url_pattern, 'pattern', {}), attr, None) in vals
+                        for attr, vals
+                        in _ignore_attrs.items()):
                     continue
 
-                regex_pattern = url_pattern.regex.pattern
+                try:
+                    # django 2.0+ simplified urls (stilluses a regex underneath)
+                    regex_pattern = url_pattern.pattern.regex.pattern
+                except AttributeError:
+                    # django <2.0 regex patterns
+                    regex_pattern = url_pattern.regex.pattern
+
                 if regex_pattern == '^$':
                     # empty patterns are a special case; they may be nested inside an
                     # include(), if that's the case then we don't really care whether
@@ -59,13 +73,20 @@ def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[
                     warnings.extend(check_resolver(url_pattern, depth+1))
 
                 elif regex_pattern.endswith('/$') != expect_trailing_slash:
-                        warnings.append(
-                            Warning(
-                                'The URL pattern {} is inconsistent with expect_trailing_slash'.format(url_pattern.describe()),
-                                obj=url_pattern,
-                                id=ID_WARNING_TRAILING_SLASH,
-                            )
+                    try:
+                        # django 2.0+ simplified urls
+                        description = url_pattern.pattern.describe()
+                    except AttributeError:
+                        # django <2.0 regex urls
+                        description = url_pattern.describe()
+
+                    warnings.append(
+                        Warning(
+                            'The URL pattern {} is inconsistent with expect_trailing_slash'.format(description),
+                            obj=url_pattern,
+                            id=ID_WARNING_TRAILING_SLASH,
                         )
+                    )
 
             return warnings
 

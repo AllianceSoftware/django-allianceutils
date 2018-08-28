@@ -1,18 +1,19 @@
+import io
+from pathlib import Path
 import subprocess
 
 import django.apps
 import django.conf
 import django.core.management.base
 import django.db
-import unipath
 
 
 def get_dump_file_path(dump_file):
-    f = unipath.Path(dump_file)
-    if f.isabsolute():
+    f = Path(dump_file)
+    if f.is_absolute():
         return f
     else:
-        return unipath.Path(django.conf.settings.PROJECT_DIR, 'quicksql', dump_file)
+        return Path(django.conf.settings.PROJECT_DIR, 'quicksql', dump_file)
 
 
 class Command(django.core.management.base.BaseCommand):
@@ -71,7 +72,7 @@ class Command(django.core.management.base.BaseCommand):
         else:
             cmd += ['--extended-insert',]
 
-        if not sql_file.parent.isdir():
+        if not sql_file.parent.is_dir():
             if verbosity >= 1:
                 self.stdout.write('%s %s\n' % (self.style.WARNING('Creating'), sql_file.parent))
             sql_file.parent.mkdir(parents=True)
@@ -79,8 +80,19 @@ class Command(django.core.management.base.BaseCommand):
         if verbosity >= 1:
             self.stdout.write('%s %s\n' % (self.style.NOTICE('Executing'), ' '.join(cmd)))
 
-        with open(sql_file, 'wb') as f:
-            returncode = subprocess.call(cmd, stdout=f, stderr=self.stderr)
+        with sql_file.open('wb') as f:
+            # in django >=2.0 the stderr wrapper don't have a fileno() attribute
+            # see https://stackoverflow.com/a/48392466/6653190
+            # unwrap stderr until we find something that supports fileno()
+            wrapped_stderr = self.stderr
+            fileno = None
+            while fileno is None and hasattr(wrapped_stderr, '_out'):
+                wrapped_stderr = wrapped_stderr._out
+                try:
+                    fileno = wrapped_stderr.fileno()
+                except io.UnsupportedOperation:
+                    pass
+            returncode = subprocess.call(cmd, stdout=f, stderr=wrapped_stderr)
             if returncode != 0:
                 self.stdout.write(self.style.ERROR('Error executing mysqldump (return code %s)\n' % returncode))
 

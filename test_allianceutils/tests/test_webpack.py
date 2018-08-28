@@ -1,5 +1,6 @@
 from distutils.util import strtobool
 import os
+from pathlib import Path
 import random
 import unittest
 
@@ -8,7 +9,11 @@ from django.template import Context
 from django.template import Template
 from django.test import override_settings
 from django.test import SimpleTestCase
-from unipath import Path
+
+try:
+    import webpack_loader
+except ImportError:
+    webpack_loader = None
 
 # data that is in the webpack
 stats_dev_root = 'http://0.0.0.0:3011/'
@@ -60,7 +65,7 @@ def make_settings():
             cfg = {
                 'CACHE': False,
                 'BUNDLE_DIR_NAME': BUNDLE_DIR_NAME,
-                'STATS_FILE': stats_path,
+                'STATS_FILE': str(stats_path), # need str() because open() doesn't work with pathlib.Path until python 3.6
             }
             if loader:
                 cfg['LOADER_CLASS'] = loader
@@ -69,6 +74,7 @@ def make_settings():
     return webpack_loader_settings
 
 
+@unittest.skipIf(webpack_loader is None, 'webpack_loader not installed, skipping tests')
 @override_settings(**make_settings())
 class AllianceBundleTestCase(SimpleTestCase):
 
@@ -79,11 +85,10 @@ class AllianceBundleTestCase(SimpleTestCase):
             assert path.exists()
             t = random.randint(0, 60 * 60 * 24 * 365 * 20)
             try:
-                path.set_times(mtime=t)
+                os.utime(str(path), (t, t))
                 details[2] = t
             except PermissionError:
-                details[2] = path.mtime()
-
+                details[2] = path.stat().st_mtime
 
     def check_tag(self, config, bundle, extension, expected):
         tpl_str = '{{% load alliance_bundle %}}{{% alliance_bundle "{}" "{}" "{}" %}}'.format(bundle, extension, config)

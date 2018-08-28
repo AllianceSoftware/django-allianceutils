@@ -682,6 +682,12 @@ WEBPACK_LOADER = {
 ## Changelog
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
+* 0.5
+    * 0.5.dev
+        * Breaking Changes    
+            * drop support for python 3.4, 3.5
+        * django 2.1 support
+        * remove `unipath` dependency
 * 0.4
     * 0.4.2
         * `GenericUserProfileManagerMixin` rewritten; interface has changed, now works correctly
