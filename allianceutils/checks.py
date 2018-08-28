@@ -160,12 +160,6 @@ def make_check_autodumpdata(ignore_labels: Iterable[str]):
             for fixture, autodump_models in get_autodump_labels(app_config).items():
                 valid_models.update(autodump_models.all())
 
-        # mark ignored apps/models
-        # for app_config in app_configs.values():
-        #     for model in app_config.get_models():
-        #         if model._meta.app_label in ignore_labels or model._meta.label in ignore_labels:
-        #             valid_models.add(model._meta.label)
-
         proxy_models: Set[str] = set([label for label, model in candidate_models.items() if model._meta.proxy])
 
         # many:many relationships are included implicitly by dumpdata from the table they're declared on,
