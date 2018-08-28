@@ -178,7 +178,7 @@ class MyAppConfig(AutodumpAppConfigMixin, AppConfig):
         )
         
     def ready(self):
-		check_autodumpdata = make_check_autodumpdata(ignore_labels=DEFAULT_AUTODUMP_CHECK_IGNORE + [
+        check_autodumpdata = make_check_autodumpdata(ignore_labels=DEFAULT_AUTODUMP_CHECK_IGNORE + [
             'some_app',
             'another_app.my_model',
             'another_app.your_model',
@@ -357,11 +357,11 @@ class User(GenericUserProfile, authtools.models.AbstractEmailUser):
     # You would normally not access this directly but instead use the`.profile`
     # property that caches the return value of `get_profile()` and works
     # correctly for both user and profile records  
-	def get_profile(self) -> Model:
-		# custom logic
-		if datetime.now() > datetime.date(2000,1,1):
-			return self
-		return super().get_profile()
+    def get_profile(self) -> Model:
+        # custom logic
+        if datetime.now() > datetime.date(2000,1,1):
+            return self
+        return super().get_profile()
 
 
 # ------------------------------------------------------------------
@@ -408,9 +408,9 @@ AUTHENTICATION_BACKENDS = [
 
 
 def my_view(request):
-	# standard django AuthenticationMiddleware will call the authentication backend
-	profile = request.user  
-	return HttpResponse('Current user is ' + profile.username)
+    # standard django AuthenticationMiddleware will call the authentication backend
+    profile = request.user  
+    return HttpResponse('Current user is ' + profile.username)
 
 ```
 
@@ -426,7 +426,7 @@ def my_view(request):
     * The context manager returns a `ValidationError` subclass with an `add_error` function that follows the same rules as `django.forms.forms.BaseForm.add_error`
     * If the wrapped function raises a `ValidationError` then this will be merged into the `ValidationError` returned by the context manager
     * If the wrapped function raises any other exception then this will not be intercepted and the context block will not be executed 
-	* At the end of a block,
+    * At the end of a block,
         * If code in the context block raised an exception (including a `ValidationError`) then this will not be caught
         * If `ValidationError` the context manager returned has any errors (either from `ve.add_error()` or from the wrapped function) then this will be raised 
 
@@ -459,11 +459,11 @@ def my_view(request):
         with allianceutils.models.raise_validation_errors() as ve:
              with ve.capture_validation_error():
                  self.func1()
-			 with ve.capture_validation_error():
+             with ve.capture_validation_error():
                  self.func2()
-			 with ve.capture_validation_error():
+             with ve.capture_validation_error():
                  raise ValidationError('bad things')
-			# all raised ValidationErrors will be collected, merged and raised at the end of this block
+            # all raised ValidationErrors will be collected, merged and raised at the end of this block
 ```   
 
 ### Serializers
