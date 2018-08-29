@@ -231,6 +231,19 @@ class MyAppConfig(AppConfig):
 		register(check=check_autodumpdata, tags=Tags.models)
 ```
 
+##### check\_admins
+
+* Checks that `settings.ADMINS` has been properly set in staging and production settings files.
+
+##### check\_git\_hooks
+
+* Checks that the `.git/hooks` directory has been sym-linked to the projects' `git-hooks` directory.
+
+##### check\_db\_constraints
+
+* Checks that all models that specify `db_constraints` in their Meta will generate unique constraint names when truncated by the database.
+
+
 ### Middleware
 
 #### CurrentUserMiddleware
