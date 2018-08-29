@@ -6,7 +6,6 @@
 # dependencies for tox testing
 django-filter
 django-storages
-django-webpack-loader
 djangorestframework
 isort
 logging_tree

@@ -1,51 +1,43 @@
 {
   "status": "done",
   "publicPath": "/static/webpack_dist/",
-  "chunks": {
+  "entrypoints": {
     "combined": [
       {
         "name": "combined.HASH.bundle.js",
-        "publicPath": "/static/webpack_dist/combined.HASH.bundle.js",
-        "path": "/absolutepath/frontend/dist/production/combined.HASH.bundle.js"
+        "contentHash": "abc123"
       },
       {
         "name": "combined.HASH.bundle.css",
-        "publicPath": "/static/webpack_dist/combined.HASH.bundle.css",
-        "path": "/absolutepath/frontend/dist/production/combined.HASH.bundle.css"
+        "contentHash": "abc123"
       },
       {
         "name": "combined.HASH.bundle.js.map",
-        "publicPath": "/static/webpack_dist/combined.HASH.bundle.js.map",
-        "path": "/absolutepath/frontend/dist/production/combined.HASH.bundle.js.map"
+        "contentHash": "abc123"
       },
       {
         "name": "combined.HASH.bundle.css.map",
-        "publicPath": "/static/webpack_dist/combined.HASH.bundle.css.map",
-        "path": "/absolutepath/frontend/dist/production/combined.HASH.bundle.css.map"
+        "contentHash": "abc123"
       }
     ],
     "cssonly": [
       {
         "name": "cssonly.HASH.bundle.css",
-        "publicPath": "/static/webpack_dist/cssonly.HASH.bundle.css",
-        "path": "/absolutepath/frontend/dist/production/cssonly.HASH.bundle.css"
+        "contentHash": "abc123"
       },
       {
         "name": "cssonly.HASH.bundle.css.map",
-        "publicPath": "/static/webpack_dist/cssonly.HASH.bundle.css.map",
-        "path": "/absolutepath/frontend/dist/production/cssonly.HASH.bundle.css.map"
+        "contentHash": "abc123"
       }
     ],
     "jsonly": [
       {
         "name": "jsonly.HASH.bundle.js",
-        "publicPath": "/static/webpack_dist/jsonly.HASH.bundle.js",
-        "path": "/absolutepath/frontend/dist/production/jsonly.HASH.bundle.js"
+        "contentHash": "abc123"
       },
       {
         "name": "jsonly.HASH.bundle.js.map",
-        "publicPath": "/static/webpack_dist/jsonly.HASH.bundle.js.map",
-        "path": "/absolutepath/frontend/dist/production/jsonly.HASH.bundle.js.map"
+        "contentHash": "abc123"
       }
     ]
   }
