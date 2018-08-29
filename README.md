@@ -144,48 +144,7 @@ class Customer(models.Model):
 
 * To add autodump metadata to models that are part of core django or third party models:
     * This can be particularly useful for dumping django group permissions (which you typically want to send to a live server) separately from test data
-* `allianceutils.checks.check_autodumpdata()` is available as a check to warn about tables that are not part of any autodumpdata fixture
-    * If you have extra tables you want to ignore in `check_autodumpdata`, use `make_check_autodumpdata`
-
-```python
-# This will take the default fixture dumping config for this app and add the core auth.group and authtools.user
-# tables to the groups and users fixtures respectively
- 
-from django.apps import AppConfig
-from django.core.checks import Tags
-
-from allianceutils.util.autodump import AutodumpAppConfigMixin
-from allianceutils.util.autodump import AutodumpModelFormats
-from allianceutils.util.checks import DEFAULT_AUTODUMP_CHECK_IGNORE
-
-class MyAppConfig(AutodumpAppConfigMixin, AppConfig):
-    name = 'myapp'
-    verbose_name = "My App"
-
-    def get_autodump_labels(self):
-        return self.autodump_labels_merge(
-            {
-                'group': AutodumpModelFormats(
-                    json=[
-                        'auth.Group',
-                    ],
-                    sql=[
-                        # ...
-                    ],
-                ),
-            },
-            super().get_autodump_labels()
-        )
-        
-    def ready(self):
-        check_autodumpdata = make_check_autodumpdata(ignore_labels=DEFAULT_AUTODUMP_CHECK_IGNORE + [
-            'some_app',
-            'another_app.my_model',
-            'another_app.your_model',
-        ])
-
-        register(check=check_autodumpdata, tags=Tags.models)
-```
+* See also [`check_autodumpdata()`](#check_autodumpdata) to warn about tables that are not part of any autodumpdata fixture
 
 ##### mysqlquickdump
 
@@ -244,6 +203,33 @@ router = routers.DefaultRouter(trailing_slash=True)
 router.include_format_suffixes = False
 router.register(r'myurl', MyViewSet)
 urlpatterns += router.urls
+```
+
+##### check_autodumpdata
+
+* Checks that all models have either [`fixures_autodump`](#autodumpdata) or [`fixures_autodump_sql`](#autodumpdata) defined
+* `allianceutils.checks.make_check_autodumpdata` allows you to ignore specified apps or models
+	* `allianceutils.checks.check_autodumpdata` is shorthand for `make_check_autodumpdata(ignore_labels=DEFAULT_AUTODUMP_CHECK_IGNORE)` which has a predefined set of apps to ignore 
+
+```python
+from django.apps import AppConfig
+from django.core.checks import Tags
+
+from allianceutils.util.checks import DEFAULT_AUTODUMP_CHECK_IGNORE
+from allianceutils.util.checks import make_check_autodumpdata
+
+class MyAppConfig(AppConfig):
+    name = 'myapp'
+    verbose_name = "My App"
+
+	def ready(self):
+		check_autodumpdata = make_check_autodumpdata(ignore_labels=DEFAULT_AUTODUMP_CHECK_IGNORE + [
+			'some_app',
+			'another_app.my_model',
+			'another_app.your_model',
+		])
+	
+		register(check=check_autodumpdata, tags=Tags.models)
 ```
 
 ### Middleware
