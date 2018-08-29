@@ -1,10 +1,14 @@
+import ast
 from collections import defaultdict
+import inspect
 from pathlib import Path
 from typing import Dict
 from typing import Iterable
+from typing import List
 from typing import Mapping
 from typing import Set
 from typing import Type
+from typing import Union
 
 import django
 from django.apps import apps
@@ -33,6 +37,36 @@ ID_WARNING_TRAILING_SLASH = 'allianceutils.W004'
 ID_WARNING_GIT = 'allianceutils.W007'
 ID_WARNING_GIT_HOOKS = 'allianceutils.W008'
 ID_ERROR_GIT_HOOKS = 'allianceutils.E008'
+ID_ERROR_EXPLICIT_TABLE_NAME = 'allianceutils.E009'
+ID_ERROR_EXPLICIT_TABLE_NAME_LOWERCASE = 'allianceutils.E010'
+
+
+def find_candidate_models(
+        app_configs: Union[Iterable[AppConfig], None],
+        ignore_labels: List[str] = None
+) -> Dict[str, Type[Model]]:
+    """
+    Given a list of labels to ignore, return models whose app_label or label is NOT in ignore_labels.
+    :return: list of candidate models
+    """
+    if app_configs is None:
+        app_configs = apps.get_app_configs()
+
+    if ignore_labels is None:
+        ignore_labels = []
+
+    ignore_labels = set(ignore_labels)
+    candidate_models: Dict[str, Type[Model]] = {}
+
+    for app_config in app_configs:
+        candidate_models.update({
+            model._meta.label: model
+            for model
+            in app_config.get_models()
+            if model._meta.app_label not in ignore_labels and model._meta.label not in ignore_labels
+        })
+
+    return candidate_models
 
 
 def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[str, Iterable[str]]={}):
@@ -208,3 +242,71 @@ def check_db_constraints(app_configs: Iterable[AppConfig], **kwargs):
             )
 
     return errors
+
+
+def check_explicit_table_names_on_model(model: Type[Model]):
+    """
+    Use an ast to check if a model has the db_table meta option set.
+    This is done this way because a model instance's db_table is always
+    populated even if with that of the default.
+    """
+    errors = []
+    found = None
+    tree = ast.parse(inspect.getsource(model))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef) and node.name == 'Meta':
+            for sub_node in node.body:
+                if isinstance(sub_node, ast.Assign):
+                    if sub_node.targets[0].id == 'db_table':
+                        found = sub_node.value.s
+                        break
+    if not found:
+        errors.append(
+            Error(
+                'Explicit table name required',
+                hint='Add db_table setting to {} model Meta'.format(model._meta.label),
+                obj=model,
+                id=ID_ERROR_EXPLICIT_TABLE_NAME,
+            )
+        )
+    elif not found.islower():
+        errors.append(
+            Error(
+                'Table names must be lowercase',
+                hint='Check db_table setting for {}'.format(model._meta.label),
+                obj=model,
+                id=ID_ERROR_EXPLICIT_TABLE_NAME_LOWERCASE,
+            )
+        )
+
+    return errors
+
+
+def make_check_explicit_table_names(ignore_labels=None):
+    """
+    Return a function that checks for models with missing or invalid db_table settings
+
+    Args:
+        ignore_labels: ignore apps or models matching supplied labels
+
+    Returns:
+        check function for use with django system checks
+    """
+
+    def _check_explicit_table_names(app_configs: Iterable[AppConfig], **kwargs):
+        """
+        Warn when models don't have Meta's db_table_name set in apps that require it.
+        """
+        candidate_models = find_candidate_models(app_configs, ignore_labels)
+        errors = []
+        for model in candidate_models.values():
+            errors += check_explicit_table_names_on_model(model)
+        return errors
+
+    return _check_explicit_table_names
+
+
+DEFAULT_TABLE_NAME_CHECK_IGNORE = [
+    'auth',
+]
+check_explicit_table_names = make_check_explicit_table_names(DEFAULT_TABLE_NAME_CHECK_IGNORE)
