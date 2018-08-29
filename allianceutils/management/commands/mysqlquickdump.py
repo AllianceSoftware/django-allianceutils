@@ -8,7 +8,7 @@ import django.core.management.base
 import django.db
 
 
-def get_dump_file_path(dump_file):
+def get_dump_file_path(dump_file) -> Path:
     f = Path(dump_file)
     if f.is_absolute():
         return f

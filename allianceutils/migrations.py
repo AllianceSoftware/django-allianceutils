@@ -26,8 +26,7 @@ def migrate_run_sql_file(schema_editor, app_name, filename):
     :param filename: file to run (without .sql extension)
     """
     path = Path(apps.get_app_config(app_name).path, 'migrations/sql', filename + '.sql')
-    with path.open('r') as f:
-        schema_editor.execute(f.read())
+    schema_editor.execute(path.read_text())
 
 
 def migrate_create_group(schema_editor, groups):
