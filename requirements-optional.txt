@@ -12,8 +12,5 @@ isort
 logging_tree
 mysqlclient
 
-# See https://github.com/ezhome/django-webpack-loader/pull/41
--e git+https://github.com/levic/django-webpack-loader.git@webpack_loader_class#egg=webpack_loader
-
 # .. plus specific version dependencies defined in tox.ini
 # we can't list them here because of https://github.com/pypa/pip/issues/2367
