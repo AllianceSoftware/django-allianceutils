@@ -33,6 +33,7 @@ link = '<link type="text/css" href="%s?abc123" rel="stylesheet" />'
 
 is_tox = strtobool(os.getenv('TOX', '0'))
 
+
 def make_settings():
     stats_dev_path = Path(Path(__file__).parent, 'webpack-stats-dev.json')
     stats_prod_path = Path(Path(__file__).parent, 'webpack-stats-prod.json')
@@ -41,17 +42,13 @@ def make_settings():
     assert (stats_prod_path.exists())
 
     webpack_loader_settings = {
-        'INSTALLED_APPS': settings.INSTALLED_APPS + ('webpack_loader',),
         'WEBPACK_LOADER': {}
     }
 
     for mode, stats_path in (('dev', stats_dev_path), ('prod', stats_prod_path)):
-        cfg = {
-            'CACHE': False,
-            'BUNDLE_DIR_NAME': BUNDLE_DIR_NAME,
+        webpack_loader_settings['WEBPACK_LOADER'][mode] = {
             'STATS_FILE': str(stats_path),
         }
-        webpack_loader_settings['WEBPACK_LOADER'][mode] = cfg
 
     return webpack_loader_settings
 
