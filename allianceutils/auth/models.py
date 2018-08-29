@@ -11,7 +11,7 @@ from django.db.models import Model
 from django.db.models import QuerySet
 from django.db.models.query import ModelIterable
 
-ID_ERROR_PROFILE_RELATED_TABLES = 'allianceutils.E001'
+from allianceutils.checks import ID_ERROR_PROFILE_RELATED_TABLES
 
 
 class GenericUserProfileIterable(ModelIterable):

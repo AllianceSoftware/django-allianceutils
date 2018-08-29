@@ -1,3 +1,5 @@
+from collections import defaultdict
+from pathlib import Path
 from typing import Dict
 from typing import Iterable
 from typing import Mapping
@@ -7,6 +9,8 @@ from typing import Type
 import django
 from django.apps import apps
 from django.apps.config import AppConfig
+from django.conf import settings
+from django.core.checks import Error
 from django.core.checks import Warning
 from django.db import models
 from django.db.models import Model
@@ -22,9 +26,15 @@ else:
 # W001 not used
 # W002 not used
 # W003 not used
+ID_ERROR_PROFILE_RELATED_TABLES = 'allianceutils.E001'
+ID_ERROR_DB_CONSTRAINTS = 'allianceutils.E002'
+ID_ERROR_ADMINS = 'allianceutils.E003'
 ID_WARNING_TRAILING_SLASH = 'allianceutils.W004'
 ID_WARNING_AUTODUMP_MISSING = 'allianceutils.W005'
 ID_WARNING_AUTODUMP_PROXY = 'allianceutils.W006'
+ID_WARNING_GIT = 'allianceutils.W007'
+ID_WARNING_GIT_HOOKS = 'allianceutils.W008'
+ID_ERROR_GIT_HOOKS = 'allianceutils.E008'
 
 
 def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[str, Iterable[str]]={}):
@@ -213,3 +223,94 @@ DEFAULT_AUTODUMP_CHECK_IGNORE = [
     'silk',
 ]
 check_autodumpdata = make_check_autodumpdata(DEFAULT_AUTODUMP_CHECK_IGNORE)
+
+
+def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs):
+    git_path = Path(settings.PROJECT_DIR, '.git')
+
+    warnings = []
+
+    if not git_path.exists():
+        if settings.DEBUG:
+            # If in dev mode then there should be a .git dir
+            warnings.append(
+                Warning(
+                    "DEBUG is true but can't find a .git dir; are you trying to use DEBUG in production?",
+                    obj=git_path,
+                    id=ID_WARNING_GIT,
+                )
+            )
+    else:
+        # there is a .git dir:
+        #   If dev then there must be a .git/hooks symlink
+        #   If in prod then there should be a .git/hooks symlink
+        git_hooks_path = Path(git_path, 'hooks')
+        if not git_hooks_path.is_symlink():
+            (warning_type, warning_id) = (Error, ID_ERROR_GIT_HOOKS) if settings.DEBUG else (Warning, ID_WARNING_GIT_HOOKS)
+            warnings.append(
+                warning_type(
+                    ".git/hooks should be a symlink to the git-hooks directory",
+                    obj=git_hooks_path,
+                    id=warning_id,
+                )
+            )
+
+    return warnings
+
+
+def check_admins(app_configs: Iterable[AppConfig], **kwargs):
+    errors = []
+    if not settings.AUTOMATED_TESTS and not settings.DEBUG:
+        if len(settings.ADMINS) == 0:
+            errors.append(
+                Error(
+                    "settings.ADMINS should not be empty",
+                    obj='settings',
+                    id=ID_ERROR_ADMINS,
+                )
+            )
+    return errors
+
+
+def check_db_constraints(app_configs: Iterable[AppConfig], **kwargs):
+    """
+    If using django-db-constraints, constraint identifiers can be supplied
+    that are longer than the max identifier length for Postgres
+    (63 bytes, see https://stackoverflow.com/a/8218026/6653190) or MySQL
+    (64 BMP unicode characters, see https://dev.mysql.com/doc/refman/8.0/en/identifiers.html).
+    Check that any such constraints are globally unique when truncated to the smaller (Postgres) limit.
+    """
+    if app_configs is None:
+        app_configs = apps.app_configs
+    else:
+        app_configs = {app_config.label: app_config for app_config in app_configs}
+
+    NAMEDATALEN = 63
+
+    def _truncate_constraint_name(_name):
+        return _name.encode('utf-8')[:NAMEDATALEN]
+
+    known_constraints = defaultdict(list)
+    for app_config in app_configs.values():
+        for model in app_config.get_models():
+            if hasattr(model._meta, 'db_constraints'):
+                for constraint_name in model._meta.db_constraints.keys():
+                    known_constraints[_truncate_constraint_name(constraint_name)].append((model, constraint_name))
+
+    errors = []
+    for truncated_name, model_constraints in known_constraints.items():
+        if len(model_constraints) == 1:
+            continue
+        _models = ['%s.%s' % (model._meta.app_label, model.__name__) for model, _ in model_constraints]
+        models_string = ', '.join(_models)
+        for _model, constraint_name in model_constraints:
+            errors.append(
+                Error(
+                    '%s constraint %s is not unique' % (_model._meta.label, constraint_name),
+                    hint='Constraint truncates to %s' % truncated_name.decode('utf-8', 'replace'),
+                    obj=models_string,
+                    id=ID_ERROR_DB_CONSTRAINTS,
+                )
+            )
+
+    return errors
