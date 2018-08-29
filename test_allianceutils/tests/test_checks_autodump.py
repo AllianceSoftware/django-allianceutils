@@ -51,6 +51,8 @@ class TestCheckAutodumpdata(SimpleTestCase):
         self.assertNoModelErrors(model)
 
     def test_manytomany_through(self):
-        # manytomany with explicit through table should warn
-        warning = warning_autodumpdata_missing(test_models.AuthorBook)
-        self.assertIn(warning, self.errors)
+        # manytomany with explicit through table should not warn
+        # Author.books is a FK with through=AuthorBook
+        self.assertNoModelErrors(test_models.Author)
+        self.assertNoModelErrors(test_models.AuthorBook)
+        self.assertNoModelErrors(test_models.Book)
