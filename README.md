@@ -720,6 +720,9 @@ FIXME
         * django 2.1 support
         * remove `unipath` dependency
         * Added `checks.make_check_autodumpdata`, simplified mechanism to ignore missing autodumpdata warnings
+        * Added `checks.check_git_hooks`, ensure .git/hooks directory sym-linked to git-hooks
+        * Added `checks.check_admins`, ensure settings.ADMINS has been set for staging/production
+        * Added `checks.check_db_constraints`, ensure db_constraints are unique when truncated
         * Add `render_entry_point` tag
         * Fix `QueryCountMiddleware` reporting incorrect query counts when run in multithreaded server 
 * 0.4
