@@ -1,4 +1,5 @@
 from collections import defaultdict
+from pathlib import Path
 from typing import Dict
 from typing import Iterable
 from typing import Mapping
@@ -14,7 +15,6 @@ from django.core.checks import Warning
 from django.db import models
 from django.db.models import Model
 from django.urls import get_resolver
-from unipath import Path
 
 from .management.commands.autodumpdata import get_autodump_labels
 
@@ -245,7 +245,7 @@ def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs):
         #   If dev then there must be a .git/hooks symlink
         #   If in prod then there should be a .git/hooks symlink
         git_hooks_path = Path(git_path, 'hooks')
-        if not git_hooks_path.islink():
+        if not git_hooks_path.is_symlink():
             (warning_type, warning_id) = (Error, ID_ERROR_GIT_HOOKS) if settings.DEBUG else (Warning, ID_WARNING_GIT_HOOKS)
             warnings.append(
                 warning_type(
