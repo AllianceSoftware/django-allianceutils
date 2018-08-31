@@ -1,3 +1,4 @@
+from typing import Optional
 from unittest.mock import patch
 import warnings
 
@@ -13,7 +14,13 @@ QUERY_COUNT_OVERHEAD = 0
 
 class QueryCountMiddlewareTestCase(TestCase):
 
-    def assert_warning_count(self, expected_warnings, expected_log_warnings, count, set_threshold=None):
+    def assert_warning_count(self, expected_warnings: int, expected_log_warnings: int, count: int, set_threshold: Optional[int]=None):
+        """
+        :param expected_warnings: number of expected python warnings module warnings
+        :param expected_log_warnings: number of expected python logging module warnings
+        :param count: number of queryies to run
+        :param set_threshold: override request.QUERY_COUNT_WARNING_THRESHOLD to this value
+        """
         client = Client()
 
         data = {'count': str(int(count))}

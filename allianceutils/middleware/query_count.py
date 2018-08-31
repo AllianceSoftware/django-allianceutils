@@ -18,6 +18,7 @@ Possible strategies:
     - see https://github.com/YPlan/django-perf-rec/blob/2.1.0/django_perf_rec/db.py
 
 The problem with both of these is that they capture the content of every query, not just the number of queries
+This data can get quite large depending on the application
 
 - Set connection.cursor() to be a wrapper function and have this call to the underlying connection.__class__.cursor()
     - django debug toolbar takes this approach, but doesn't play well with other apps: it doesn't correctly restore an
@@ -26,26 +27,39 @@ The problem with both of these is that they capture the content of every query, 
 
 Instead we dynamically create a new class for the connection to override cursor() and have this call the parent
 
+
+NOTE: We could have used django signals but since this is going to be called on every single SQL query we want to
+avoid the associated overhead
 """
 import logging
+from typing import Callable
+from typing import List
 import warnings
 
 from django.conf import settings
 from django.db import connections
+from django.http import HttpRequest
+from django.http import HttpResponse
 
 DEFAULT_QUERY_COUNT_WARNING_THRESHOLD = 50
-
 
 logger = logging.getLogger('django.db')
 
 
 def _patched_execute(cursor, sql, params=None):
-    cursor._qcm_callback_execute(sql, params)
-    return cursor._qcm_original_execute(sql, params)
+    """
+    Patch function that is used to replace execute() on a database connection
+    """
+    cursor.querycountmiddleware_callback_execute(sql, params)
+    return cursor.querycountmiddleware_original_execute(sql, params)
+
 
 def _patched_executemany(cursor, sql, param_list):
-    cursor._qcm_callback_executemany(sql, param_list)
-    return cursor._qcm_original_executemany(sql, param_list)
+    """
+    Patch function that is used to replace executemany() on a database connection
+    """
+    cursor.querycountmiddleware_callback_executemany(sql, param_list)
+    return cursor.querycountmiddleware_original_executemany(sql, param_list)
 
 
 class ConnectionCallbackMixin:
@@ -53,18 +67,14 @@ class ConnectionCallbackMixin:
         cursor = super().cursor(*args, **kwargs)
 
         # make sure noone else has tried to patch execute()/executemany() on the object
-        if cursor.__class__.executemany != cursor.executemany.__func__ or \
-                        cursor.__class__.execute != cursor.execute.__func__:
-            warnings.warn(
-                "Connection '%s' cursor has already been patched; ConnectionCallbackMixin doing nothing" % self.alias,
-                RuntimeWarning
-            )
+        if cursor.__class__.executemany != cursor.executemany.__func__ or cursor.__class__.execute != cursor.execute.__func__:
+            warnings.warn("Connection '{self.alias}' cursor has already been patched; ConnectionCallbackMixin doing nothing", RuntimeWarning)
             return cursor
 
-        cursor._qcm_callback_execute = self._qcm_callback_execute
-        cursor._qcm_callback_executemany = self._qcm_callback_executemany
-        cursor._qcm_original_execute = cursor.execute
-        cursor._qcm_original_executemany = cursor.executemany
+        cursor.querycountmiddleware_callback_execute = self.querycountmiddleware_callback_execute
+        cursor.querycountmiddleware_callback_executemany = self.querycountmiddleware_callback_executemany
+        cursor.querycountmiddleware_original_execute = cursor.execute
+        cursor.querycountmiddleware_original_executemany = cursor.executemany
 
         cursor.execute = _patched_execute.__get__(cursor)
         cursor.executemany = _patched_executemany.__get__(cursor)
@@ -72,21 +82,24 @@ class ConnectionCallbackMixin:
         return cursor
 
 
-class QueryInterceptor:
-    def __init__(self, callback_execute, callback_executemany, connection: object, alias: str):
+class QueryObserver:
+    callback_execute: Callable
+    callback_executemany: Callable
+    connection: object
+    alias: str
+    patch_applied: bool
+
+    def __init__(self, callback_execute: Callable, callback_executemany: Callable, connection: object, alias: str):
         self.callback_execute = callback_execute
         self.callback_executemany = callback_executemany
         self.connection = connection
         self.alias = alias
-        self.patched = None
+        self.patch_applied = False
 
     def __enter__(self):
-        # we patch on the connection object itself; make sure there's nothing attached to the object
         if hasattr(self.connection, '_query_count_middleware') or isinstance(self.connection, ConnectionCallbackMixin):
-            warnings.warn(
-                "Connection '%s' has already been patched; has QueryCountMiddleware been included twice?" % self.alias,
-                RuntimeWarning
-            )
+            # This could be a hard exception but we don't want to kill the server in production if someone screws up
+            warnings.warn(f"Can't patch connection '{self.alias}' with QueryObserver multiple times", RuntimeWarning)
             return
 
         # TODO: At some point we might cache these generated classes so we don't have to recreate it every time
@@ -94,53 +107,65 @@ class QueryInterceptor:
         PatchedConnectionClass = type(
             'QueryCountMiddleware' + original_class.__name__,
             (ConnectionCallbackMixin, original_class),
-            {'_qcm_original_class': original_class},
+            {'querycountmiddleware_original_class': original_class},
         )
 
         self.connection.__class__ = PatchedConnectionClass
-        self.patched = True
-        self.connection._qcm_callback_execute =  self.callback_execute
-        self.connection._qcm_callback_executemany = self.callback_executemany
+        self.patch_applied = True
+        self.connection.querycountmiddleware_callback_execute =  self.callback_execute
+        self.connection.querycountmiddleware_callback_executemany = self.callback_executemany
 
     def __exit__(self, ex_type, ex_value, ex_trace):
-        if not self.patched:
-            # multiple QueryCountMiddleware present in MIDDLEWARE
+        if not self.patch_applied:
             return
 
         if not isinstance(self.connection, ConnectionCallbackMixin):
-            warnings.warn(
-                "Connection '%s' has been unexpectedly changed; QueryCountMiddleware cannot cleanup" % self.alias,
-                RuntimeWarning
-            )
+            msg = f"Connection '{self.alias}' has been unexpectedly changed; QueryCountMiddleware cannot cleanup"
+            warnings.warn(msg, RuntimeWarning )
             return
 
-        self.connection.__class__ = self.connection._qcm_original_class
-        delattr(self.connection, '_qcm_callback_execute')
-        delattr(self.connection, '_qcm_callback_executemany')
+        self.connection.__class__ = self.connection.querycountmiddleware_original_class
+        delattr(self.connection, 'querycountmiddleware_callback_execute')
+        delattr(self.connection, 'querycountmiddleware_callback_executemany')
 
 
-class AllConnectionsInterceptor:
-    def __init__(self, callback_execute, callback_executemany):
+class AllConnectionsQueryObserver:
+    """
+    Intercepts calls to every DB connection for
+    - execute()
+    - executemany()
+    """
+
+    callback_execute: Callable
+    callback_executemany: Callable
+    observers: List[QueryObserver]
+
+    def __init__(self, callback_execute: Callable, callback_executemany: Callable):
         self.callback_execute = callback_execute
         self.callback_executemany = callback_executemany
-        self.interceptors = []
+        self.observers = []
 
     def __enter__(self):
         for alias in settings.DATABASES:
-            self.interceptors.append(QueryInterceptor(
+            observer = QueryObserver(
                 self.callback_execute,
                 self.callback_executemany,
-                connections[alias], alias
-            ))
-            self.interceptors[-1].__enter__()
+                connections[alias],
+                alias
+            )
+            self.observers.append(observer)
+            observer.__enter__()
 
     def __exit__(self, ex_type, ex_value, ex_trace):
-        for interceptor in reversed(self.interceptors):
+        for interceptor in reversed(self.observers):
             interceptor.__exit__(ex_type, ex_value, ex_trace)
 
 
-class QueryCountMiddleware(object):
-    def __init__(self, get_response):
+class QueryCountMiddleware:
+    get_response: Callable
+    query_count: int
+
+    def __init__(self, get_response: Callable):
         self.get_response = get_response
         self.query_count = 0
         # warnings.simplefilter('always', category=QueryCountWarning)
@@ -154,7 +179,7 @@ class QueryCountMiddleware(object):
         # set up DB patching
         request.QUERY_COUNT_WARNING_THRESHOLD = getattr(settings, 'QUERY_COUNT_WARNING_THRESHOLD', DEFAULT_QUERY_COUNT_WARNING_THRESHOLD)
 
-        with AllConnectionsInterceptor(self.increment, self.increment):
+        with AllConnectionsQueryObserver(self.increment, self.increment):
             response = self.get_response(request)
 
         if getattr(request, 'QUERY_COUNT_WARNING_THRESHOLD', 0) and self.query_count >= request.QUERY_COUNT_WARNING_THRESHOLD:
