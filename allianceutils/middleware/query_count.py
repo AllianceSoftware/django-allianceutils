@@ -163,26 +163,30 @@ class AllConnectionsQueryObserver:
 
 class QueryCountMiddleware:
     get_response: Callable
-    query_count: int
 
     def __init__(self, get_response: Callable):
         self.get_response = get_response
-        self.query_count = 0
         # warnings.simplefilter('always', category=QueryCountWarning)
 
-    def increment(self, *args, **kwargs):
-        self.query_count += 1
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        # check for QueryCountMiddleware being included twice
+        if getattr(request, 'querycountmiddleware', None) not in (None, self):
+            msg = "QueryCountMiddleware appears to be already initialised (did you include QueryCountMiddleware multiple times?)"
+            warnings.warn(msg, RuntimeWarning)
+            return self.get_response(request)
 
-    def __call__(self, request):
-        self.query_count = 0
-
-        # set up DB patching
+        request.querycountmiddleware = self
+        request.querycountmiddleware_query_count = 0
         request.QUERY_COUNT_WARNING_THRESHOLD = getattr(settings, 'QUERY_COUNT_WARNING_THRESHOLD', DEFAULT_QUERY_COUNT_WARNING_THRESHOLD)
 
-        with AllConnectionsQueryObserver(self.increment, self.increment):
+        def increment_query_count(*args, **kwargs):
+            request.querycountmiddleware_query_count += 1
+
+        with AllConnectionsQueryObserver(increment_query_count, increment_query_count):
             response = self.get_response(request)
 
-        if getattr(request, 'QUERY_COUNT_WARNING_THRESHOLD', 0) and self.query_count >= request.QUERY_COUNT_WARNING_THRESHOLD:
-            logger.warning('excessive query count: request "%s %s" ran %d queries', request.method, request.path, self.query_count)
+        query_count = request.querycountmiddleware_query_count
+        if getattr(request, 'QUERY_COUNT_WARNING_THRESHOLD', 0) and query_count >= request.QUERY_COUNT_WARNING_THRESHOLD:
+            logger.warning(f'excessive query count: request "{request.method} {request.path}" ran {query_count} queries')
 
         return response
