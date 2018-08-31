@@ -1,8 +1,7 @@
 # Inspired by https://github.com/vbabiy/djangorestframework-camel-case
 # (but apart from 2 regexes, completely rewritten in order to add `ignore` parameters)
-from collections import Mapping
 from collections import OrderedDict
-from collections import Sequence
+from collections.abc import Mapping
 import re
 from typing import Any
 from typing import Callable
