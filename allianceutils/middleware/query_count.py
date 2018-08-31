@@ -97,7 +97,7 @@ class QueryObserver:
         self.patch_applied = False
 
     def __enter__(self):
-        if hasattr(self.connection, '_query_count_middleware') or isinstance(self.connection, ConnectionCallbackMixin):
+        if isinstance(self.connection, ConnectionCallbackMixin):
             # This could be a hard exception but we don't want to kill the server in production if someone screws up
             warnings.warn(f"Can't patch connection '{self.alias}' with QueryObserver multiple times", RuntimeWarning)
             return
