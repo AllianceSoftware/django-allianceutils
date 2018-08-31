@@ -708,6 +708,7 @@ FIXME
         * remove `unipath` dependency
         * Added `checks.make_check_autodumpdata`, simplified mechanism to ignore missing autodumpdata warnings
         * Add `render_entry_point` tag
+        * Fix `QueryCountMiddleware` reporting incorrect query counts when run in multithreaded server 
 * 0.4
     * 0.4.2
         * `GenericUserProfileManagerMixin` rewritten; interface has changed, now works correctly
