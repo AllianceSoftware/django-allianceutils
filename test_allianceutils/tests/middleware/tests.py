@@ -78,15 +78,15 @@ class QueryCountMiddlewareTestCase(TestCase):
         """
         Can temporarily increasing the query count threshold
         """
-        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD + 9, settings.QUERY_COUNT_WARNING_THRESHOLD + 10)
-        self.assert_warning_count(0, 1, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD + 10, settings.QUERY_COUNT_WARNING_THRESHOLD + 10)
-        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD + 9, settings.QUERY_COUNT_WARNING_THRESHOLD + 10)
+        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD + 9, set_threshold=settings.QUERY_COUNT_WARNING_THRESHOLD + 10)
+        self.assert_warning_count(0, 1, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD + 10,set_threshold=settings.QUERY_COUNT_WARNING_THRESHOLD + 10)
+        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD + 9, set_threshold=settings.QUERY_COUNT_WARNING_THRESHOLD + 10)
 
     @override_settings(MIDDLEWARE=settings.MIDDLEWARE + ('allianceutils.middleware.QueryCountMiddleware',))
     def test_disable_query_count(self):
         """
         Query count threshold can be temporarily disabled
         """
-        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD * 2, '')
+        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD * 2, set_threshold='')
         self.assert_warning_count(0, 1, settings.QUERY_COUNT_WARNING_THRESHOLD * 2)
-        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD * 2, '')
+        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD * 2, set_threshold='')
