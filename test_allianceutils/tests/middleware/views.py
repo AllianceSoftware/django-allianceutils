@@ -1,6 +1,8 @@
+from distutils.util import strtobool
 import threading
 from typing import Optional
 
+from django.core.exceptions import PermissionDenied
 from django.db import connection
 from django.http import HttpRequest
 from django.http import HttpResponse
@@ -38,6 +40,7 @@ def run_queries(request: HttpRequest, **kwargs) -> HttpRequest:
         set_threshold: (optional) set request.QUERY_COUNT_WARNING_THRESHOLD to this value
     """
     count = int(request.POST['count'])
+    throw_exception = strtobool(request.POST['throw_exception'])
 
     if 'set_threshold' in request.POST:
         request.QUERY_COUNT_WARNING_THRESHOLD = int(request.POST['set_threshold'] or 0)
@@ -49,6 +52,11 @@ def run_queries(request: HttpRequest, **kwargs) -> HttpRequest:
     global _request_thread_wait_barrier
     if _request_thread_wait_barrier is not None:
         _request_thread_wait_barrier.wait()
+
+    if throw_exception:
+        # note that django test client only handles some exceptions:
+        # https://docs.djangoproject.com/en/dev/topics/testing/tools/#exceptions
+        raise PermissionDenied('throw_exception is True')
 
     return HttpResponse('Ran %d queries' % count)
 

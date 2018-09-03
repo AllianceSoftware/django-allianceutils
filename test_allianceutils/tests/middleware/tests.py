@@ -70,6 +70,7 @@ class QueryCountMiddlewareTestCase(TestCase):
         expected_log_warnings: int,
         count: int,
         set_threshold: Optional[int]=None,
+        throw_exception: bool=False,
         thread_count: int = 1,
     ):
         """
@@ -80,9 +81,13 @@ class QueryCountMiddlewareTestCase(TestCase):
         :param expected_log_warnings: number of expected python logging module warnings
         :param count: number of queryies to run
         :param set_threshold: override request.QUERY_COUNT_WARNING_THRESHOLD to this value
+        :param throw_exception: whether the request should throw an exception before returning
         :param thread_count: number of threads to create & run this request in
         """
-        data = {'count': str(int(count))}
+        data = {
+            'count': str(int(count)),
+            'throw_exception': str(throw_exception),
+        }
         if set_threshold is not None:
             data['set_threshold'] = str(set_threshold)
 
@@ -105,7 +110,7 @@ class QueryCountMiddlewareTestCase(TestCase):
         """
         Ensure no false positives
         """
-        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD * 2)
+        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD / 2)
 
     @override_settings(MIDDLEWARE=settings.MIDDLEWARE + ('allianceutils.middleware.QueryCountMiddleware',))
     def test_not_exceeded(self):
@@ -118,10 +123,11 @@ class QueryCountMiddlewareTestCase(TestCase):
     @override_settings(MIDDLEWARE=settings.MIDDLEWARE + ('allianceutils.middleware.QueryCountMiddleware',))
     def test_exceeded(self):
         """
-        Queries less than threshold
+        Queries more than threshold
         """
         self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD - 1)
         self.assert_warning_count(0, 1, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD)
+        self.assert_warning_count(0, 1, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD + settings.QUERY_COUNT_WARNING_THRESHOLD)
         self.assert_warning_count(0, 1, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD)
         self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD - 1)
 
@@ -157,6 +163,18 @@ class QueryCountMiddlewareTestCase(TestCase):
         self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD * 2, set_threshold='')
         self.assert_warning_count(0, 1, settings.QUERY_COUNT_WARNING_THRESHOLD * 2)
         self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD * 2, set_threshold='')
+
+    @override_settings(MIDDLEWARE=settings.MIDDLEWARE + ('allianceutils.middleware.QueryCountMiddleware',))
+    def test_exception(self):
+        """
+        QueryCountMiddleware works even if an exception is thrown
+        """
+        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD - 1)
+        self.assert_warning_count(0, 1, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD)
+        self.assert_warning_count(0, 1, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD, throw_exception=True)
+        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD - 1, throw_exception=True)
+        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD - 1)
+        self.assert_warning_count(0, 1, settings.QUERY_COUNT_WARNING_THRESHOLD - QUERY_COUNT_OVERHEAD)
 
     @override_settings(MIDDLEWARE=settings.MIDDLEWARE + ('allianceutils.middleware.QueryCountMiddleware',))
     def test_query_count_threaded(self):
