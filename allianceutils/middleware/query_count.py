@@ -166,7 +166,6 @@ class QueryCountMiddleware:
 
     def __init__(self, get_response: Callable):
         self.get_response = get_response
-        # warnings.simplefilter('always', category=QueryCountWarning)
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         # check for QueryCountMiddleware being included twice
