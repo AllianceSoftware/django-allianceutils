@@ -31,6 +31,7 @@ Instead we dynamically create a new class for the connection to override cursor(
 NOTE: We could have used django signals but since this is going to be called on every single SQL query we want to
 avoid the associated overhead
 """
+import contextlib
 import logging
 from typing import Callable
 from typing import List
@@ -129,7 +130,7 @@ class QueryObserver:
         delattr(self.connection, 'querycountmiddleware_callback_executemany')
 
 
-class AllConnectionsQueryObserver:
+class AllConnectionsQueryObserver(contextlib.ExitStack):
     """
     Intercepts calls to every DB connection for
     - execute()
@@ -138,27 +139,23 @@ class AllConnectionsQueryObserver:
 
     callback_execute: Callable
     callback_executemany: Callable
-    observers: List[QueryObserver]
 
     def __init__(self, callback_execute: Callable, callback_executemany: Callable):
+        super().__init__()
         self.callback_execute = callback_execute
         self.callback_executemany = callback_executemany
-        self.observers = []
 
     def __enter__(self):
+        stack = super().__enter__()
         for alias in settings.DATABASES:
-            observer = QueryObserver(
+            observer_context = QueryObserver(
                 self.callback_execute,
                 self.callback_executemany,
                 connections[alias],
                 alias
             )
-            self.observers.append(observer)
-            observer.__enter__()
-
-    def __exit__(self, ex_type, ex_value, ex_trace):
-        for interceptor in reversed(self.observers):
-            interceptor.__exit__(ex_type, ex_value, ex_trace)
+            stack.enter_context(observer_context)
+        return stack
 
 
 class QueryCountMiddleware:
