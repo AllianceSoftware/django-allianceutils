@@ -231,6 +231,19 @@ class MyAppConfig(AppConfig):
 		register(check=check_autodumpdata, tags=Tags.models)
 ```
 
+##### check\_admins
+
+* Checks that `settings.ADMINS` has been properly set in staging and production settings files.
+
+##### check\_git\_hooks
+
+* Checks that the `.git/hooks` directory has been sym-linked to the projects' `git-hooks` directory.
+
+##### check\_db\_constraints
+
+* Checks that all models that specify `db_constraints` in their Meta will generate unique constraint names when truncated by the database.
+
+
 ### Middleware
 
 #### CurrentUserMiddleware
@@ -707,6 +720,9 @@ FIXME
         * django 2.1 support
         * remove `unipath` dependency
         * Added `checks.make_check_autodumpdata`, simplified mechanism to ignore missing autodumpdata warnings
+        * Added `checks.check_git_hooks`, ensure .git/hooks directory sym-linked to git-hooks
+        * Added `checks.check_admins`, ensure settings.ADMINS has been set for staging/production
+        * Added `checks.check_db_constraints`, ensure db_constraints are unique when truncated
         * Add `render_entry_point` tag
         * Fix `QueryCountMiddleware` reporting incorrect query counts when run in multithreaded server 
 * 0.4
