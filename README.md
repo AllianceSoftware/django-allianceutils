@@ -712,7 +712,7 @@ FIXME
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.5
-    * 0.5.dev
+    * 0.5.0
         * Breaking Changes    
             * drop support for python 3.4, 3.5
             * `alliance_bundle` removed
