@@ -243,7 +243,7 @@ def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs):
     else:
         # there is a .git dir:
         #   If dev then there must be a .git/hooks symlink
-        #   If in prod then there should be a .git/hooks symlink
+        #   If in prod then there should be a .git/hooks symlink if there is a .git dir
         git_hooks_path = Path(git_path, 'hooks')
         if not git_hooks_path.is_symlink():
             (warning_type, warning_id) = (Error, ID_ERROR_GIT_HOOKS) if settings.DEBUG else (Warning, ID_WARNING_GIT_HOOKS)
