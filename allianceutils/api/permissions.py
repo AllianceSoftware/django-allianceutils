@@ -91,7 +91,7 @@ class GenericDjangoViewsetPermissions(BasePermission):
         """Given a model and an action, return the list of permission
         codes that the user is required to have."""
 
-        model_cls = view.queryset.model
+        model_cls = view.get_queryset().model
         kwargs = {
             'app_label': model_cls._meta.app_label,
             'model_name': model_cls._meta.model_name,
