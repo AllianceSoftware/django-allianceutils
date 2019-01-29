@@ -1,7 +1,7 @@
 # hard (runtime) dependencies
 # keep this in sync with setup.py
 
-# (only django, but the verison is chosen by the tox environment)
+# (only django, but the version is chosen by the tox environment)
 
 # dependencies for tox testing
 django-db-constraints
@@ -10,7 +10,8 @@ django-storages
 djangorestframework
 isort
 logging_tree
-mysqlclient
+# Mysql Client 1.4 is not compatible with Django 1.11
+mysqlclient<1.4
 
 # .. plus specific version dependencies defined in tox.ini
 # we can't list them here because of https://github.com/pypa/pip/issues/2367
