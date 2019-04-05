@@ -10,9 +10,7 @@ django-storages
 djangorestframework
 isort
 logging_tree
-
-# Mysql Client >1.3.14 is not compatible with Django 1.11
-# so dependency is moved into tox.ini
+mysqlclient
 
 # .. plus specific version dependencies defined in tox.ini
 # we can't list them here because of https://github.com/pypa/pip/issues/2367
