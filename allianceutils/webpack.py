@@ -1,7 +1,14 @@
 import time
 import json
+import logging
 from typing import Dict, Optional
 from typing import Sequence
+
+logger = logging.Logger('webpack')
+
+# Number of seconds before warning about slow build
+# Helps catch broken dev servers and confusing devs about why requests are loading
+WEBPACK_DEV_LOADING_TIME_WARNING_DELAY = 20
 
 
 def get_chunk_tags(chunks: Dict, attrs: str):
@@ -137,11 +144,17 @@ class WebpackEntryPointLoader():
 
     def get_chunks_for_entry_point(self, entry_point_name:str, resource_type:str) -> Sequence[Dict]:
         stats = self.load_stats()
-
         if stats['status'] == 'compiling':
+            logger.warning('Webpack is compiling... web requests will wait until this resolves before loading')
+            start = time.time()
+            warning_logged = False
             while stats['status'] == 'compiling':
                 time.sleep(0.1)
                 stats = self.load_stats()
+                if not warning_logged and (time.time() - start) > WEBPACK_DEV_LOADING_TIME_WARNING_DELAY:
+                    logger.warning('Webpack appears to be taking a while to build. Check your webpack devserver is running and has not crashed')
+                    warning_logged = True
+            logger.warning('Webpack compilation complete!')
 
         if stats['status'] == 'error':
             error = f"""
