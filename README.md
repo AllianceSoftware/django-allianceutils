@@ -659,6 +659,7 @@ FIXME
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.5
     * 0.6.dev
+        * Fix DRF BrowserableAPI causes GenericViewsetPermissions to throw out an error for None action
         * Adds warning message when webpack's compiling / takes too long to compile
         * Removed autodumpdata and its related checks
         * Fix `GenericUserProfileQueryset` values() and values_list() incorrectly reject all args
