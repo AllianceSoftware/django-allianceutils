@@ -186,7 +186,6 @@ urlpatterns += router.urls
 ```
 
 
-<<<<<<< HEAD
 ##### check\_admins
 
 * Checks that `settings.ADMINS` has been properly set in staging and production settings files.
@@ -199,12 +198,11 @@ urlpatterns += router.urls
 
 * Checks that all models that specify `db_constraints` in their Meta will generate unique constraint names when truncated by the database.
 
-=======
 ##### check\_explicit\_table\_names
 
-* Checks that all models have `db_table` explicitly defined on their Meta class
-* `allianceutils.checks.make_check_explicit_table_names` allows you to ignore specified apps or models
-	* `allianceutils.checks.check_explicit_table_names` is shorthand for `make_check_explicit_table_names(ignore_labels=DEFAULT_TABLE_NAME_CHECK_IGNORE)` which has a predefined set of apps to ignore
+* Checks that all models have `db_table` explicitly defined on their Meta class, and the table name is in lowercase
+* `allianceutils.checks.make_check_explicit_table_names` allows you to ignore specified apps or models, or bypass the lowercase requirement
+	* `allianceutils.checks.check_explicit_table_names` is shorthand for `make_check_explicit_table_names(ignore_labels=DEFAULT_TABLE_NAME_CHECK_IGNORE, enforce_lowercase=True)` which has a predefined set of apps to ignore
 
 ```python
 from django.apps import AppConfig
@@ -226,7 +224,6 @@ class MyAppConfig(AppConfig):
 
 		register(check=check_explicit_table_names, tags=Tags.models)
 ```
->>>>>>> 1fcc310... feature: check for explicit table names
 
 ### Middleware
 
@@ -732,6 +729,7 @@ FIXME
         * CurrentUserMiddleware now supports the post-django-1.11 MIDDLEWARE
         * Replaces boto used by AllianceStorage with Boto3
         * now supports django 1.11 and 2.2 (dropped support for 2.1)
+        * Added `checks.check_explicit_table_names`, ensure `db_table` specified in model Meta
     * 0.5.0
         * Breaking Changes    
             * drop support for python 3.4, 3.5

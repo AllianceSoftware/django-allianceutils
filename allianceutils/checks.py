@@ -47,7 +47,7 @@ def find_candidate_models(
 ) -> Dict[str, Type[Model]]:
     """
     Given a list of labels to ignore, return models whose app_label or label is NOT in ignore_labels.
-    :return: list of candidate models
+    :return: dict which is a mapping of candidate models in the format of { model_label: Model }
     """
     if app_configs is None:
         app_configs = apps.get_app_configs()
@@ -127,7 +127,7 @@ def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[
 
                     warnings.append(
                         Warning(
-                            'The URL pattern {} is inconsistent with expect_trailing_slash'.format(description),
+                            f'The URL pattern {description} is inconsistent with expect_trailing_slash',
                             obj=url_pattern,
                             id=ID_WARNING_TRAILING_SLASH,
                         )
@@ -244,7 +244,7 @@ def check_db_constraints(app_configs: Iterable[AppConfig], **kwargs):
     return errors
 
 
-def check_explicit_table_names_on_model(model: Type[Model]):
+def check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: bool):
     """
     Use an ast to check if a model has the db_table meta option set.
     This is done this way because a model instance's db_table is always
@@ -264,16 +264,16 @@ def check_explicit_table_names_on_model(model: Type[Model]):
         errors.append(
             Error(
                 'Explicit table name required',
-                hint='Add db_table setting to {} model Meta'.format(model._meta.label),
+                hint=f'Add db_table setting to {model._meta.label} model Meta',
                 obj=model,
                 id=ID_ERROR_EXPLICIT_TABLE_NAME,
             )
         )
-    elif not found.islower():
+    elif enforce_lowercase and not found.islower():
         errors.append(
             Error(
                 'Table names must be lowercase',
-                hint='Check db_table setting for {}'.format(model._meta.label),
+                hint=f'Check db_table setting for {model._meta.label}',
                 obj=model,
                 id=ID_ERROR_EXPLICIT_TABLE_NAME_LOWERCASE,
             )
@@ -282,12 +282,13 @@ def check_explicit_table_names_on_model(model: Type[Model]):
     return errors
 
 
-def make_check_explicit_table_names(ignore_labels=None):
+def make_check_explicit_table_names(ignore_labels=None, enforce_lowercase=True):
     """
     Return a function that checks for models with missing or invalid db_table settings
 
     Args:
         ignore_labels: ignore apps or models matching supplied labels
+        enforce_lowercase: applies rule E010 which enforces table name to be all lowercase; defaults to True
 
     Returns:
         check function for use with django system checks
@@ -300,7 +301,7 @@ def make_check_explicit_table_names(ignore_labels=None):
         candidate_models = find_candidate_models(app_configs, ignore_labels)
         errors = []
         for model in candidate_models.values():
-            errors += check_explicit_table_names_on_model(model)
+            errors += check_explicit_table_names_on_model(model, enforce_lowercase)
         return errors
 
     return _check_explicit_table_names
