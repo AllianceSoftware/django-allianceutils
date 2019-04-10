@@ -10,20 +10,19 @@ class j(TestCase):
         out = StringIO()
         call_command('document_reverse_accessors', 'document_reverse_accessors', '-p', stdout=out)
         self.assertTrue(re.sub(r'^ $', '', out.getvalue(), flags=re.MULTILINE).endswith('''\
-@@ -5,8 +5,10 @@
+@@ -5,8 +5,9 @@
 
  class Person(models.Model):
      name = db.models.CharField(max_length=255)
--    # non_existent -> test_allianceutils.tests.document_reverse_accessors.models.NonExistent.model_field
--    # task_set -> test_allianceutils.tests.document_reverse_accessors.models.Task.person
+-    # no_a_thing = (reverse accessor) ForeignKey from test_allianceutils.tests.document_reverse_accessors.models.NotAThing field removeme
+-    # task_set = (reverse accessor) ForeignKey from test_allianceutils.tests.document_reverse_accessors.models.Task field perswon
 +
 +    # auditors = (reverse accessor) ForeignKey from test_allianceutils.tests.document_reverse_accessors.models.Task field auditor
 +    # reviewers = (reverse accessor) ForeignKey from test_allianceutils.tests.document_reverse_accessors.models.Task field reviewer
-+    # task_set = (reverse accessor) ForeignKey from test_allianceutils.tests.document_reverse_accessors.models.Task field person
+     # task_set = (reverse accessor) ForeignKey from test_allianceutils.tests.document_reverse_accessors.models.Task field person
 
      non_field_attribute = True
-
-@@ -23,6 +25,8 @@
+@@ -24,6 +25,8 @@
      reviewer = models.ForeignKey('Person', on_delete=models.CASCADE, related_name='reviewers')
      auditor = models.ForeignKey('Person', on_delete=models.CASCADE, related_name='auditors')
 

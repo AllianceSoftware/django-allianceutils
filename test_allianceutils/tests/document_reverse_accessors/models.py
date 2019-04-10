@@ -5,8 +5,9 @@ from django.db.models import CharField
 
 class Person(models.Model):
     name = db.models.CharField(max_length=255)
-    # non_existent -> test_allianceutils.tests.document_reverse_accessors.models.NonExistent.model_field
-    # task_set -> test_allianceutils.tests.document_reverse_accessors.models.Task.person
+    # no_a_thing = (reverse accessor) ForeignKey from test_allianceutils.tests.document_reverse_accessors.models.NotAThing field removeme
+    # task_set = (reverse accessor) ForeignKey from test_allianceutils.tests.document_reverse_accessors.models.Task field perswon
+    # task_set = (reverse accessor) ForeignKey from test_allianceutils.tests.document_reverse_accessors.models.Task field person
 
     non_field_attribute = True
 

@@ -16,7 +16,7 @@ from .base import OptionalAppCommand
 
 
 class Command(OptionalAppCommand):
-    COMMENT_REGEX = '^    # \w+ -> [\w\.]+$'
+    COMMENT_REGEX = '^    # \w+ = \(reverse accessor\) \w+ from [\w\.]+ field \w+$'
     COMMENT_FORMAT = '    # {} = (reverse accessor) {} from {}.{} field {}\n'
 
     help = "Document reverse accessors on models."
@@ -109,8 +109,9 @@ class Command(OptionalAppCommand):
     def resolve_name_or_attr(self, func: Union[ast.Attribute, ast.Name]):
         if isinstance(func, ast.Attribute):
             return func.attr
-        else:
+        elif isinstance(func, ast.Name):
             return func.id
+        return ''  # return 'ohcrapihavenoideawhatthisis' - its most likely a call, and those we dont really care.
 
     def is_model_attribute(self, statement: ast.stmt):
         """
