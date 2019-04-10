@@ -2,7 +2,8 @@ from django.apps import apps
 from django.apps import AppConfig
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
-from isort import SortImports
+
+from allianceutils.util.get_firstparty_apps import get_firstparty_apps
 
 
 class OptionalAppCommand(BaseCommand):
@@ -25,7 +26,7 @@ class OptionalAppCommand(BaseCommand):
             except (LookupError, ImportError) as e:
                 raise CommandError("%s. Are you sure your INSTALLED_APPS setting is correct?" % e)
         else:
-            app_configs = self.get_default_app_configs()
+            app_configs = get_firstparty_apps()
 
         output = []
         for app_config in app_configs:
@@ -33,18 +34,6 @@ class OptionalAppCommand(BaseCommand):
             if app_output:
                 output.append(app_output)
         return '\n'.join(output)
-
-    def get_default_app_configs(self):
-        return filter(self.is_internal_app, apps.get_app_configs())
-
-    def is_internal_app(self, app_config: AppConfig):
-        """
-        Use isort's way of determining whether an app is "first party" or otherwise
-        """
-        # SortImports is not instantiated correctly for use with place_module()
-        # unless file_contents is passed with something that is not None or
-        # 'isort:skip_file'
-        return SortImports(file_contents='').place_module(app_config.__module__) == 'FIRSTPARTY'
 
     def handle_app_config(self, app_config: AppConfig, **options):
         """

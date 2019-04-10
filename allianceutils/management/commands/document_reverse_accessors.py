@@ -11,12 +11,13 @@ from django.apps import apps
 from django.db.models import Model
 from django.db.models.fields.reverse_related import ForeignObjectRel
 
+from allianceutils.util.get_firstparty_apps import get_firstparty_apps
 from .base import OptionalAppCommand
 
 
 class Command(OptionalAppCommand):
     COMMENT_REGEX = '^    # \w+ -> [\w\.]+$'
-    COMMENT_FORMAT = '    # {} -> {}.{}.{}\n'
+    COMMENT_FORMAT = '    # {} = (reverse accessor) {} from {}.{} field {}\n'
 
     help = "Document reverse accessors on models."
 
@@ -24,22 +25,10 @@ class Command(OptionalAppCommand):
         super().add_arguments(parser)
         parser.add_argument('-p', '--preview', dest='preview', action='store_true', default=False, help='Preview the output in patch format')
 
-    def handle(self, *app_labels, **options):
-        if len(app_labels) > 0:
-            models = [
-                model
-                for app_label in app_labels
-                for model in apps.get_app_config(app_label).get_models()
-            ]
-        else:
-            models = [
-                model
-                for app_config in self.get_default_app_configs()
-                for model in app_config.get_models()
-            ]
-
-        fields_by_model_by_source_file = self.determine_fields_by_model_by_file(models)
-        output = self.generate_comments(fields_by_model_by_source_file)
+    def handle_app_config(self, app_config, **options):
+        models = [model for model in app_config.get_models()]
+        source_file_model_fields = self.determine_fields_by_model_by_file(models)
+        output = self.generate_comments(source_file_model_fields)
 
         if options['preview']:
             self.preview_output(output)
@@ -47,38 +36,52 @@ class Command(OptionalAppCommand):
             self.apply_output(output)
 
     def determine_fields_by_model_by_file(self, models: Iterable[Type[Model]]):
+        """
+        Takes a list of models and returns the models & fields for each source file
+        :param: model - look up the source file & fields for these models
+        :returns: { source_file: { model_name: [ Field ] } }
+        """
         related_fields = [
             field
             for model in models
             for field in model._meta.related_objects
         ]
 
-        fields_by_model = {
+        model_fields = {
             model: list(model_fields)
-            for model, model_fields in groupby(sorted(related_fields, key=lambda f: f.model.__name__), key=lambda f: f.model)
+            for model, model_fields
+            in groupby(sorted(related_fields, key=lambda f: f.model.__name__), key=lambda f: f.model)
         }
 
-        models_by_source_file = {
+        source_file_models = {
             source_file: list(models)
-            for source_file, models in groupby(sorted(fields_by_model.keys(), key=inspect.getsourcefile), key=inspect.getsourcefile)
+            for source_file, models
+            in groupby(sorted(model_fields.keys(), key=inspect.getsourcefile), key=inspect.getsourcefile)
         }
 
-        fields_by_model_by_source_file = {
+        source_file_model_fields = {
             source_file: {
-                model.__name__: fields_by_model[model]
-                for model in models_by_source_file[source_file]
+                model.__name__: model_fields[model]
+                for model
+                in source_file_models[source_file]
             }
-            for source_file in models_by_source_file.keys()
+            for source_file
+            in source_file_models.keys()
         }
-        return fields_by_model_by_source_file
+        return source_file_model_fields
 
     def generate_comments(self, fields_by_model_by_source_file: dict):
+        """
+        takes in a dict of fields in the format returned by determine_fields_by_model_by_file
+        spits out { source_file: [lines_with_comments] }
+        """
         output = {}
         for (source_file, fields_by_model) in fields_by_model_by_source_file.items():
             with open(source_file, 'r') as source_code:
                 source_lines = [
                     line
-                    for line in source_code.readlines()
+                    for line
+                    in source_code.readlines()
                     if not re.match(self.COMMENT_REGEX, line)
                 ]
                 patches = {}
@@ -91,7 +94,8 @@ class Command(OptionalAppCommand):
                             lineno = model_attributes[-1].lineno
                             patches[lineno] = [
                                 self.create_comment(field)
-                                for field in sorted(fields_by_model[node.name], key=lambda f: f.get_accessor_name())
+                                for field
+                                in sorted(fields_by_model[node.name], key=lambda f: f.get_accessor_name())
                             ]
 
                 # mash em up
@@ -120,6 +124,7 @@ class Command(OptionalAppCommand):
     def create_comment(self, field: ForeignObjectRel):
         return self.COMMENT_FORMAT.format(
             field.get_accessor_name(),
+            field.remote_field.get_internal_type(),
             field.remote_field.model.__module__,
             field.remote_field.model.__name__,
             field.remote_field.name,
