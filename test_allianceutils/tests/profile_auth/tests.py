@@ -81,7 +81,7 @@ class AuthTestCase(TestCase):
         Iterating over users instantiates the correct type
         """
         with self.assertNumQueries(1):
-            qs = User.objects.all().filter(id__gt=0).filter(id__isnull=False)
+            qs = User.objects.all().filter(id__gt=0).filter(id__isnull=False).filter(email__endswith='@example.com')
             for fetched in qs:
                 with self.subTest(username=fetched.username):
                     self.assertEqual(User, type(fetched))
@@ -91,7 +91,7 @@ class AuthTestCase(TestCase):
         """
         Iterating over users still allows us to (inefficiently) get profiles
         """
-        qs = User.objects.all().filter(id__gt=0).filter(id__isnull=False)
+        qs = User.objects.all().filter(id__gt=0).filter(id__isnull=False).filter(email__endswith='@example.com')
         for fetched in qs:
             with self.subTest(username=fetched.username):
                 self.assertEqual(User, type(fetched))
@@ -112,7 +112,7 @@ class AuthTestCase(TestCase):
         """
         with self.assertNumQueries(1):
             # chain some random filters together
-            qs = User.profiles.filter(id__gt=0).filter(id__isnull=False).all()
+            qs = User.profiles.filter(id__gt=0).filter(id__isnull=False).filter(email__endswith='@example.com').all()
             for fetched in qs:
                 with self.subTest(username=fetched.username):
                     self.assertEqual(type(self.profiles[fetched.id]), type(fetched))

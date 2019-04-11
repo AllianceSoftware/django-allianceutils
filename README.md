@@ -662,6 +662,7 @@ FIXME
         * Adds warning message when webpack's compiling / takes too long to compile
         * Removed autodumpdata and its related checks
         * Fix `cd ` values() and values_list() incorrectly reject all args
+        * CurrentUserMiddleware now supports the post-django-1.11 MIDDLEWARE
     * 0.5.0
         * Breaking Changes    
             * drop support for python 3.4, 3.5

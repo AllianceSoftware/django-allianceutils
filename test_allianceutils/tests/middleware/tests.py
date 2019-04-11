@@ -1,11 +1,13 @@
 import threading
+from time import sleep
+from typing import Callable
 from typing import Dict
-from typing import List
 from typing import Optional
 from unittest.mock import patch
 import warnings
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.test import Client
 from django.test import override_settings
 from django.test import TestCase
@@ -16,6 +18,105 @@ from test_allianceutils.tests.middleware.views import reset_thread_wait_barrier
 
 QUERY_COUNT_OVERHEAD = 0
 
+def execute_request(client: object,
+    url_path: str,
+    data: Dict[str, str] = {},
+    thread_count: int = 1,
+    prehook: Callable = None,
+):
+    """
+    Execute a request, optionally on multiple threads
+
+    :param url_path: URL path to request
+    :param data: POST variables
+    :param thread_count: number of threads to create & run this request in
+
+    :return: a list of responses if `thread_pool` more than 1, otherwise a single response
+    """
+    thread_exceptions = []
+    thread_responses = []
+
+    def do_request(client=None, count=None):
+        try:
+            if prehook:
+                client = prehook(client, count)
+            response = client.post(path=url_path, data=data)
+            thread_responses.append(response)
+        except Exception as ex:
+            thread_exceptions.append(ex)
+            raise
+
+    if thread_count == 1:
+        do_request(client, 0)
+        return thread_responses[0]
+
+    threads = [threading.Thread(target=do_request, args=(client, count)) for count in range(thread_count)]
+
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    if thread_exceptions:
+        raise Exception(f'Found {len(thread_exceptions)} exception(s): {thread_exceptions}')
+
+    return thread_responses
+
+
+class CurrentUserMiddlewareTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.username = 'user'
+        self.password = 'password'
+        user = get_user_model().objects.create_user(username=self.username, password=self.password)
+        self.user_id = user.id
+        self.path = reverse('middleware:current_user')
+
+    @override_settings(MIDDLEWARE=settings.MIDDLEWARE + (
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.contrib.auth.middleware.AuthenticationMiddleware',
+        'allianceutils.middleware.CurrentUserMiddleware',
+    ))
+    def test_able_to_get_none_from_middleware_when_anonymous(self):
+        user = self.client.post(path=self.path).json()['username']
+        self.assertEqual(user, None)
+
+    @override_settings(MIDDLEWARE=settings.MIDDLEWARE + (
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.contrib.auth.middleware.AuthenticationMiddleware',
+        'allianceutils.middleware.CurrentUserMiddleware',
+    ))
+    def test_able_to_get_current_user_from_middleware(self):
+        self.client.login(username=self.username, password=self.password)
+        user = self.client.post(path=self.path).json()['username']
+        self.assertEqual(user, self.username)
+
+    @override_settings(MIDDLEWARE=settings.MIDDLEWARE + (
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.contrib.auth.middleware.AuthenticationMiddleware',
+        'allianceutils.middleware.CurrentUserMiddleware',
+    ))
+    def test_able_to_get_current_user_from_middleware_from_respective_threads(self):
+        def create_user_and_login(client, count):
+            client = Client()
+            count = str(count)
+            get_user_model().objects.create_user(username=count, password=count)
+            client.login(username=count, password=count)
+            sleep(1)
+            return client
+
+        THREAD_COUNTS = 13
+        responses = execute_request(
+            client=None,
+            url_path=self.path,
+            thread_count=THREAD_COUNTS,
+            prehook=create_user_and_login
+        )
+
+        usernames = set([response.json()['username'] for response in responses])
+        expected_usernames = set([str(i) for i in range(THREAD_COUNTS)])
+        self.assertEqual(usernames, expected_usernames)
+
 
 class QueryCountMiddlewareTestCase(TestCase):
 
@@ -24,46 +125,6 @@ class QueryCountMiddlewareTestCase(TestCase):
         # (ie it's as if every request is running in a new preocess)
         self.client = Client()
 
-    def execute_request(self,
-        url_path: str,
-        data: Dict[str, str] = {},
-        thread_count: int = 1,
-    ):
-        """
-        Execute a request, optionally on multiple threads
-
-        :param url_path: URL path to request
-        :param data: POST variables
-        :param thread_count: number of threads to create & run this request in
-
-        :return: a list of responses if `thread_pool` more than 1, otherwise a single response
-        """
-        thread_exceptions = []
-        thread_responses = []
-
-        def do_request():
-            try:
-                response = self.client.post(path=url_path, data=data)
-                thread_responses.append(response)
-            except Exception as ex:
-                thread_exceptions.append(ex)
-                raise
-
-        if thread_count == 1:
-            do_request()
-            return thread_responses[0]
-
-        threads = [threading.Thread(target=do_request) for _ in range(thread_count)]
-
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
-
-        if thread_exceptions:
-            raise Exception(f'Found {len(thread_exceptions)} exception(s): {thread_exceptions}')
-
-        return thread_responses
 
     def assert_warning_count(self,
         expected_warnings: int,
@@ -96,7 +157,8 @@ class QueryCountMiddlewareTestCase(TestCase):
             with warnings.catch_warnings(record=True) as w:
                 with patch('allianceutils.middleware.query_count.logger.warning', autospec=True) as mock_logger_warning:
                     warnings.simplefilter('always')
-                    self.execute_request(
+                    execute_request(
+                        client=self.client,
                         url_path=reverse('middleware:run_queries'),
                         data=data,
                         thread_count=thread_count,
@@ -190,7 +252,7 @@ class QueryCountMiddlewareTestCase(TestCase):
         # django runs some extra queries for each new thread
         # the exact number depends on the django version
         url_path = reverse('middleware:query_overhead')
-        responses = self.execute_request(url_path=url_path, thread_count=thread_count)
+        responses = execute_request(client=self.client, url_path=url_path, thread_count=thread_count)
         request_overheads = [r.json()['data'] for r in responses]
         self.assertEqual(len(set(request_overheads)), 1)
         request_overhead = request_overheads[0]
