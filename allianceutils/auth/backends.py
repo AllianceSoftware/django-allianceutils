@@ -1,14 +1,14 @@
 from django.contrib.auth import get_user_model
-import django.contrib.auth.backends
+from authtools.backends import CaseInsensitiveEmailModelBackend
 
 UserModel = get_user_model()
 
 
-class ProfileModelBackend(django.contrib.auth.backends.ModelBackend):
+class ProfileModelBackend(CaseInsensitiveEmailModelBackend):
     """
-    A variant of django.contrib.auth.backends.ModelBackend that will
-    use User.profiles & get_profile() if present otherwise will fall back to default
-    django behaviour
+    A variant of authtools.CaseInsensitiveEmailModelBackend which is a variant of
+    django.contrib.auth.backends.ModelBackend that will use User.profiles &
+    get_profile() if present otherwise will fall back to default django behaviour
     """
     def get_user(self, user_id):
         try:
