@@ -315,9 +315,9 @@ class CamelCaseTestCase(SimpleTestCase):
     def test_camelize(self):
         tests = (
             (
-                [1, 'a_bc_d', {'a_bc_d': {'d_ef_g': ['h_ij_k']}}],
+                [1, 'a_bc_d', {'a_bc_d': {'d_ef_g': ['h_ij_k'], 2: 2}, 1: 1}],
                 [],
-                [1, 'a_bc_d', {'aBcD':   {'dEfG':   ['h_ij_k']}}],
+                [1, 'a_bc_d', {'aBcD':   {'dEfG':   ['h_ij_k'], 2: 2}, 1: 1}],
             ),
             (
                 [1, 'a_bc_d', {'a_bc_d': {'d_ef_g': {'h_ij_k': {'qr_s': 't_uv'}}}}, {'d_ef_g': {'h_ij_k': 4}}],
@@ -332,9 +332,9 @@ class CamelCaseTestCase(SimpleTestCase):
     def test_underscorize(self):
         tests = (
             (
-                [1, 'aBcD', {'aBcD': {'dEfG': ['hIjK']}}],
+                [1, 'aBcD', {'aBcD': {'dEfG': ['hIjK'], 2: 2}, 1: 1}],
                 [],
-                [1, 'aBcD', {'a_bc_d': {'d_ef_g': ['hIjK']}}],
+                [1, 'aBcD', {'a_bc_d': {'d_ef_g': ['hIjK'], 2: 2}, 1: 1}],
             ),
 
             (

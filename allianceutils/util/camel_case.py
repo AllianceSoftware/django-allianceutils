@@ -184,11 +184,15 @@ def underscore_to_camel(key: str) -> str:
     :param key: underscore-case string
     :return: camel-case string
     """
-    return re.sub(
-        _re_underscore,
-        lambda match: match.group()[1].upper(),
-        key
-    )
+    try:
+        return re.sub(
+            _re_underscore,
+            lambda match: match.group()[1].upper(),
+            key
+        )
+    except TypeError:
+        # Not a string... ignore
+        return key
 
 
 def camelize(data: Any, ignore: Sequence[str]=[]) -> Any:
@@ -209,8 +213,12 @@ def camel_to_underscore(key: str) -> str:
     :param key: camel-casestring
     :return: underscore-case string
     """
-    s1 = _first_cap_re.sub(r'\1_\2', key)
-    return _all_cap_re.sub(r'\1_\2', s1).lower()
+    try:
+        s1 = _first_cap_re.sub(r'\1_\2', key)
+        return _all_cap_re.sub(r'\1_\2', s1).lower()
+    except TypeError:
+        # Not a string... ignore
+        return key
 
 
 def underscoreize(data: Any, ignore: Sequence[str]=[]) -> Any:
