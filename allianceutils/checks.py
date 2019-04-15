@@ -16,8 +16,6 @@ from django.db import models
 from django.db.models import Model
 from django.urls import get_resolver
 
-from .management.commands.autodumpdata import get_autodump_labels
-
 if django.VERSION >= (2, 0):
     from django.urls import URLResolver
 else:
@@ -30,8 +28,6 @@ ID_ERROR_PROFILE_RELATED_TABLES = 'allianceutils.E001'
 ID_ERROR_DB_CONSTRAINTS = 'allianceutils.E002'
 ID_ERROR_ADMINS = 'allianceutils.E003'
 ID_WARNING_TRAILING_SLASH = 'allianceutils.W004'
-ID_WARNING_AUTODUMP_MISSING = 'allianceutils.W005'
-ID_WARNING_AUTODUMP_PROXY = 'allianceutils.W006'
 ID_WARNING_GIT = 'allianceutils.W007'
 ID_WARNING_GIT_HOOKS = 'allianceutils.W008'
 ID_ERROR_GIT_HOOKS = 'allianceutils.E008'
@@ -105,124 +101,6 @@ def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[
 
         return check_resolver(get_resolver())
     return _check_url_trailing_slash
-
-
-def warning_autodumpdata_missing(model: models.Model):
-    """
-    Create a missing autodumpdata definition warning
-    """
-    return Warning('Missing autodump definition',
-        hint='see fixtures_autodump in alliance-django-utils README',
-        obj=model,
-        id=ID_WARNING_AUTODUMP_MISSING,
-    )
-
-
-def warning_autodumpdata_proxy(model: models.Model):
-    """
-    Create a missing autodumpdata definition warning
-    """
-    return Warning('Illegal proxy autodump definition',
-        hint='fixtures_autodump(_sql) cannot be set on a proxy model',
-        obj=model,
-        id=ID_WARNING_AUTODUMP_PROXY,
-    )
-
-
-def make_check_autodumpdata(ignore_labels: Iterable[str]):
-    """
-    Return a function that checks for models with missing autodumpdata definitions
-
-    Args:
-        ignore_labels:
-
-    Returns:
-        check function for use with django system checks
-    """
-    ignore_labels = set(ignore_labels)
-
-    def check_autodumpdata(app_configs: Iterable[AppConfig], **kwargs):
-        """
-        Warn about models that don't have a fixtures_autodump or fixtures_autodump_sql attribute;
-        see allianceutils.management.commands.autodumpdata
-        """
-
-        if app_configs is None:
-            app_configs = apps.app_configs
-        else:
-            app_configs = {app_config.label: app_config for app_config in app_configs}
-        check_app_labels = set(app_configs.keys())
-
-        candidate_models: Dict[str, Type[Model]] = {}
-        valid_models: Set[str] = set()
-
-        # find candidate models
-        for app_config in app_configs.values():
-            candidate_models.update({
-                model._meta.label: model
-                for model
-                in app_config.get_models()
-                if model._meta.app_label not in ignore_labels and model._meta.label not in ignore_labels
-            })
-
-        # mark models that have fixtures_autodump details
-        for app_config in app_configs.values():
-            for fixture, autodump_models in get_autodump_labels(app_config).items():
-                valid_models.update(autodump_models.all())
-
-        proxy_models: Set[str] = set([label for label, model in candidate_models.items() if model._meta.proxy])
-
-        # many:many relationships are included implicitly by dumpdata from the table they're declared on,
-        # so mark these as okay.
-        # Known issue: If you are only looking at one app_config then it will not see implict inclusions from
-        # other apps
-        # The implicit inclusion is not transitive (we don't need to recurse into the included tables)
-        implicit_models = set()
-        for model_label in valid_models:
-            try:
-                model = candidate_models[model_label]
-            except KeyError:
-                continue
-            for field in model._meta.get_fields(include_hidden=True): # need to include hidden to get automatically created through models
-                try:
-                    if field.is_relation and field.many_to_many:
-                        through = field.remote_field.through
-                        implicit_models.add(through._meta.label)
-                except AttributeError:
-                    pass
-
-        # TODO: how should GenericForeignKeys be handled?
-
-        # find models that were missing autodumpdata definitions
-        errors_missing = set(candidate_models.keys()) \
-            .difference(valid_models) \
-            .difference(proxy_models) \
-            .difference(implicit_models)
-        errors_missing = [
-            warning_autodumpdata_missing(candidate_models[model_label])
-            for model_label
-            in sorted(errors_missing)
-            if candidate_models[model_label]._meta.app_label in check_app_labels
-        ]
-
-        errors_proxy = []
-        # proxy models should not explicitly define fixture details
-        for model_label in sorted(proxy_models):
-            model = candidate_models[model_label]
-            proxied_model = model._meta.proxy_for_model
-            if getattr(model, 'fixtures_autodump', None) is not getattr(proxied_model, 'fixtures_autodump', None) or \
-                    getattr(model, 'fixtures_autodump_sql', None) is not getattr(proxied_model, 'fixtures_autodump_sql', None):
-                errors_proxy.append(warning_autodumpdata_proxy(model))
-
-        return errors_missing + errors_proxy
-
-    return check_autodumpdata
-
-
-DEFAULT_AUTODUMP_CHECK_IGNORE = [
-    'silk',
-]
-check_autodumpdata = make_check_autodumpdata(DEFAULT_AUTODUMP_CHECK_IGNORE)
 
 
 def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs):

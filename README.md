@@ -117,34 +117,6 @@ customer = MultipleFieldCharFilter(names=('customer__first_name', 'customer__las
 
 #### Commands
 
-##### autodumpdata
-
-* Designed to more conveniently allow dumping of data from different models into different fixtures
-* Strongly advised to also use the [Serializers](#serializers)
-* If `autodumpdata` is invoked without a fixture name, it defaults to `dev`
-* For each model, you add a list of fixture names that this model should be part of
-    * `fixures_autodump`
-        * Fixtures in JSON format
-    * `fixtures_autodump_sql`
-        * Fixures in SQL
-        * Only works with mysql
-        * Much likelier to cause merge conflicts and are less readable by developers but are significantly faster.
-        * Should only be used for large tables where django's default fixture loading is too slow.
-    
-* Example
-    * The following will dump the Customer model as part of the `customers` and `test` fixtures
-    * The following will also dump the Customer model in SQL as part of the `fast` fixture
-
-```python
-class Customer(models.Model):
-    fixtures_autodump = ['customers', 'test']
-    fixtures_autodump_sql = ['fast']
-```
-
-* To add autodump metadata to models that are part of core django or third party models:
-    * This can be particularly useful for dumping django group permissions (which you typically want to send to a live server) separately from test data
-* See also [`check_autodumpdata()`](#check_autodumpdata) to warn about tables that are not part of any autodumpdata fixture
-
 ##### mysqlquickdump
 
 * Command to quickly dump a mysql database
@@ -204,32 +176,6 @@ router.register(r'myurl', MyViewSet)
 urlpatterns += router.urls
 ```
 
-##### check_autodumpdata
-
-* Checks that all models have either [`fixures_autodump`](#autodumpdata) or [`fixures_autodump_sql`](#autodumpdata) defined
-* `allianceutils.checks.make_check_autodumpdata` allows you to ignore specified apps or models
-	* `allianceutils.checks.check_autodumpdata` is shorthand for `make_check_autodumpdata(ignore_labels=DEFAULT_AUTODUMP_CHECK_IGNORE)` which has a predefined set of apps to ignore 
-
-```python
-from django.apps import AppConfig
-from django.core.checks import Tags
-
-from allianceutils.util.checks import DEFAULT_AUTODUMP_CHECK_IGNORE
-from allianceutils.util.checks import make_check_autodumpdata
-
-class MyAppConfig(AppConfig):
-    name = 'myapp'
-    verbose_name = "My App"
-
-	def ready(self):
-		check_autodumpdata = make_check_autodumpdata(ignore_labels=DEFAULT_AUTODUMP_CHECK_IGNORE + [
-			'some_app',
-			'another_app.my_model',
-			'another_app.your_model',
-		])
-	
-		register(check=check_autodumpdata, tags=Tags.models)
-```
 
 ##### check\_admins
 
@@ -474,7 +420,7 @@ def my_view(request):
 * Setup
     * Add to `SERIALIZATION_MODULES` in your settings
     * This will allow you to do fixture dumps with `--format json_ordered`
-    * Note that django treats this as the file extension to use; `autodumpdata` overrides this to `.json`
+    * Note that django treats this as the file extension to use
 
 ```python
 SERIALIZATION_MODULES = {
@@ -714,6 +660,7 @@ FIXME
 * 0.5
     * 0.5.dev
         * Adds warning message when webpack's compiling / takes too long to compile
+        * Removed autodumpdata and its related checks
     * 0.5.0
         * Breaking Changes    
             * drop support for python 3.4, 3.5
