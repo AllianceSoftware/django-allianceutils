@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from rest_framework.permissions import BasePermission
 from rest_framework.permissions import IsAuthenticated
@@ -135,7 +136,10 @@ class GenericDjangoViewsetPermissions(BasePermission):
         # appears that the default behaviour for OPTIONS should be no authentication
         # in the context of CORS.
         # See https://github.com/encode/django-rest-framework/issues/5616
-        if request.method == 'OPTIONS':
+        # Browseable APIs are not supposed to be enabled on production (see ROOT one),
+        # thus we only care when DEBUG's set, and this will not have side effects
+        # if a dev choose to use OPTIONS for some specific purpose.
+        if request.method == 'OPTIONS' and settings.DEBUG:
             return True
 
         user = request.user
@@ -157,7 +161,7 @@ class GenericDjangoViewsetPermissions(BasePermission):
     def has_object_permission(self, request, viewset, obj):
         action = viewset.action
         # Handles OPTIONS requests
-        if request.method == 'OPTIONS':
+        if request.method == 'OPTIONS' and settings.DEBUG:
             return True
         perms = self.get_permissions_for_action(action, viewset)
         user = request.user
