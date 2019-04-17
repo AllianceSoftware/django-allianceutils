@@ -1,5 +1,6 @@
 from unittest.mock import Mock
 
+from django.test import override_settings
 from django.test import TestCase
 
 from allianceutils.api.permissions import GenericDjangoViewsetPermissions
@@ -7,6 +8,7 @@ from allianceutils.api.permissions import SimpleDjangoObjectPermissions
 
 
 class PermissionTestCase(TestCase):
+    @override_settings(DEBUG=True)
     def test_permission_when_request_is_options_request(self):
         """
         Test GenericDjangoViewsetPermissions.has_permission when the request
