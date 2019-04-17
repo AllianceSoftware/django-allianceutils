@@ -658,7 +658,7 @@ FIXME
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.5
-    * 0.5.dev
+    * 0.6.dev
         * Adds warning message when webpack's compiling / takes too long to compile
         * Removed autodumpdata and its related checks
     * 0.5.0
