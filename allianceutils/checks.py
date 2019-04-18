@@ -2,7 +2,7 @@ import ast
 from collections import defaultdict
 import inspect
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional, Callable
 from typing import Iterable
 from typing import List
 from typing import Mapping
@@ -42,7 +42,7 @@ ID_ERROR_EXPLICIT_TABLE_NAME_LOWERCASE = 'allianceutils.E010'
 
 
 def find_candidate_models(
-        app_configs: Union[Iterable[AppConfig], None],
+        app_configs: Optional[Iterable[AppConfig]],
         ignore_labels: List[str] = None
 ) -> Dict[str, Type[Model]]:
     """
@@ -244,7 +244,7 @@ def check_db_constraints(app_configs: Iterable[AppConfig], **kwargs):
     return errors
 
 
-def check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: bool):
+def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: bool) -> Iterable[Type[Error]]:
     """
     Use an ast to check if a model has the db_table meta option set.
     This is done this way because a model instance's db_table is always
@@ -282,7 +282,7 @@ def check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: b
     return errors
 
 
-def make_check_explicit_table_names(ignore_labels=None, enforce_lowercase=True):
+def make_check_explicit_table_names(ignore_labels: Optional[Iterable[str]], enforce_lowercase: bool=True) -> Callable:
     """
     Return a function that checks for models with missing or invalid db_table settings
 
@@ -301,7 +301,7 @@ def make_check_explicit_table_names(ignore_labels=None, enforce_lowercase=True):
         candidate_models = find_candidate_models(app_configs, ignore_labels)
         errors = []
         for model in candidate_models.values():
-            errors += check_explicit_table_names_on_model(model, enforce_lowercase)
+            errors += _check_explicit_table_names_on_model(model, enforce_lowercase)
         return errors
 
     return _check_explicit_table_names
