@@ -1,6 +1,6 @@
 from distutils.util import strtobool
-from time import sleep
 import threading
+from time import sleep
 from typing import Optional
 
 from django.core.exceptions import PermissionDenied
