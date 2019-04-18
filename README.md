@@ -661,7 +661,7 @@ FIXME
     * 0.6.dev
         * Adds warning message when webpack's compiling / takes too long to compile
         * Removed autodumpdata and its related checks
-        * Fix `cd ` values() and values_list() incorrectly reject all args
+        * Fix `GenericUserProfileQueryset` values() and values_list() incorrectly reject all args
         * CurrentUserMiddleware now supports the post-django-1.11 MIDDLEWARE
     * 0.5.0
         * Breaking Changes    
