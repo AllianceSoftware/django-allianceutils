@@ -1,4 +1,5 @@
 from distutils.util import strtobool
+from time import sleep
 import threading
 from typing import Optional
 
@@ -80,10 +81,11 @@ def query_overhead(request: HttpRequest, **kwargs) -> HttpResponse:
 
 def current_user(request: HttpRequest, **kwargs) -> HttpResponse:
     """
-    returns current user from middleware, ignoring request
+    returns current user from middleware
     """
     from allianceutils.middleware import CurrentUserMiddleware
     user = CurrentUserMiddleware.get_user()
+    sleep(1)
     if user['user_id']:
         from django.contrib.auth import get_user_model
         return JsonResponse({'username': get_user_model().objects.get(id=user['user_id']).username})

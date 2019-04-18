@@ -1,5 +1,4 @@
 import threading
-from time import sleep
 from typing import Callable
 from typing import Dict
 from typing import Optional
@@ -72,6 +71,9 @@ class CurrentUserMiddlewareTestCase(TestCase):
         self.user_id = user.id
         self.path = reverse('middleware:current_user')
 
+    def tearDown(self):
+        get_user_model().objects.all().delete()
+
     @override_settings(MIDDLEWARE=settings.MIDDLEWARE + (
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -102,7 +104,6 @@ class CurrentUserMiddlewareTestCase(TestCase):
             count = str(count)
             get_user_model().objects.create_user(username=count, password=count)
             client.login(username=count, password=count)
-            sleep(1)
             return client
 
         THREAD_COUNTS = 13

@@ -32,6 +32,8 @@ from .models import UserFKIndirectModel
 )
 class AuthTestCase(TestCase):
     def setUp(self):
+        User.objects.all().delete()
+
         def create_user(model, username):
             # objects.create_user() is only available if UserManager inheritance works
             user = model(username=username, email='%s@example.com' % username)
@@ -81,7 +83,7 @@ class AuthTestCase(TestCase):
         Iterating over users instantiates the correct type
         """
         with self.assertNumQueries(1):
-            qs = User.objects.all().filter(id__gt=0).filter(id__isnull=False).filter(email__endswith='@example.com')
+            qs = User.objects.all().filter(id__gt=0).filter(id__isnull=False)
             for fetched in qs:
                 with self.subTest(username=fetched.username):
                     self.assertEqual(User, type(fetched))
@@ -91,7 +93,7 @@ class AuthTestCase(TestCase):
         """
         Iterating over users still allows us to (inefficiently) get profiles
         """
-        qs = User.objects.all().filter(id__gt=0).filter(id__isnull=False).filter(email__endswith='@example.com')
+        qs = User.objects.all().filter(id__gt=0).filter(id__isnull=False)
         for fetched in qs:
             with self.subTest(username=fetched.username):
                 self.assertEqual(User, type(fetched))
@@ -112,7 +114,7 @@ class AuthTestCase(TestCase):
         """
         with self.assertNumQueries(1):
             # chain some random filters together
-            qs = User.profiles.filter(id__gt=0).filter(id__isnull=False).filter(email__endswith='@example.com').all()
+            qs = User.profiles.filter(id__gt=0).filter(id__isnull=False).all()
             for fetched in qs:
                 with self.subTest(username=fetched.username):
                     self.assertEqual(type(self.profiles[fetched.id]), type(fetched))

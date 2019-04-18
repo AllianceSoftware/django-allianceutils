@@ -24,8 +24,7 @@ class CurrentUserMiddleware(MiddlewareMixin):
         """
         assert hasattr(request, 'user'), (
             u"The CurrentUser middleware requires the authentication middleware "
-            u"to be installed. Edit your MIDDLEWARE_CLASSES (pre-django-1.10) or"
-            u" MIDDLEWARE (post-django-1.11) setting to insert "
+            u"to be installed. Edit your MIDDLEWARE setting to insert"
             u"'django.contrib.auth.middleware.AuthenticationMiddleware' before "
             u"'%s.CurrentUserMiddleware'." % __name__
         )
