@@ -32,6 +32,8 @@ from .models import UserFKIndirectModel
 )
 class AuthTestCase(TestCase):
     def setUp(self):
+        User.objects.all().delete()
+
         def create_user(model, username):
             # objects.create_user() is only available if UserManager inheritance works
             user = model(username=username, email='%s@example.com' % username)

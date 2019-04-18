@@ -1,11 +1,15 @@
 import threading
 
+from django.utils.deprecation import MiddlewareMixin
 
-class CurrentUserMiddleware(object):
+class CurrentUserMiddleware(MiddlewareMixin):
 
     # mapping of thread id to current user id
     # Based on https://github.com/Alir3z4/django-crequest
     _users = {}
+
+    def __init__(self, get_response=None):
+        self.get_response = get_response
 
     """
     Middleware to enable accessing the currently logged-in user without
@@ -20,7 +24,7 @@ class CurrentUserMiddleware(object):
         """
         assert hasattr(request, 'user'), (
             u"The CurrentUser middleware requires the authentication middleware "
-            u"to be installed. Edit your MIDDLEWARE_CLASSES setting to insert "
+            u"to be installed. Edit your MIDDLEWARE setting to insert"
             u"'django.contrib.auth.middleware.AuthenticationMiddleware' before "
             u"'%s.CurrentUserMiddleware'." % __name__
         )

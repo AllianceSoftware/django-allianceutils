@@ -1,5 +1,6 @@
 from distutils.util import strtobool
 import threading
+from time import sleep
 from typing import Optional
 
 from django.core.exceptions import PermissionDenied
@@ -76,3 +77,16 @@ def query_overhead(request: HttpRequest, **kwargs) -> HttpResponse:
     # django 1.11 and 2.1 behaviour is different; this method of calculating overhead appears to work:
     overhead = cqc.final_queries - 1
     return JsonResponse({'data': overhead})
+
+
+def current_user(request: HttpRequest, **kwargs) -> HttpResponse:
+    """
+    returns current user from middleware
+    """
+    from allianceutils.middleware import CurrentUserMiddleware
+    user = CurrentUserMiddleware.get_user()
+    sleep(1)
+    if user['user_id']:
+        from django.contrib.auth import get_user_model
+        return JsonResponse({'username': get_user_model().objects.get(id=user['user_id']).username})
+    return JsonResponse({'username': None})
