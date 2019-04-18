@@ -47,15 +47,15 @@ class GenericUserProfileQuerySet(QuerySet):
         qs._validate_iterator()
         return qs
 
-    def values(self) -> QuerySet:
+    def values(self, *args, **kwargs) -> QuerySet:
         # We want to fail early if needed rather than when the iterator is created (easier to debug)
-        qs = super().values()
+        qs = super().values(*args, **kwargs)
         qs._validate_iterator()
         return qs
 
-    def values_list(self) -> QuerySet:
+    def values_list(self, *args, **kwargs) -> QuerySet:
         # We want to fail early if needed rather than when the iterator is created (easier to debug)
-        qs = super().values_list()
+        qs = super().values_list(*args, **kwargs)
         qs._validate_iterator()
         return qs
 

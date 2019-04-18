@@ -471,3 +471,7 @@ class AuthTestCase(TestCase):
     def test_count(self):
         # we don't do anything special with aggregate queries; they should work as normal
         self.assertEqual(User.profiles.count(), len(self.profiles))
+
+    def test_queryset_with_args(self):
+        self.assertEqual(tuple(AdminProfile.objects.all().values_list('username')), (('admin1',),('admin2',)))
+        self.assertEqual(tuple(AdminProfile.objects.all().values_list('username', flat=True)), ('admin1', 'admin2'))
