@@ -661,7 +661,7 @@ FIXME
     * 0.6.dev
         * Adds warning message when webpack's compiling / takes too long to compile
         * Removed autodumpdata and its related checks
-        * Fix `GenericUserProfileQuerySet` values() and values_list() incorrectly reject all args
+        * Fix `cd ` values() and values_list() incorrectly reject all args
     * 0.5.0
         * Breaking Changes    
             * drop support for python 3.4, 3.5

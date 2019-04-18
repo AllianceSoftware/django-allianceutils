@@ -4,6 +4,4 @@
 allianceutils.egg-info/
 test_allianceutils/tests/autodumpdata/fixtures/publication.json
 test_allianceutils/tests/autodumpdata/fixtures/publication.sql
-allianceutils/tests/autodumpdata/fixtures/publication.json
-allianceutils/fixtures/publication.json
 .idea/
