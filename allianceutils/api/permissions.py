@@ -115,11 +115,19 @@ class GenericDjangoViewsetPermissions(BasePermission):
             # Determine any `@list_route` decorated methods on the viewset
             for methodname in dir(viewset_class):
                 method = getattr(viewset_class, methodname)
+
+                # pre-3.9 DRF
                 http_methods = getattr(method, 'bind_to_methods', None)
                 # Only certain methods do not require an object
                 if http_methods and all(m.lower() in ('header', 'get', 'post',) for m in http_methods):
                     if getattr(method, 'detail', None) is False:
                         viewset_class._saved_permission_list_actions.add(methodname)
+
+                # post-3.9 DRF
+                if not http_methods and hasattr(method, 'mapping'):
+                    if all(m.lower() in ('header', 'get', 'post',) for m in getattr(method, 'mapping').keys()):
+                        if getattr(method, 'detail', None) is False: # the detail remains accessible - just bind_to_methods' gone.
+                            viewset_class._saved_permission_list_actions.add(methodname)
 
         return viewset_class._saved_permission_list_actions
 
