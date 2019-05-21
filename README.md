@@ -676,6 +676,7 @@ FIXME
         * Fix DRF BrowserableAPI causes GenericViewsetPermissions to throw out an error for None action
         * Fix `GenericUserProfileQueryset` values() and values_list() incorrectly reject all args
         * CurrentUserMiddleware now supports the post-django-1.11 MIDDLEWARE
+        * replace django 2.1 with django 2.2 (LTS)
     * 0.5.0
         * Breaking Changes    
             * drop support for python 3.4, 3.5
