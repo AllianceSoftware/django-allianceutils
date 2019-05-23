@@ -196,6 +196,7 @@ urlpatterns += router.urls
 
 * Middleware to enable basic http auth to block unwanted traffic from search engines and random visitors
     * To be used on remote dev / staging server
+    * Not designed with high security in mind, and not suitable for replace other authorizations in place
 
 * Setup
     * Add `allianceutils.middleware.HttpAuthMiddleware` to `MIDDLEWARE`.
