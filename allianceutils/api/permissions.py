@@ -174,3 +174,35 @@ class GenericDjangoViewsetPermissions(BasePermission):
         perms = self.get_permissions_for_action(action, viewset)
         user = request.user
         return user.has_perms(perms, obj)
+
+
+class GenericDjangoViewsetWithoutModelPermissions(GenericDjangoViewsetPermissions):
+    default_actions_to_perms_map = {}
+    default_list_routes = ()
+
+    def get_permissions_for_action(self, action, view):
+        """Given an action, return the list of permission
+        codes that the user is required to have."""
+
+        perms_map = self.get_actions_to_perms_map()
+
+        try:
+            return [perm for perm in perms_map[action]]
+        except KeyError:
+            raise ImproperlyConfigured('Missing GenericDjangoViewsetWithoutModelPermissions action permission for %s' % action)
+
+    def has_permission(self, request, viewset):
+        action = getattr(viewset, 'action', None)
+
+        # Handles OPTION requests
+        if action is None:
+            return True
+
+        user = request.user
+        perms = self.get_permissions_for_action(action, viewset)
+
+        # Check permissions for action available irrespective of object
+        if user.has_perms(perms):
+            return True
+
+        return False
