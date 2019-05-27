@@ -1,7 +1,7 @@
 # hard (runtime) dependencies
 # keep this in sync with setup.py
 
-# (only django, but the verison is chosen by the tox environment)
+# (only django, but the version is chosen by the tox environment)
 
 # dependencies for tox testing
 django-db-constraints

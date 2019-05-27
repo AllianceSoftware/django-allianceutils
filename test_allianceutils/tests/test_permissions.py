@@ -1,14 +1,25 @@
-from unittest.mock import MagicMock
 from unittest.mock import Mock
 
-from django.contrib.auth import get_user_model
-from django.test import RequestFactory
+from django.test import override_settings
 from django.test import TestCase
 
+from allianceutils.api.permissions import GenericDjangoViewsetPermissions
 from allianceutils.api.permissions import SimpleDjangoObjectPermissions
 
 
 class PermissionTestCase(TestCase):
+    @override_settings(DEBUG=True)
+    def test_permission_when_request_is_options_request(self):
+        """
+        Test GenericDjangoViewsetPermissions.has_permission when the request
+        is an OPTIONS request i.e. the viewset action will be None
+        """
+        request = Mock()
+        request.method = 'OPTIONS'
+        viewset = Mock()
+
+        self.assertTrue(GenericDjangoViewsetPermissions().has_permission(request, viewset))
+
     def test_object_permission_when_user_has_global_permission(self):
         """
         Test SimpleDjangoObjectPermissions.has_object_permission() when the user
