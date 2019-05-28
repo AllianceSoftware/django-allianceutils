@@ -1,3 +1,4 @@
+import base64
 import threading
 from typing import Callable
 from typing import Dict
@@ -264,3 +265,38 @@ class QueryCountMiddlewareTestCase(TestCase):
         self.assert_warning_count(0, thread_count, query_count_threshold + 1, thread_count=thread_count)
         self.assert_warning_count(0, 0,            query_count_threshold,     thread_count=thread_count)
         self.assert_warning_count(0, thread_count, query_count_threshold + 1, thread_count=thread_count)
+
+
+class HttpAuthMiddlewareTestCase(TestCase):
+    username = 'TehLocalFooties'
+    password = 'Toazted:Mushr0m'
+
+    def setUp(self):
+        self.client = Client()
+
+    @override_settings(HTTP_AUTH_USERNAME=username, HTTP_AUTH_PASSWORD=password)
+    def test_site_accessible_without_middleware(self):
+        resp = self.client.get(path="/")
+        self.assertEqual(resp.status_code, 404)
+
+    @override_settings(MIDDLEWARE=settings.MIDDLEWARE + ('allianceutils.middleware.HttpAuthMiddleware',))
+    def test_site_accessible_with_middleware_but_no_config(self):
+        resp = self.client.get(path="/")
+        self.assertEqual(resp.status_code, 404)
+
+    @override_settings(MIDDLEWARE=settings.MIDDLEWARE + ('allianceutils.middleware.HttpAuthMiddleware',), HTTP_AUTH_USERNAME=username, HTTP_AUTH_PASSWORD=password)
+    def test_site_inaccessible_without_any_auth(self):
+        resp = self.client.get(path="/")
+        self.assertEqual(resp.status_code, 401)
+
+    @override_settings(MIDDLEWARE=settings.MIDDLEWARE + ('allianceutils.middleware.HttpAuthMiddleware',), HTTP_AUTH_USERNAME=username, HTTP_AUTH_PASSWORD=password)
+    def test_site_inaccessible_with_incorrect_auth(self):
+        auth_headers = {'HTTP_AUTHORIZATION': 'Basic ' + str(base64.b64encode(b'a:b'), 'utf-8')}
+        resp = self.client.get(path="/", **auth_headers)
+        self.assertEqual(resp.status_code, 401)
+
+    @override_settings(MIDDLEWARE=settings.MIDDLEWARE + ('allianceutils.middleware.HttpAuthMiddleware',), HTTP_AUTH_USERNAME=username, HTTP_AUTH_PASSWORD=password)
+    def test_site_accessible_with_correct_auth(self):
+        auth_headers = {'HTTP_AUTHORIZATION': 'Basic ' + str(base64.b64encode(f'{self.username}:{self.password}'.encode()), 'utf-8')}
+        resp = self.client.get(path="/", **auth_headers)
+        self.assertEqual(resp.status_code, 404)

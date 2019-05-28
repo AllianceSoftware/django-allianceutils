@@ -192,6 +192,17 @@ urlpatterns += router.urls
 
 ### Middleware
 
+#### HttpAuthMiddleware
+
+* Middleware to enable basic http auth to block unwanted traffic from search engines and random visitors
+    * To be used on remote dev / staging server
+    * Not designed with high security in mind, and not suitable for replace other authorizations in place
+
+* Setup
+    * Add `allianceutils.middleware.HttpAuthMiddleware` to `MIDDLEWARE`.
+    * Add `HTTP_AUTH_USERNAME` and `HTTP_AUTH_PASSWORD` to appropriate setting file, e.g. settings/production_staging.py
+        * Consider add them in the way that these two values will be read from env
+
 #### CurrentUserMiddleware
 
 * Middleware to enable accessing the currently logged-in user without a request object.
@@ -659,9 +670,10 @@ FIXME
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.5
     * 0.6.dev
-        * Fix DRF BrowserableAPI causes GenericViewsetPermissions to throw out an error for None action
+        * Added HttpAuthMiddleware to provide basic http auth functionality
         * Adds warning message when webpack's compiling / takes too long to compile
         * Removed autodumpdata and its related checks
+        * Fix DRF BrowserableAPI causes GenericViewsetPermissions to throw out an error for None action
         * Fix `GenericUserProfileQueryset` values() and values_list() incorrectly reject all args
         * CurrentUserMiddleware now supports the post-django-1.11 MIDDLEWARE
     * 0.5.0
