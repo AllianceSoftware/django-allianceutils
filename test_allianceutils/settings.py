@@ -34,6 +34,7 @@ DATABASES = {'default': _db_vars}
 
 INSTALLED_APPS = (
     'allianceutils',
+    'authtools',
     'test_allianceutils',
     'test_allianceutils.tests.middleware',
     'test_allianceutils.tests.profile_auth',
