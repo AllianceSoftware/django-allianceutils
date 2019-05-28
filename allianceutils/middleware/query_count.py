@@ -188,14 +188,14 @@ class QueryCountMiddleware:
         request.QUERY_COUNT_WARNING_THRESHOLD = getattr(settings, 'QUERY_COUNT_WARNING_THRESHOLD', DEFAULT_QUERY_COUNT_WARNING_THRESHOLD)
 
         if django.VERSION < (2, 0):
-            # use the old, evil way to count queries if still running django1
+            # use the old, evil way to count queries if still running django1.x
             def increment_query_count(*args, **kwargs):
                 request.querycountmiddleware_query_count += 1
             with AllConnectionsQueryObserver(increment_query_count, increment_query_count):
                 response = self.get_response(request)
             query_count = request.querycountmiddleware_query_count
         else:
-            # if dj2, go w/ db instrument
+           # if django 2.0+, use DB instrumentation
             counter = QueryCounter()
             with connection.execute_wrapper(counter):
                 response = self.get_response(request)
