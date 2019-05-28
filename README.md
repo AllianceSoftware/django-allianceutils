@@ -457,21 +457,22 @@ SERIALIZATION_MODULES = {
 
 ### Storage
 
-* Requires `django-storages` and `boto` to be installed
+* Requires `django-storages` and `boto3` to be installed
 
 * Use the below if you are using S3 for file storage and want to prefix media and / or static files - otherwise they will all be dumped unprefixed in the bucket.
 
-* Configure S3 for use with S3 Boto
+* Configure S3 for use with S3 Boto3
 
 ```python
 AWS_ACCESS_KEY_ID = 'ACCESS_KEY'
 AWS_STORAGE_BUCKET_NAME = 'bucket-name'
-AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
+AWS_DEFAULT_REGION = 'ap-southeast-2'
+AWS_DEFAULT_ACL = None
 ```
 
 #### StaticStorage
 
-* An extension to S3BotoStorage that specifies a prefix for static files.
+* An extension to S3Boto3Storage that specifies a prefix for static files.
 * Allows you to put static files and media files in S3 without worrying about clobbering each other.
 * Note that if using on Heroku this doesn't play nice with pipelines so you probably don't want to use it
 * Configuration
@@ -480,12 +481,12 @@ AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
 STATICFILES_STORAGE = 'allianceutils.storage.StaticStorage'
 STATICFILES_LOCATION="static"
 
-STATIC_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, STATICFILES_LOCATION)
+STATIC_URL = "https://%s.s3.amazonaws.com/%s/" % (AWS_STORAGE_BUCKET_NAME, STATICFILES_LOCATION)
 ```
 
 #### MediaStorage
 
-* An extension to S3BotoStorage that specifies a prefix for static files.
+* An extension to S3Boto3Storage that specifies a prefix for static files.
 * Allows you to put static files and media files in S3 without worrying about clobbering each other.
 
 Configuration:
@@ -494,7 +495,7 @@ Configuration:
 DEFAULT_FILE_STORAGE = 'allianceutils.storage.MediaStorage'
 MEDIAFILES_LOCATION="media"
 
-MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, MEDIAFILES_LOCATION)
+MEDIA_URL = "https://%s.s3.amazonaws.com/%s/" % (AWS_STORAGE_BUCKET_NAME, MEDIAFILES_LOCATION)
 ```
 
 ### Template Tags
