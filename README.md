@@ -470,7 +470,7 @@ AWS_DEFAULT_ACL = None
 STATICFILES_STORAGE = 'allianceutils.storage.StaticStorage'
 STATICFILES_LOCATION="static"
 
-STATIC_URL = "https://%s.s3.amazonaws.com/%s/" % (AWS_STORAGE_BUCKET_NAME, STATICFILES_LOCATION)
+STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/"
 ```
 
 #### MediaStorage
@@ -484,7 +484,7 @@ Configuration:
 DEFAULT_FILE_STORAGE = 'allianceutils.storage.MediaStorage'
 MEDIAFILES_LOCATION="media"
 
-MEDIA_URL = "https://%s.s3.amazonaws.com/%s/" % (AWS_STORAGE_BUCKET_NAME, MEDIAFILES_LOCATION)
+MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/"
 ```
 
 ### Template Tags
@@ -664,6 +664,8 @@ FIXME
         * Removed autodumpdata and its related checks
         * Fix `GenericUserProfileQueryset` values() and values_list() incorrectly reject all args
         * CurrentUserMiddleware now supports the post-django-1.11 MIDDLEWARE
+        * Replaces boto used by AllianceStorage with Boto3
+        * now supports django 1.11 and 2.2 (dropped support for 2.1)
     * 0.5.0
         * Breaking Changes    
             * drop support for python 3.4, 3.5
