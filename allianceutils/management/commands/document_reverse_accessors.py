@@ -17,8 +17,8 @@ from .base import OptionalAppCommand
 
 
 class Command(OptionalAppCommand):
-    COMMENT_REGEX = '^    # \w+ = \(reverse accessor\) \w+ from [\w\.]+ field \w+$'
-    COMMENT_FORMAT = '    # {} = (reverse accessor) {} from {}.{} field {}\n'
+    COMMENT_REGEX = '^    # \w+ = \(reverse accessor\) \w+ from [\w]+\.[\w]+.[\w]+$'
+    COMMENT_FORMAT = '    # {field} = (reverse accessor) {fieldtype} from {app}.{klass}.{name}\n'
 
     help = "Document reverse accessors on models."
 
@@ -123,11 +123,11 @@ class Command(OptionalAppCommand):
 
     def create_comment(self, field: ForeignObjectRel) -> str:
         return self.COMMENT_FORMAT.format(
-            field.get_accessor_name(),
-            field.remote_field.get_internal_type(),
-            field.remote_field.model.__module__,
-            field.remote_field.model.__name__,
-            field.remote_field.name,
+            field=field.get_accessor_name(),
+            fieldtype=field.remote_field.get_internal_type(),
+            app=field.remote_field.model._meta.app_label,
+            klass=field.remote_field.model.__name__,
+            name=field.remote_field.name,
         )
 
     def preview_output(self, output: Dict[str, List[str]]):
