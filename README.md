@@ -687,6 +687,7 @@ FIXME
         * Added HttpAuthMiddleware to provide basic http auth functionality
         * Adds warning message when webpack's compiling / takes too long to compile
         * Removed autodumpdata and its related checks
+        * `checks.check_git_hooks` now also checks for husky
         * Fix DRF BrowserableAPI causes GenericViewsetPermissions to throw out an error for None action
         * Fix `GenericUserProfileQueryset` values() and values_list() incorrectly reject all args
         * CurrentUserMiddleware now supports the post-django-1.11 MIDDLEWARE

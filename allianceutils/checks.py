@@ -125,11 +125,25 @@ def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs):
         #   If dev then there must be a .git/hooks symlink
         #   If in prod then there should be a .git/hooks symlink if there is a .git dir
         git_hooks_path = Path(git_path, 'hooks')
-        if not git_hooks_path.is_symlink():
+        precommit = git_hooks_path / 'pre-commit'
+
+        found_installed_hooks = False
+        if git_hooks_path.is_symlink():
+            found_installed_hooks = True
+        else:
+            try:
+                with precommit.open('r') as f:
+                    first_two_lines = next(f), next(f)
+                    if first_two_lines == ('#!/bin/sh\n', '# husky\n'):
+                        found_installed_hooks = True
+            except (FileNotFoundError, StopIteration):
+                pass
+
+        if not found_installed_hooks:
             (warning_type, warning_id) = (Error, ID_ERROR_GIT_HOOKS) if settings.DEBUG else (Warning, ID_WARNING_GIT_HOOKS)
             warnings.append(
                 warning_type(
-                    ".git/hooks should be a symlink to the git-hooks directory",
+                    "git hooks are not configured (husky should be installed or .git/hooks should be a symlink to the git-hooks directory)",
                     obj=git_hooks_path,
                     id=warning_id,
                 )
