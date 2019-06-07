@@ -247,7 +247,19 @@ def my_view(request, *args, **kwargs):
 
 ### Migrations
 
-FIXME
+#### Run SQL function
+    * allianceutils.migrations.migrate_run_sql_file
+    * Run arbitrary SQL from the migration/sql directory as part of a mgiration
+    * Usage:
+        ```python
+        migrations.RunPython(insert_my_table),
+
+        def insert_my_table(_, schema_editor):
+            migrate_run_sql_file(schema_editor, 'my_app', '0001_my_table_sql_file')
+        ```
+    * The reason you would do this as an external file & function is so that squashed migrations don't become unwieldy (it will inline and strip whitespace the SQL even for large data files)
+    * Also much faster to load a prepared .sql compares to json loads via ORM
+
 
 ### Models
 
