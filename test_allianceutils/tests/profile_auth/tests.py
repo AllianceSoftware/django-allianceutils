@@ -3,6 +3,7 @@ import io
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractBaseUser
 from django.core.management import call_command
+from django.db import IntegrityError
 from django.forms import IntegerField
 from django.test import Client
 from django.test import override_settings
@@ -36,7 +37,8 @@ class AuthTestCase(TestCase):
 
         def create_user(model, username):
             # objects.create_user() is only available if UserManager inheritance works
-            user = model(username=username, email='%s@example.com' % username)
+            # w/ authtools, your username == ur email
+            user = model(username='%s@example.com' % username, email='%s@example.com' % username)
             user.set_password('abc123')
             user.save()
             return user
@@ -256,6 +258,26 @@ class AuthTestCase(TestCase):
                 response = client.get(reverse('logout'))
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'This is a logout page')
+
+                # login page should succeed with a good password and case-alternated username eg. AdMiN1@eXaMpLe.cOm
+                response = client.post(
+                    path=login_page_url,
+                    data={'username': ''.join([x.lower() if i%2 else x.upper() for i,x in enumerate(user.username)]), 'password': 'abc123'},
+                    follow=True)
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'This is a protected page')
+                self.assertContains(response, 'Username is %s' % user.username)
+
+                # logout for the next user
+                response = client.get(reverse('logout'))
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'This is a logout page')
+
+    def test_create_user_with_case_alternated_existing_username_should_fail(self):
+        username = self.user1.username.split('@')[0]
+        username = ''.join([x.lower() if i%2 else x.upper() for i,x in enumerate(username)])
+        user = User(username='%s@example.com' % username, email='%s@example.com' % username)
+        self.assertRaises(IntegrityError, user.save)
 
     def test_middleware(self):
         """

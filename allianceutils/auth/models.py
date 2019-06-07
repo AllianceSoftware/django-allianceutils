@@ -243,6 +243,10 @@ class GenericUserProfile(Model):
     class Meta:
         abstract = True
 
+    @classmethod
+    def normalize_email(cls, email):
+        return email.lower()
+
     def get_profile(self) -> Model:
         # We're already a profile
         if _is_profile(self):
