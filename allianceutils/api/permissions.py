@@ -177,6 +177,13 @@ class GenericDjangoViewsetPermissions(BasePermission):
 
 
 class GenericDjangoViewsetWithoutModelPermissions(GenericDjangoViewsetPermissions):
+    """
+    When you need to apply the GenericDjangoViewset to viewsets without a queryset eg. viewsets.ViewSet
+    Note that we dont have a default here, so you'll need to provide an actions_to_perms_map attribute:
+        actions_to_perms_map = {
+            'retrieve': ['permission']
+        }
+    """
     default_actions_to_perms_map = {}
     default_list_routes = ()
 
