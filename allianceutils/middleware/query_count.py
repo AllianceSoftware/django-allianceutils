@@ -32,12 +32,13 @@ NOTE: We could have used django signals but since this is going to be called on 
 avoid the associated overhead
 """
 import contextlib
+import django
 import logging
 from typing import Callable
-from typing import List
 import warnings
 
 from django.conf import settings
+from django.db import connection
 from django.db import connections
 from django.http import HttpRequest
 from django.http import HttpResponse
@@ -158,6 +159,17 @@ class AllConnectionsQueryObserver(contextlib.ExitStack):
         return stack
 
 
+class QueryCounter:
+    count: int
+
+    def __init__(self):
+        self.count = 0
+
+    def __call__(self, execute, sql, params, many, context):
+        self.count += 1
+        return execute(sql, params, many, context)
+
+
 class QueryCountMiddleware:
     get_response: Callable
 
@@ -175,13 +187,20 @@ class QueryCountMiddleware:
         request.querycountmiddleware_query_count = 0
         request.QUERY_COUNT_WARNING_THRESHOLD = getattr(settings, 'QUERY_COUNT_WARNING_THRESHOLD', DEFAULT_QUERY_COUNT_WARNING_THRESHOLD)
 
-        def increment_query_count(*args, **kwargs):
-            request.querycountmiddleware_query_count += 1
+        if django.VERSION < (2, 0):
+            # use the old, evil way to count queries if still running django1.x
+            def increment_query_count(*args, **kwargs):
+                request.querycountmiddleware_query_count += 1
+            with AllConnectionsQueryObserver(increment_query_count, increment_query_count):
+                response = self.get_response(request)
+            query_count = request.querycountmiddleware_query_count
+        else:
+           # if django 2.0+, use DB instrumentation
+            counter = QueryCounter()
+            with connection.execute_wrapper(counter):
+                response = self.get_response(request)
+            query_count = counter.count
 
-        with AllConnectionsQueryObserver(increment_query_count, increment_query_count):
-            response = self.get_response(request)
-
-        query_count = request.querycountmiddleware_query_count
         if getattr(request, 'QUERY_COUNT_WARNING_THRESHOLD', 0) and query_count >= request.QUERY_COUNT_WARNING_THRESHOLD:
             logger.warning(f'excessive query count: request "{request.method} {request.path}" ran {query_count} queries')
 
