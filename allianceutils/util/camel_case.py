@@ -6,6 +6,7 @@ import re
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import Iterable
 from typing import Sequence
 from typing import Tuple
 
@@ -162,10 +163,11 @@ def _transform_data(data, transform_key: Callable, ignore_lookup: Dict):
             for (key, value) in data.items()
         )
 
-    # Sequence (list) -- but exclude strings
+    # Iterable - we'll want to use iterable to cover all ... iterables, such as a list or a queryset,
+    #   but we'll want to ignore two common iterable types: str & bytes.
     # At least for now we don't support numeric indices in ignores, so '*' is the only ignore lookup index
     # that can match a list/iterable
-    if isinstance(data, Sequence) and not isinstance(data, str):
+    if isinstance(data, Iterable) and not isinstance(data, str) and not isinstance(data, bytes):
         ignore_lookup = ignore_lookup.get('*', _empty_dict)
         return [_transform_data(x, transform_key, ignore_lookup) for x in data]
 
