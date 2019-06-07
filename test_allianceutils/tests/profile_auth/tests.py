@@ -497,5 +497,5 @@ class AuthTestCase(TestCase):
         self.assertEqual(User.profiles.count(), len(self.profiles))
 
     def test_queryset_with_args(self):
-        self.assertEqual(tuple(AdminProfile.objects.all().values_list('username')), (('admin1',),('admin2',)))
-        self.assertEqual(tuple(AdminProfile.objects.all().values_list('username', flat=True)), ('admin1', 'admin2'))
+        self.assertEqual(tuple(AdminProfile.objects.all().values_list('username')), (('admin1@example.com',),('admin2@example.com',)))
+        self.assertEqual(tuple(AdminProfile.objects.all().values_list('username', flat=True)), ('admin1@example.com', 'admin2@example.com'))
