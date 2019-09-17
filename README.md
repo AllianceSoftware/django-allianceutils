@@ -682,7 +682,8 @@ FIXME
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.5
-    * 0.6.dev
+    * 0.5.dev
+        * underscore_to_camel, camel_to_underscore no longer break if passed dict with non-string keys (eg. int keys)
         * Added HttpAuthMiddleware to provide basic http auth functionality
         * Adds warning message when webpack's compiling / takes too long to compile
         * Removed autodumpdata and its related checks
