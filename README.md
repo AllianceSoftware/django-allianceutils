@@ -195,13 +195,13 @@ urlpatterns += router.urls
 #### HttpAuthMiddleware
 
 * Middleware to enable basic http auth to block unwanted traffic from search engines and random visitors
-    * To be used on remote dev / staging server
-    * Not designed with high security in mind, and not suitable for replace other authorizations in place
+    * Intended to be used on dev / staging servers
+    * Is not a full authorization system: is a single hardcoded username/password and should be used on top of a proper authorization system
 
 * Setup
     * Add `allianceutils.middleware.HttpAuthMiddleware` to `MIDDLEWARE`.
-    * Add `HTTP_AUTH_USERNAME` and `HTTP_AUTH_PASSWORD` to appropriate setting file, e.g. settings/production_staging.py
-        * Consider add them in the way that these two values will be read from env
+    * Add `HTTP_AUTH_USERNAME` and `HTTP_AUTH_PASSWORD` to appropriate setting file, e.g. `settings/production_staging.py`
+        * Remember that you shouldn't be hardcoding credentials in code: read content from env vars or file
 
 #### CurrentUserMiddleware
 
