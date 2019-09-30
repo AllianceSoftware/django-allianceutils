@@ -1,4 +1,5 @@
 import ast
+import datetime
 import importlib
 import os
 import pathlib
@@ -71,10 +72,21 @@ class Command(django.core.management.base.BaseCommand):
                 rel_path = os.path.relpath(pathlib.Path(path) / fn, base_dir)[:-3]
                 all_tasks.append((rel_path, cls, kwargs))
 
+        def match(time_dict, now):
+            if not time_dict:
+                return False
+            flag = True
+            for k, v in time_dict.items():
+                if getattr(now, k, None) != v:
+                    flag = False
+            return flag
 
         while True:
             time.sleep(1)
-            for rel_path, cls, kwargs in all_tasks:
-                import_path = rel_path.replace('/', '.')
-                actual_cls = importlib.import_module(import_path, cls.name)
-                actual_cls().enqueue()
+            now = datetime.now()
+            for rel_path, cls, scheduled_time in all_tasks:
+                if match(scheduled_time, now):
+                    import_path = rel_path.replace('/', '.')
+                    actual_cls = importlib.import_module(import_path, cls.name)
+                    actual_cls().enqueue()
+
