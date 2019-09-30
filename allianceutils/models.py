@@ -16,6 +16,8 @@ from django.db.models import Model
 from django.db.models import Q
 from django.db.models import QuerySet
 
+from allianceutils.asynctask.models import *
+
 
 def add_group_permissions(group_id: int, codenames: List[str]):
     """
