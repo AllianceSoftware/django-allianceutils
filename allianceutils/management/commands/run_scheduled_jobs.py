@@ -13,7 +13,6 @@ class Command(django.core.management.base.BaseCommand):
     help = 'Find ASYNC pseudo crons via checking for decorator and import & execute task. To be used by CRON-worker.'
 
     def handle(self, **options):
-        #base_dir = '/Users/fang/377bin/alliance_django_utils/alliance-django-utils/'
         base_dir = settings.BASE_DIR
 
         files = []
@@ -75,10 +74,12 @@ class Command(django.core.management.base.BaseCommand):
         def match(time_dict, now):
             if not time_dict:
                 return False
+
             flag = True
             for k, v in time_dict.items():
                 if getattr(now, k, None) != v:
                     flag = False
+
             return flag
 
         while True:

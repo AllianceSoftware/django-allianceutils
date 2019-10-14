@@ -12,11 +12,11 @@ class WorkerTimeoutException(Exception):
     pass
 
 
-def signalHandler(*args, **kwargs):
+def signal_handler(*args, **kwargs):
     raise WorkerTimeoutException
 
 
-signal.signal(signal.SIGALRM, signalHandler)
+signal.signal(signal.SIGALRM, signal_handler)
 
 
 def decoratored_celery_shared_task(f):  # to allow for late importing
@@ -35,13 +35,12 @@ class CeleryQueue:
     @decoratored_celery_shared_task
     def run_func(task_id):
 
-        task = AsyncTaskItem.objects.get(id=task_id)
-
-        status = task.get_status()
-        if status in ["Processing", "Success"]:
-            return
-
-        task.mark_processing()
+        with transaction.atomic():
+            task = AsyncTaskItem.objects.select_for_update().get(id=task_id)
+            status = task.get_status()
+            if status in ["Processing", "Success"]:
+                return
+            task.mark_processing()
 
         try:
             p = importlib.import_module(task.task_module)
@@ -51,8 +50,8 @@ class CeleryQueue:
                 signal.alarm(task.timeout)
 
             result = p(*task.payload["args"], **task.payload["kwargs"]).__run__()
-        except Exception:
-            task.mark_failed()
+        except Exception as e:
+            task.mark_failed(e)
             # kick it back into the queue for another attempt if we're not hitting the max retry yet
             if task.get_retries() < task.max_retries:
                 CeleryQueue.run_func.delay(task.id)
@@ -66,6 +65,8 @@ class CeleryQueue:
                 raise ValueError(
                     f"run() of {task.task_module}.{task.task_class} returned None. This is not allowed; change it to return True."
                 )
+        finally:
+            signal.alarm(0)
 
 
 class SQSQueue:
@@ -111,20 +112,22 @@ class SQSQueue:
             connection.close()
 
             task_id = message.attributes.get("MessageDeduplicationId")
-            task, created = AsyncTaskItem.objects.get_or_create(
-                id=int(task_id)
-            )  # in case of SQS we might have "outside" source of queues eg lambda
-            if created and message.body:
-                task.payload = json.loads(
-                    message.body
-                )  # message.body should always be a stringified json
-                task.save()
 
-            status = task.get_status()
-            if status in ["Processing", "Success"]:
-                return
+            with transaction.atomic():
+                task, created = AsyncTaskItem.objects.select_for_update().get_or_create(
+                    id=int(task_id)
+                )  # in case of SQS we might have "outside" source of queues eg lambda
+                if created and message.body:
+                    task.payload = json.loads(
+                        message.body
+                    )  # message.body should always be a stringified json
+                    task.save()
 
-            task.mark_processing()
+                status = task.get_status()
+                if status in ["Processing", "Success"]:
+                    return
+
+                task.mark_processing()
 
             try:
                 p = importlib.import_module(task.task_module)
@@ -134,9 +137,8 @@ class SQSQueue:
                     signal.alarm(task.timeout)
 
                 result = p(message=message).__run__()
-                signal.alarm(0)
-            except Exception:
-                task.mark_failed()
+            except Exception as e:
+                task.mark_failed(e)
                 # dont delete the message if retry maximum's not hit yet; this'll cause sqs queue to send it again next time
                 if task.get_retries() >= task.max_retries:
                     message.delete()
@@ -149,3 +151,5 @@ class SQSQueue:
                         f"run() of {task.task_module}.{task.task_class} returned None. This is not allowed; change it to return True."
                     )
                 message.delete()
+            finally:
+                signal.alarm(0)

@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
 from django.contrib.postgres.fields import JSONField
-from django.db import models
+from django.db import models, transaction
 
 
 class AsyncTaskStatusEnum:
@@ -23,7 +23,7 @@ class AsyncTaskStatusEnum:
 class AsyncTaskItem(models.Model):
     # name of the queue
     queue = models.CharField(blank=True, max_length=255)
-    created_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     # human readable message
     message = models.CharField(blank=True, max_length=255)
@@ -38,12 +38,13 @@ class AsyncTaskItem(models.Model):
     # how many retries are allowed?
     max_retries = models.PositiveSmallIntegerField()
 
-    # how long this task's allowed to run before it times out? - set to
+    # how long this task's allowed to run before it times out? (in seconds)
     timeout = models.PositiveSmallIntegerField()
 
     class Meta:
         db_table = "alliance_utils_async_task_item"
 
+    @transaction.atomic
     def save(self):
         new = not self.id
         super().save()
@@ -61,9 +62,10 @@ class AsyncTaskItem(models.Model):
     def mark_processing(self):
         AsyncTaskStatus(item=self, status=AsyncTaskStatusEnum.PROCESSING).save()
 
-    def mark_failed(self):
-        AsyncTaskStatus(item=self, status=AsyncTaskStatusEnum.FAILED).save()
+    def mark_failed(self, error=''):
+        AsyncTaskStatus(item=self, status=AsyncTaskStatusEnum.FAILED, error=str(error)).save()
 
+    @transaction.atomic
     def mark_success(self, result):
         AsyncTaskStatus(item=self, status=AsyncTaskStatusEnum.SUCCEEDED).save()
         self.success_result = result
@@ -77,7 +79,8 @@ class AsyncTaskStatus(models.Model):
     status = models.PositiveSmallIntegerField(
         choices=AsyncTaskStatusEnum.choices.items()
     )
-    created_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    error = models.TextField(blank=True)
 
     class Meta:
         db_table = "alliance_utils_async_task_status"
