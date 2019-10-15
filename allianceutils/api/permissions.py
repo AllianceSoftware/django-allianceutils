@@ -176,7 +176,7 @@ class GenericDjangoViewsetPermissions(BasePermission):
         return user.has_perms(perms, obj)
 
 
-class GenericDjangoViewsetWithoutModelPermissions(GenericDjangoViewsetPermissions):
+class GenericDjangoViewsetWithoutModelPermissions(BasePermission):
     """
     When you need to apply the GenericDjangoViewset to viewsets without a queryset eg. viewsets.ViewSet
     Note that we dont have a default here, so you'll need to provide an actions_to_perms_map attribute:
@@ -184,8 +184,19 @@ class GenericDjangoViewsetWithoutModelPermissions(GenericDjangoViewsetPermission
             'retrieve': ['permission']
         }
     """
-    default_actions_to_perms_map = {}
-    default_list_routes = ()
+
+    def __init__(self):
+        self._saved_actions_to_perms_map = None
+
+    def get_actions_to_perms_map(self):
+        """
+        Merge the default actions to perms map with the class overrides & return
+        Will cache results
+        """
+        if self._saved_actions_to_perms_map is None:
+            self._saved_actions_to_perms_map = getattr(self, 'actions_to_perms_map', {})
+
+        return self._saved_actions_to_perms_map
 
     def get_permissions_for_action(self, action, view):
         """Given an action, return the list of permission
