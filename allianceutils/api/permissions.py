@@ -184,6 +184,7 @@ class GenericDjangoViewsetWithoutModelPermissions(BasePermission):
             'retrieve': ['permission']
         }
     """
+    actions_to_perms_map = {}
 
     def __init__(self):
         self._saved_actions_to_perms_map = None
@@ -194,11 +195,11 @@ class GenericDjangoViewsetWithoutModelPermissions(BasePermission):
         Will cache results
         """
         if self._saved_actions_to_perms_map is None:
-            self._saved_actions_to_perms_map = getattr(self, 'actions_to_perms_map', {})
+            self._saved_actions_to_perms_map = getattr(self, 'actions_to_perms_map')
 
         return self._saved_actions_to_perms_map
 
-    def get_permissions_for_action(self, action, view):
+    def get_permissions_for_action(self, action, *args, **kwargs):
         """Given an action, return the list of permission
         codes that the user is required to have."""
 
@@ -224,3 +225,9 @@ class GenericDjangoViewsetWithoutModelPermissions(BasePermission):
             return True
 
         return False
+
+    def has_object_permission(self, request, viewset, obj):
+        action = viewset.action
+        perms = self.get_permissions_for_action(action)
+        user = request.user
+        return user.has_perms(perms, obj)
