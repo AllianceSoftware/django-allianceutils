@@ -66,9 +66,10 @@ def execute_request(client: object,
 class CurrentUserMiddlewareTestCase(TestCase):
     def setUp(self):
         self.client = Client()
-        self.username = 'user'
+        self.username = 'user@ue.c'
         self.password = 'password'
-        user = get_user_model().objects.create_user(username=self.username, password=self.password)
+        print(get_user_model())
+        user = get_user_model().objects.create_user(email=self.username, password=self.password)
         self.user_id = user.id
         self.path = reverse('middleware:current_user')
 
@@ -103,7 +104,7 @@ class CurrentUserMiddlewareTestCase(TestCase):
         def create_user_and_login(client, count):
             client = Client()
             count = str(count)
-            get_user_model().objects.create_user(username=count, password=count)
+            get_user_model().objects.create_user(email=count, password=count)
             client.login(username=count, password=count)
             return client
 

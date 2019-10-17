@@ -37,8 +37,8 @@ class AuthTestCase(TestCase):
 
         def create_user(model, username):
             # objects.create_user() is only available if UserManager inheritance works
-            # w/ authtools, your username == ur email
-            user = model(username='%s@example.com' % username, email='%s@example.com' % username)
+            # w/ more recent authtools, you dont have username - instead you have your email
+            user = model(email='%s@example.com' % username)
             user.set_password('abc123')
             user.save()
             return user
@@ -87,7 +87,7 @@ class AuthTestCase(TestCase):
         with self.assertNumQueries(1):
             qs = User.objects.all().filter(id__gt=0).filter(id__isnull=False)
             for fetched in qs:
-                with self.subTest(username=fetched.username):
+                with self.subTest(email=fetched.email):
                     self.assertEqual(User, type(fetched))
             self.assertEqual(qs.count(), len(self.profiles))
 
@@ -97,7 +97,7 @@ class AuthTestCase(TestCase):
         """
         qs = User.objects.all().filter(id__gt=0).filter(id__isnull=False)
         for fetched in qs:
-            with self.subTest(username=fetched.username):
+            with self.subTest(email=fetched.email):
                 self.assertEqual(User, type(fetched))
                 with self.assertNumQueries(self.get_profile_query_count(fetched)):
                     profile = fetched.profile
@@ -118,7 +118,7 @@ class AuthTestCase(TestCase):
             # chain some random filters together
             qs = User.profiles.filter(id__gt=0).filter(id__isnull=False).all()
             for fetched in qs:
-                with self.subTest(username=fetched.username):
+                with self.subTest(email=fetched.email):
                     self.assertEqual(type(self.profiles[fetched.id]), type(fetched))
 
                     profile = fetched.profile
@@ -131,7 +131,7 @@ class AuthTestCase(TestCase):
         Fetching an individual user instantiates the correct type
         """
         for user_id, original_profile in self.profiles.items():
-            with self.subTest(username=original_profile.username):
+            with self.subTest(email=original_profile.email):
                 with self.assertNumQueries(1):
                     fetched = User.objects.get(pk=user_id)
                     self.assertEqual(User, type(fetched))
@@ -145,7 +145,7 @@ class AuthTestCase(TestCase):
         Fetching an individual profile instantiates the correct type
         """
         for user_id, original_profile in self.profiles.items():
-            with self.subTest(username=original_profile.username):
+            with self.subTest(email=original_profile.email):
                 with self.assertNumQueries(1):
                     fetched = User.profiles.get(pk=user_id)
                     self.assertEqual(type(original_profile), type(fetched))
@@ -171,7 +171,7 @@ class AuthTestCase(TestCase):
                 )
 
             for manager, expected_fetched_type, profile_lookup_query_count in manager_query_counts:
-                with self.subTest(username=original_profile.username, model=manager.model.__name__, manager=manager.name):
+                with self.subTest(email=original_profile.email, model=manager.model.__name__, manager=manager.name):
                     # fetch record with no profile lookup
                     with self.assertNumQueries(1):
                         fetched = manager.get(pk=user_id)
@@ -207,19 +207,19 @@ class AuthTestCase(TestCase):
         Manager should inherit from the base model manager
         """
         manager = User.objects
-        user = manager.create_user(username='user99', email='user99@example.com', password='abc123')
+        user = manager.create_user(email='user99@example.com', password='abc123')
         self.assertEqual(type(user), User)
-        self.assertIsNotNone(manager.get_by_natural_key('user99'))
+        self.assertIsNotNone(manager.get_by_natural_key('user99@example.com'))
 
         manager = User.objects
-        user = manager.create_user(username='user100', email='user100@example.com', password='abc123')
+        user = manager.create_user(email='user100@example.com', password='abc123')
         self.assertEqual(type(user), User)
-        self.assertIsNotNone(manager.get_by_natural_key('user100'))
+        self.assertIsNotNone(manager.get_by_natural_key('user100@example.com'))
 
         manager = User.profiles
-        user = manager.create_user(username='user101', email='user101@example.com', password='abc123')
+        user = manager.create_user(email='user101@example.com', password='abc123')
         self.assertEqual(type(user), User)
-        self.assertIsNotNone(manager.get_by_natural_key('user101'))
+        self.assertIsNotNone(manager.get_by_natural_key('user101@example.com'))
 
     def test_login(self):
         """
@@ -228,7 +228,7 @@ class AuthTestCase(TestCase):
         client = Client()
 
         for user in (self.user1, self.admin1, self.customer1):
-            with self.subTest(username=user.username):
+            with self.subTest(email=user.email):
                 # protected page should redirect to login page
                 response = client.get(
                     path=reverse('profile_auth:login_required'),
@@ -241,18 +241,18 @@ class AuthTestCase(TestCase):
                 # login page should fail with a bad password
                 response = client.post(
                     path=login_page_url,
-                    data={'username': user.username, 'password': 'badpassword'})
+                    data={'username': user.email, 'password': 'badpassword'})
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'This is a login page')
 
                 # login page should succeed with a good password
                 response = client.post(
                     path=login_page_url,
-                    data={'username': user.username, 'password': 'abc123'},
+                    data={'username': user.email, 'password': 'abc123'},
                     follow=True)
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'This is a protected page')
-                self.assertContains(response, 'Username is %s' % user.username)
+                self.assertContains(response, 'Username is %s' % user.email)
 
                 # logout for the next user
                 response = client.get(reverse('logout'))
@@ -262,11 +262,11 @@ class AuthTestCase(TestCase):
                 # login page should succeed with a good password and case-alternated username eg. AdMiN1@eXaMpLe.cOm
                 response = client.post(
                     path=login_page_url,
-                    data={'username': ''.join([x.lower() if i%2 else x.upper() for i,x in enumerate(user.username)]), 'password': 'abc123'},
+                    data={'username': ''.join([x.lower() if i%2 else x.upper() for i,x in enumerate(user.email)]), 'password': 'abc123'},
                     follow=True)
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'This is a protected page')
-                self.assertContains(response, 'Username is %s' % user.username)
+                self.assertContains(response, 'Username is %s' % user.email)
 
                 # logout for the next user
                 response = client.get(reverse('logout'))
@@ -274,10 +274,10 @@ class AuthTestCase(TestCase):
                 self.assertContains(response, 'This is a logout page')
 
     def test_create_user_with_case_alternated_existing_username_should_fail(self):
-        username = self.user1.username.split('@')[0]
+        username = self.user1.email.split('@')[0]
         username = ''.join([x.lower() if i%2 else x.upper() for i,x in enumerate(username)])
-        user = User(username='%s@example.com' % username, email='%s@example.com' % username)
-        self.assertRaises(IntegrityError, user.save)
+        user = User(email='%s@example.com' % username)
+        self.assertRaises(ValueError, user.save)
 
     def test_middleware(self):
         """
@@ -286,16 +286,16 @@ class AuthTestCase(TestCase):
         client = Client()
 
         for user in (self.user1, self.admin1, self.customer1):
-            with self.subTest(username=user.username):
+            with self.subTest(email=user.email):
                 # login page should succeed
                 response = client.post(
                     path=reverse('login') + '?' + urlencode({'next': reverse('profile_auth:login_required')}),
-                    data={'username': user.username, 'password': 'abc123'},
+                    data={'username': user.email, 'password': 'abc123'},
                     follow=True)
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'This is a protected page')
                 self.assertEqual(response.context['user']['id'], user.id)
-                self.assertEqual(response.context['user']['username'], user.username)
+                self.assertEqual(response.context['user']['username'], user.email)
                 self.assertEqual(response.context['user']['class'], type(user).__name__)
 
                 # logout for the next user
@@ -331,7 +331,7 @@ class AuthTestCase(TestCase):
         self._test_exception('DoesNotExist', lambda mgr: mgr.get_by_natural_key('thisshouldnotexist'))
 
     def test_exception_multipleobjectsreturned(self):
-        self._test_exception('MultipleObjectsReturned', lambda mgr: mgr.get(username__isnull=False))
+        self._test_exception('MultipleObjectsReturned', lambda mgr: mgr.get(email__isnull=False))
 
     def test_superuser_create(self):
         username = 'test_superuser_create'
@@ -340,7 +340,6 @@ class AuthTestCase(TestCase):
         try:
             call_command('createsuperuser',
                 interactive=False,
-                username=username,
                 email=email,
                 stdout=stdout
             )
@@ -352,15 +351,15 @@ class AuthTestCase(TestCase):
         # validate that was created correctly
         manager = get_user_model()._default_manager
 
-        user = manager.get(username=username)
+        user = manager.get(email=email)
         self.assertEqual(user.email, email)
 
-        user = manager.get_by_natural_key(username)
+        user = manager.get_by_natural_key(email)
         self.assertEqual(user.email, email)
 
     def test_fk_immediate(self):
         for user_id, original_profile in self.profiles.items():
-            with self.subTest(username=original_profile.username):
+            with self.subTest(email=original_profile.email):
                 # can assign any User or subclass to the FK
                 referrer = UserFKImmediateModel(fk_id=user_id)
                 referrer.save()
@@ -379,7 +378,7 @@ class AuthTestCase(TestCase):
 
     def test_fk_indirect(self):
         for user_id, original_profile in self.profiles.items():
-            with self.subTest(username=original_profile.username):
+            with self.subTest(email=original_profile.email):
                 # can assign any User or subclass to the FK
                 referrer_middle = UserFKImmediateModel(fk_id=user_id)
                 referrer_middle.save()
@@ -401,7 +400,7 @@ class AuthTestCase(TestCase):
 
     def test_select_prefetch_related(self):
         for user_id, original_profile in self.profiles.items():
-            with self.subTest(username=original_profile.username):
+            with self.subTest(email=original_profile.email):
                 referrer_middle = UserFKImmediateModel(fk_id=user_id)
                 referrer_middle.save()
 
@@ -461,19 +460,19 @@ class AuthTestCase(TestCase):
             f = IntegerField()
 
             def get_full_name(self):
-                return self.username
+                return self.email
 
             def get_short_name(self):
-                return self.username
+                return self.email
 
         class GoodUserModel(GenericUserProfile, AbstractBaseUser):
             f = IntegerField()
 
             def get_full_name(self):
-                return self.username
+                return self.email
 
             def get_short_name(self):
-                return self.username
+                return self.email
 
             related_profile_tables = []
 
@@ -497,5 +496,5 @@ class AuthTestCase(TestCase):
         self.assertEqual(User.profiles.count(), len(self.profiles))
 
     def test_queryset_with_args(self):
-        self.assertEqual(tuple(AdminProfile.objects.all().values_list('username')), (('admin1@example.com',),('admin2@example.com',)))
-        self.assertEqual(tuple(AdminProfile.objects.all().values_list('username', flat=True)), ('admin1@example.com', 'admin2@example.com'))
+        self.assertEqual(tuple(AdminProfile.objects.all().values_list('email')), (('admin1@example.com',),('admin2@example.com',)))
+        self.assertEqual(tuple(AdminProfile.objects.all().values_list('email', flat=True)), ('admin1@example.com', 'admin2@example.com'))

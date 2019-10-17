@@ -29,7 +29,7 @@ lint:
 # unit tests
 test-python:
   services:
-    - alliance/mysql
+    - postgres:9.5
   script:
     - pip install tox
     - time bin/runtests.sh

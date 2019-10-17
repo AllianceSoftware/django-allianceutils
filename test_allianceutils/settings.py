@@ -9,18 +9,14 @@ is_ci = _os.environ.get('CI_SERVER', 'no') == 'yes'
 BASE_DIR = _Path(__file__).parent
 
 _db_vars = {
-    'HOST': ('MYSQL_HOST', None),
-    'USER': ('MYSQL_USER', None),
-    'PASSWORD': ('MYSQL_PASSWORD', None),
-    'NAME': ('MYSQL_DATABASE', 'alliance_django_utils'),
+    'NAME': ('DB_NAME', 'alliance_django_utils'),
+    'PORT': ('DB_PORT', '5432'),
+    'USER': ('DB_USER', _os.environ['USER']),
+    'PASSWORD': ('DB_PASSWORD', None),
 }
 _db_vars = {var: _os.environ.get(env_var, default) for var, (env_var, default) in _db_vars.items()}
 _db_vars = {key: value for key, value in _db_vars.items() if value}
-_db_vars['ENGINE'] = 'django.db.backends.mysql'
-_db_vars['OPTIONS'] = {
-    'init_command': 'SET default_storage_engine=InnoDB',
-    'read_default_file': '~/.my.cnf',
-}
+_db_vars['ENGINE'] = 'django.db.backends.postgresql'
 
 # Django connects via the live DB in order to create/drop the test DB
 # If the live DB doesn't exist then it bails out before even trying to

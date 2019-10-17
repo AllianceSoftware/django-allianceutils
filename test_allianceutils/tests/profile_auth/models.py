@@ -1,15 +1,16 @@
-import django.contrib.auth.models
+from authtools.models import AbstractEmailUser
+from authtools.models import UserManager
 from django.db import models
 
 import allianceutils.auth.models
 
 
-class UserManager(allianceutils.auth.models.GenericUserProfileManagerMixin, django.contrib.auth.models.UserManager):
+class UserManager(allianceutils.auth.models.GenericUserProfileManagerMixin, UserManager):
     def get_by_natural_key(self, username):
-        return self.get(username=username)
+        return self.get(email=username)
 
 
-class User(allianceutils.auth.models.GenericUserProfile, django.contrib.auth.models.AbstractUser):
+class User(allianceutils.auth.models.GenericUserProfile, AbstractEmailUser):
     objects = UserManager()
     profiles = UserManager(select_related_profiles=True)
     related_profile_tables = [
@@ -17,8 +18,12 @@ class User(allianceutils.auth.models.GenericUserProfile, django.contrib.auth.mod
         'adminprofile',
     ]
 
+    first_name = models.CharField(max_length=128, blank=True)
+    last_name = models.CharField(max_length=128, blank=True)
+    email = models.EmailField(unique=True)
+
     def natural_key(self):
-        return (self.username,)
+        return (self.email,)
 
 
 class CustomerProfile(User):

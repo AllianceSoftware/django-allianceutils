@@ -247,6 +247,11 @@ class GenericUserProfile(Model):
     def normalize_email(cls, email):
         return email.lower()
 
+    def save(self, *args, **kwargs):
+        if not self.pk and self.__class__.objects.filter(email=self.__class__.normalize_email(self.email)).exists():
+            raise ValueError('Sorry, this email is not available.')
+        return super().save(*args, **kwargs)
+
     def get_profile(self) -> Model:
         # We're already a profile
         if _is_profile(self):
