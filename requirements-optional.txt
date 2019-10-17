@@ -12,6 +12,7 @@ djangorestframework
 isort
 logging_tree
 mysqlclient
+psycopg2
 
 # .. plus specific version dependencies defined in tox.ini
 # we can't list them here because of https://github.com/pypa/pip/issues/2367
