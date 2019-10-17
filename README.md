@@ -91,6 +91,15 @@ If you have no object level permissions (eg. from rules) then it will just do a 
 
 **Status: No unit tests**
 
+FIXME
+
+##### GenericDjangoViewsetWithoutModelPermissions
+
+**Status: No unit tests**
+
+Works like GenericDjangoViewsetPermissions, except it does not require a queryset and hence can be used on model-free
+viewsets, eg. viewsets.ViewSet.
+
 ### Auth
 
 FIXME
@@ -682,7 +691,8 @@ FIXME
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.5
-    * 0.5.dev
+    * 0.6.dev
+        * Added GenericDjangoViewsetWithoutModelPermissions
         * underscore_to_camel, camel_to_underscore no longer break if passed dict with non-string keys (eg. int keys)
         * Added HttpAuthMiddleware to provide basic http auth functionality
         * Adds warning message when webpack's compiling / takes too long to compile
