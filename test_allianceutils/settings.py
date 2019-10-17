@@ -10,8 +10,9 @@ BASE_DIR = _Path(__file__).parent
 
 _db_vars = {
     'NAME': ('DB_NAME', 'alliance_django_utils'),
+    'HOST': ('DB_HOST', 'localhost'),
     'PORT': ('DB_PORT', '5432'),
-    'USER': ('DB_USER', _os.environ['USER']),
+    'USER': ('DB_USER', _os.environ.get('USER', '')),
     'PASSWORD': ('DB_PASSWORD', None),
 }
 _db_vars = {var: _os.environ.get(env_var, default) for var, (env_var, default) in _db_vars.items()}

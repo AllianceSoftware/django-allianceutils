@@ -716,20 +716,23 @@ FIXME
 ## Changelog
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
-* 0.5
+* 0.6
     * 0.6.dev
+    * 0.6.0
+        * Breaking Changes
+            * Removed autodumpdata and its related checks
         * Added GenericDjangoViewsetWithoutModelPermissions
         * underscore_to_camel, camel_to_underscore no longer break if passed dict with non-string keys (eg. int keys)
         * Added HttpAuthMiddleware to provide basic http auth functionality
         * Adds warning message when webpack's compiling / takes too long to compile
-        * Removed autodumpdata and its related checks
         * `checks.check_git_hooks` now also checks for husky
         * Fix DRF BrowserableAPI causes GenericViewsetPermissions to throw out an error for None action
         * Fix `GenericUserProfileQueryset` values() and values_list() incorrectly reject all args
         * CurrentUserMiddleware now supports the post-django-1.11 MIDDLEWARE
         * Replaces boto used by AllianceStorage with Boto3
-        * now supports django 1.11 and 2.2 (dropped support for 2.1)
+        * now supports django 1.11 and 2.2
         * Added `checks.check_explicit_table_names`, ensure `db_table` specified in model Meta
+* 0.5
     * 0.5.0
         * Breaking Changes    
             * drop support for python 3.4, 3.5
