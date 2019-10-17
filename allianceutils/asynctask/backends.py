@@ -1,6 +1,7 @@
 import importlib
 import json
 import signal
+import traceback
 
 from django.db import connection
 from django.db import transaction
@@ -50,8 +51,8 @@ class CeleryQueue:
                 signal.alarm(task.timeout)
 
             result = p(*task.payload["args"], **task.payload["kwargs"]).__run__()
-        except Exception as e:
-            task.mark_failed(e)
+        except Exception:
+            task.mark_failed(traceback.format_exc())
             # kick it back into the queue for another attempt if we're not hitting the max retry yet
             if task.get_retries() < task.max_retries:
                 CeleryQueue.run_func.delay(task.id)
@@ -137,8 +138,8 @@ class SQSQueue:
                     signal.alarm(task.timeout)
 
                 result = p(message=message).__run__()
-            except Exception as e:
-                task.mark_failed(e)
+            except Exception:
+                task.mark_failed(traceback.format_exc())
                 # dont delete the message if retry maximum's not hit yet; this'll cause sqs queue to send it again next time
                 if task.get_retries() >= task.max_retries:
                     message.delete()
