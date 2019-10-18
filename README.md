@@ -706,6 +706,28 @@ def generate_number():
 retry_fn(generate_number, (IntegrityError, ), 10)
 ```
 
+#### get_firstparty_apps
+
+`util.get_firstparty_apps` can be used to retrieve app_configs considered to be first party, ie, all that does not come from a third party package.
+This is beneficial when you want to write your own checks by excluding things you dont really care - a sample usage can be found inside 'checks.py', or
+used as such:
+
+```python
+
+from allianceutils.util import get_firstparty_apps
+
+app_configs = get_firstparty_apps()
+models_to_be_checked = {}
+
+for app_config in app_configs:
+    models_to_be_checked.update({
+        model._meta.label: model
+        for model
+        in app_config.get_models()
+    })
+```
+
+
 ### Views 
 
 #### JSONExceptionAPIView
@@ -721,6 +743,7 @@ FIXME
     * 0.6.0
         * Breaking Changes
             * Removed autodumpdata and its related checks
+            * Introduced two new models (AsyncItem and AsyncItemStatus). These two may cause your exisiting checks to fail. Consider migrate checks to use get_firstparty_apps.
         * Added GenericDjangoViewsetWithoutModelPermissions
         * underscore_to_camel, camel_to_underscore no longer break if passed dict with non-string keys (eg. int keys)
         * Added HttpAuthMiddleware to provide basic http auth functionality
@@ -732,6 +755,7 @@ FIXME
         * Replaces boto used by AllianceStorage with Boto3
         * now supports django 1.11 and 2.2
         * Added `checks.check_explicit_table_names`, ensure `db_table` specified in model Meta
+        * Added util.get_firstparty_apps() to be used for excluding 3rd party modules in certain checks
 * 0.5
     * 0.5.0
         * Breaking Changes    

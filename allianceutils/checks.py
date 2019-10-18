@@ -6,9 +6,7 @@ from typing import Dict, Optional, Callable
 from typing import Iterable
 from typing import List
 from typing import Mapping
-from typing import Set
 from typing import Type
-from typing import Union
 
 import django
 from django.apps import apps
@@ -16,9 +14,10 @@ from django.apps.config import AppConfig
 from django.conf import settings
 from django.core.checks import Error
 from django.core.checks import Warning
-from django.db import models
 from django.db.models import Model
 from django.urls import get_resolver
+
+from allianceutils.util import get_firstparty_apps
 
 if django.VERSION >= (2, 0):
     from django.urls import URLResolver
@@ -50,7 +49,7 @@ def find_candidate_models(
     :return: dict which is a mapping of candidate models in the format of { model_label: Model }
     """
     if app_configs is None:
-        app_configs = apps.get_app_configs()
+        app_configs = get_firstparty_apps()
 
     if ignore_labels is None:
         ignore_labels = []
