@@ -32,6 +32,7 @@ __version__ = str(highest_ver)
 install_requires = [
     # remember to keep this in sync with requirements.txt if necessary
     'django >= 1.11',
+    'isort >= 4.3.17',
 ]
 
 # setuptools only added environment markers in v20.5
