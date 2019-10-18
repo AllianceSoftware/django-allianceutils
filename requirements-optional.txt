@@ -9,7 +9,6 @@ django-db-constraints
 django-filter
 django-storages
 djangorestframework
-isort
 logging_tree
 mysqlclient
 psycopg2
