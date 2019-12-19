@@ -41,11 +41,11 @@ function lint_virtualenv() {
 
 function lint_python_source() {
 	if ! $files_all && [[ ${#files_py[@]} -le 0 ]] ; then
-	    return 0
-    fi
+		return 0
+	fi
 
 	notice "Linting python source"
-    bin/reformat-imports.sh --check-only "${files_py[@]}" | { egrep -v '^Skipped ' || true ; }
+	bin/reformat-imports.sh --check-only "${files_py[@]}" | { egrep -v '^Skipped ' || true ; }
 }
 
 function lint_secrets() {

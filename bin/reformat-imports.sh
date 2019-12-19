@@ -9,10 +9,10 @@ if [[ "$1" = "--check-only" ]] ; then
 	check_only="--check-only"
 	shift
 else
-    # Insist on an explicit target if we're going to be modifying files
+	# Insist on an explicit target if we're going to be modifying files
 	if [[ $# -eq 0 ]] ; then
-        echo "You must specify something to reformat" >&2
-        exit 1
+		echo "You must specify something to reformat" >&2
+		exit 1
 	fi
 fi
 
@@ -36,7 +36,7 @@ if ! [ -x "$isort_cmd" ] ; then
 fi
 
 "$isort_cmd" \
-    --settings-path "$project_dir" \
+	--settings-path "$project_dir" \
 	--recursive \
 	$check_only \
 	"${@:-$base_dir}"

@@ -17,9 +17,9 @@
 #  static_dir - collected static files path
 
 realpath=$( command -v realpath >/dev/null 2>&1 ) || function realpath() {
-    # OSX readlink does not contain the canonicalize functionality that gnu readlink does
-    # so we do this in python
-    python -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$1"
+	# OSX readlink does not contain the canonicalize functionality that gnu readlink does
+	# so we do this in python
+	python -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "$1"
 }
 
 function require_virtualenv() {
@@ -59,7 +59,7 @@ MD5SUM="$( which md5sum || which gmd5sum || fail 'Cannot find md5sum' )"
 FIND="$( which gfind || which find || fail 'Cannot find GNU findutils' )"
 
 if [[ "$OSTYPE" =~ ^darwin ]] ; then
-    # -quit is a GNU findutils extension
+	# -quit is a GNU findutils extension
 	$FIND -quit 2>/dev/null || fail "Missing GNU find; run 'brew install findutils'"
 fi
 
