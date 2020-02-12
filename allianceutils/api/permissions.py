@@ -23,9 +23,13 @@ class SimpleDjangoObjectPermissions(BasePermission):
     def has_object_permission(self, request, view, obj):
         # Note: this assertion may fail with django_rules as it will happily try to check the same predicate regardless
         # of whether obj is supplied or not, meaning that both calls below will return True.
-        assert (not (request.user.has_perm(view.permission_required, obj) and
-            request.user.has_perm(view.permission_required))), \
-            "Object level and global permissions shouldn't both return True"
+        assert not (
+            request.user.has_perm(view.permission_required, obj)
+            and request.user.has_perm(view.permission_required)
+        ), (
+            "Object level and global permissions shouldn't both return True. "
+            "This may indicate a potential security issue with your permissions."
+        )
         return request.user.has_perm(view.permission_required, obj) or request.user.has_perm(view.permission_required)
 
 
