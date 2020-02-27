@@ -106,6 +106,12 @@ FIXME
 
 ### Decorators
 
+#### staff_member_required
+
+* Similar to [`django.contrib.admin.views.decorators.staff_member_required`](https://docs.djangoproject.com/en/dev/ref/contrib/admin/#django.contrib.admin.views.decorators.staff_member_required) but redirects to the generic `login` url instead of `admin:login`.
+* Useful if you are not using the `django.contrib.admin` app
+* Useful in conjunction with [`django-hijack`](https://django-hijack.readthedocs.io/en/latest/): set `HIJACK_DECORATOR = "allianceutils.decorators.staff_member_required"` in your settings file
+
 ### Filters
 
 #### MultipleFieldCharFilter
@@ -740,6 +746,7 @@ FIXME
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.6
     * 0.6.dev
+        * Added documentation for `staff_member_required`
     * 0.6.0
         * Breaking Changes
             * Removed autodumpdata and its related checks
