@@ -747,6 +747,10 @@ FIXME
 * 0.6
     * 0.6.dev
         * Added documentation for `staff_member_required`
+    * 0.6.1
+        * Fix `isort` not being a hard requirement (needed for `get_firstparty_apps`)
+        * Doc
+            * Added documentation for `get_firstparty_apps`
     * 0.6.0
         * Breaking Changes
             * Removed autodumpdata and its related checks
