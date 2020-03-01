@@ -43,7 +43,8 @@ class AsyncTaskItem(models.Model):
     timeout = models.PositiveSmallIntegerField()
 
     class Meta:
-        db_table = "alliance_utils_async_task_item"
+        app_label = "asynctask"
+        db_table = "asynctask_item"
 
     @transaction.atomic
     def save(self):
@@ -84,5 +85,5 @@ class AsyncTaskStatus(models.Model):
     error = models.TextField(blank=True)
 
     class Meta:
-        db_table = "alliance_utils_async_task_status"
-
+        app_label = "asynctask"
+        db_table = "asynctask_status"

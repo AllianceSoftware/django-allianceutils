@@ -6,7 +6,7 @@ import traceback
 from django.db import connection
 from django.db import transaction
 
-from allianceutils.asynctask import AsyncTaskItem
+from .models import AsyncTaskItem
 
 
 class WorkerTimeoutException(Exception):
