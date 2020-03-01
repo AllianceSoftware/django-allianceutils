@@ -2,6 +2,7 @@ import threading
 
 from django.utils.deprecation import MiddlewareMixin
 
+
 class CurrentUserMiddleware(MiddlewareMixin):
 
     # mapping of thread id to current user id

@@ -5,8 +5,8 @@ import os
 import pathlib
 import time
 
-import django.core.management.base
 from django.conf import settings
+import django.core.management.base
 
 
 class Command(django.core.management.base.BaseCommand):
@@ -90,4 +90,3 @@ class Command(django.core.management.base.BaseCommand):
                     import_path = rel_path.replace('/', '.')
                     actual_cls = importlib.import_module(import_path, cls.name)
                     actual_cls().enqueue()
-

@@ -1,7 +1,8 @@
-import time
 import json
 import logging
-from typing import Dict, Optional
+import time
+from typing import Dict
+from typing import Optional
 from typing import Sequence
 
 logger = logging.Logger('webpack')

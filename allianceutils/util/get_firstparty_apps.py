@@ -1,7 +1,7 @@
-from django.apps import apps
 from django.apps import AppConfig
-
+from django.apps import apps
 from isort import SortImports
+
 
 def is_firstparty_app(app_config: AppConfig):
     """
