@@ -752,7 +752,7 @@ FIXME
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.7
-    * 0.7.dev
+    * 0.7.0
         * Breaking Changes
             * `asynctask` table names have changed 
         * `asynctask` is now separate from allianceutils app 
