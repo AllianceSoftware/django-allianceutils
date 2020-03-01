@@ -38,5 +38,6 @@ fi
 "$isort_cmd" \
 	--settings-path "$project_dir" \
 	--recursive \
+	--filter-files \
 	$check_only \
 	"${@:-$base_dir}"
