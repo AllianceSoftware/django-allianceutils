@@ -2,7 +2,8 @@ from django import template
 from django.conf import settings
 from django.utils.safestring import mark_safe
 
-from ..webpack import WebpackEntryPointLoader, get_chunk_tags
+from ..webpack import get_chunk_tags
+from ..webpack import WebpackEntryPointLoader
 
 register = template.Library()
 
@@ -36,4 +37,3 @@ def render_entry_point(entry_point_name:str, resource_type:str, attrs:str='', co
     loader = WebpackEntryPointLoader(settings.WEBPACK_LOADER[config])
     tags = get_chunk_tags(loader.get_chunks_for_entry_point(entry_point_name, resource_type), attrs)
     return mark_safe('\n'.join(tags))
-

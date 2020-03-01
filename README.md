@@ -5,6 +5,7 @@ A collection of utilities for django projects.
 * [Installation](#installation)
 * [Usage](#usage)
     * [API](#api)
+    * [Asynctask](#asynctask)
     * [Auth](#auth)
     * [Decorators](#decorators)
     * [Filters](#filters)
@@ -99,6 +100,12 @@ FIXME
 
 Works like GenericDjangoViewsetPermissions, except it does not require a queryset and hence can be used on model-free
 viewsets, eg. viewsets.ViewSet.
+
+### asynctask
+
+**Status: No unit tests**
+
+* See [asynctask documentation](allianceutils/asynctask/README.md)
 
 ### Auth
 
@@ -744,9 +751,14 @@ FIXME
 ## Changelog
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
-* 0.6
-    * 0.6.dev
+* 0.7
+    * 0.7.dev
+        * Breaking Changes
+            * `asynctask` table names have changed 
+        * `asynctask` is now separate from allianceutils app 
+        * Various test fixes (esp test both mysql and postgres in CI)
         * Added documentation for `staff_member_required`
+* 0.6
     * 0.6.1
         * Fix `isort` not being a hard requirement (needed for `get_firstparty_apps`)
         * Doc

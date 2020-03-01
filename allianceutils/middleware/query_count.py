@@ -32,11 +32,11 @@ NOTE: We could have used django signals but since this is going to be called on 
 avoid the associated overhead
 """
 import contextlib
-import django
 import logging
 from typing import Callable
 import warnings
 
+import django
 from django.conf import settings
 from django.db import connection
 from django.db import connections

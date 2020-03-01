@@ -31,4 +31,3 @@ def retry_fn(fn: Callable, allowable_exceptions: Tuple, retry_count: int=5):
         except allowable_exceptions:
             if i == retry_count - 1:
                 raise
-

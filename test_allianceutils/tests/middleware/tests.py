@@ -68,7 +68,6 @@ class CurrentUserMiddlewareTestCase(TestCase):
         self.client = Client()
         self.username = 'user@ue.c'
         self.password = 'password'
-        print(get_user_model())
         user = get_user_model().objects.create_user(email=self.username, password=self.password)
         self.user_id = user.id
         self.path = reverse('middleware:current_user')

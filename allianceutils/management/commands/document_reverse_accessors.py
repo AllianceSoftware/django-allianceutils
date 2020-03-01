@@ -3,10 +3,10 @@ import difflib
 import inspect
 from itertools import groupby
 import re
-from typing import Iterable
-from typing import Type
 from typing import Dict
+from typing import Iterable
 from typing import List
+from typing import Type
 from typing import Union
 
 from django.db.models import Field

@@ -27,10 +27,18 @@ lint:
 
 
 # unit tests
-test-python:
+test-python-postgres:
   services:
-    - postgres:9.5
+    - postgres
   script:
-    - pip install tox
-    - time bin/runtests.sh
+    - pip install tox tox-factor
+    - time bin/runtests.sh -f postgresql
 #  when: manual
+
+
+test-python-mysql:
+  services:
+    - alliance/mysql
+  script:
+    - pip install tox tox-factor
+    - time bin/runtests.sh -f mysql
