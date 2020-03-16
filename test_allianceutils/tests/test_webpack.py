@@ -87,3 +87,47 @@ class AllianceBundleTestCase(SimpleTestCase):
         self.check_tag(cfg, 'combined', 'js', script % url('combined_js'))
         self.check_tag(cfg, 'cssonly',  'js', '')
         self.check_tag(cfg, 'jsonly',   'js', script % url('jsonly_js'))
+
+    @override_settings(**make_settings(), STATIC_URL="/static/")
+    def test_static_url(self):
+        def url(filename_key):
+            return stats_prod_root + stats_prod[filename_key]
+
+        cfg = 'prod'
+        self.check_tag(cfg, 'combined', 'css', link % url('combined_css'))
+        self.check_tag(cfg, 'cssonly', 'css', link % url('cssonly_css'))
+        self.check_tag(cfg, 'jsonly', 'css', '')
+
+        self.check_tag(cfg, 'combined', 'js', script % url('combined_js'))
+        self.check_tag(cfg, 'cssonly', 'js', '')
+        self.check_tag(cfg, 'jsonly', 'js', script % url('jsonly_js'))
+
+
+    @override_settings(**make_settings(), STATIC_URL="/")
+    def test_static_url_empty(self):
+        def url(filename_key):
+            return stats_prod_root + stats_prod[filename_key]
+
+        cfg = 'prod'
+        self.check_tag(cfg, 'combined', 'css', link % url('combined_css'))
+        self.check_tag(cfg, 'cssonly', 'css', link % url('cssonly_css'))
+        self.check_tag(cfg, 'jsonly', 'css', '')
+
+        self.check_tag(cfg, 'combined', 'js', script % url('combined_js'))
+        self.check_tag(cfg, 'cssonly', 'js', '')
+        self.check_tag(cfg, 'jsonly', 'js', script % url('jsonly_js'))
+
+
+    @override_settings(**make_settings(), STATIC_URL="http://example.com/")
+    def test_static_url_absolute(self):
+        def url(filename_key):
+            return stats_prod_root + stats_prod[filename_key]
+
+        cfg = 'prod'
+        self.check_tag(cfg, 'combined', 'css', link % url('combined_css'))
+        self.check_tag(cfg, 'cssonly', 'css', link % url('cssonly_css'))
+        self.check_tag(cfg, 'jsonly', 'css', '')
+
+        self.check_tag(cfg, 'combined', 'js', script % url('combined_js'))
+        self.check_tag(cfg, 'cssonly', 'js', '')
+        self.check_tag(cfg, 'jsonly', 'js', script % url('jsonly_js'))
