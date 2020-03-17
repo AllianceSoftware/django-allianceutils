@@ -25,6 +25,23 @@ stats_prod = {
     'jsonly_js':    'jsonly.HASH.bundle.js',
 }
 
+stats_multiple_prod = {
+    'combined_css': 'combined.HASH.bundle.css',
+    'cssonly_css':  'cssonly.HASH.bundle.css',
+    'combined_js':  'combined.HASH.bundle.js',
+    'jsonly_js':    'jsonly.HASH.bundle.js',
+    'vendor_js': 'vendor.HASH.bundle.js',
+    'vendor_css': 'vendor.HASH.bundle.css',
+}
+
+stats_dev_path = Path(Path(__file__).parent, 'webpack-stats-dev.json')
+stats_prod_path = Path(Path(__file__).parent, 'webpack-stats-prod.json')
+stats_multiple_prod_path = Path(Path(__file__).parent, 'webpack-stats-multiple-prod.json')
+
+assert (stats_dev_path.exists())
+assert (stats_prod_path.exists())
+assert (stats_multiple_prod_path.exists())
+
 # expected output for script & link tags
 script = '<script type="text/javascript" src="%s?abc123" ></script>'
 script_attrs = '<script type="text/javascript" src="%s?abc123" %s></script>'
@@ -34,18 +51,12 @@ link = '<link type="text/css" href="%s?abc123" rel="stylesheet" />'
 is_tox = strtobool(os.getenv('TOX', '0'))
 
 
-def make_settings():
-    stats_dev_path = Path(Path(__file__).parent, 'webpack-stats-dev.json')
-    stats_prod_path = Path(Path(__file__).parent, 'webpack-stats-prod.json')
-
-    assert (stats_dev_path.exists())
-    assert (stats_prod_path.exists())
-
+def make_settings(prod_path=stats_prod_path):
     webpack_loader_settings = {
         'WEBPACK_LOADER': {}
     }
 
-    for mode, stats_path in (('dev', stats_dev_path), ('prod', stats_prod_path)):
+    for mode, stats_path in (('dev', stats_dev_path), ('prod', prod_path)):
         webpack_loader_settings['WEBPACK_LOADER'][mode] = {
             'STATS_FILE': str(stats_path),
         }
@@ -87,3 +98,60 @@ class AllianceBundleTestCase(SimpleTestCase):
         self.check_tag(cfg, 'combined', 'js', script % url('combined_js'))
         self.check_tag(cfg, 'cssonly',  'js', '')
         self.check_tag(cfg, 'jsonly',   'js', script % url('jsonly_js'))
+
+    @override_settings(**make_settings(), STATIC_URL="/static/")
+    def test_static_url(self):
+        def url(filename_key):
+            return stats_prod_root + stats_prod[filename_key]
+
+        cfg = 'prod'
+        self.check_tag(cfg, 'combined', 'css', link % url('combined_css'))
+        self.check_tag(cfg, 'cssonly', 'css', link % url('cssonly_css'))
+        self.check_tag(cfg, 'jsonly', 'css', '')
+
+        self.check_tag(cfg, 'combined', 'js', script % url('combined_js'))
+        self.check_tag(cfg, 'cssonly', 'js', '')
+        self.check_tag(cfg, 'jsonly', 'js', script % url('jsonly_js'))
+
+
+    @override_settings(**make_settings(), STATIC_URL="/")
+    def test_static_url_empty(self):
+        def url(filename_key):
+            return stats_prod_root + stats_prod[filename_key]
+
+        cfg = 'prod'
+        self.check_tag(cfg, 'combined', 'css', link % url('combined_css'))
+        self.check_tag(cfg, 'cssonly', 'css', link % url('cssonly_css'))
+        self.check_tag(cfg, 'jsonly', 'css', '')
+
+        self.check_tag(cfg, 'combined', 'js', script % url('combined_js'))
+        self.check_tag(cfg, 'cssonly', 'js', '')
+        self.check_tag(cfg, 'jsonly', 'js', script % url('jsonly_js'))
+
+
+    @override_settings(**make_settings(), STATIC_URL="http://example.com/")
+    def test_static_url_absolute(self):
+        def url(filename_key):
+            return stats_prod_root + stats_prod[filename_key]
+
+        cfg = 'prod'
+        self.check_tag(cfg, 'combined', 'css', link % url('combined_css'))
+        self.check_tag(cfg, 'cssonly', 'css', link % url('cssonly_css'))
+        self.check_tag(cfg, 'jsonly', 'css', '')
+
+        self.check_tag(cfg, 'combined', 'js', script % url('combined_js'))
+        self.check_tag(cfg, 'cssonly', 'js', '')
+        self.check_tag(cfg, 'jsonly', 'js', script % url('jsonly_js'))
+
+    @override_settings(**make_settings(prod_path=stats_multiple_prod_path))
+    def test_multiple_prod(self):
+        """Test entry points with multiple files (eg. a common vendor chunk)"""
+        def url(filename_key):
+            return stats_prod_root + stats_multiple_prod[filename_key]
+        cfg = 'prod'
+        self.check_tag(cfg, 'combined', 'css', link % url('combined_css') + '\n' + link % url('vendor_css'))
+        self.check_tag(cfg, 'cssonly',  'css', link % url('cssonly_css') + '\n' + link % url('vendor_css'))
+        self.check_tag(cfg, 'jsonly',   'css', '')
+        self.check_tag(cfg, 'combined', 'js', script % url('combined_js') + '\n' + script % url('vendor_js'))
+        self.check_tag(cfg, 'cssonly',  'js', '')
+        self.check_tag(cfg, 'jsonly',   'js', script % url('jsonly_js') + '\n' + script % url('vendor_js'))

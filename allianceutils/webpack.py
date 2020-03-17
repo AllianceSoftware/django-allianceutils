@@ -4,6 +4,14 @@ import time
 from typing import Dict
 from typing import Optional
 from typing import Sequence
+from urllib.parse import ParseResult
+from urllib.parse import urljoin
+
+from django.templatetags.static import static
+from django.conf import settings
+from urllib.parse import quote
+from urllib.parse import urlparse
+
 
 logger = logging.Logger('webpack')
 
@@ -22,7 +30,20 @@ def get_chunk_tags(chunks: Dict, attrs: str):
     tags = []
     for chunk in chunks:
         resource_type = chunk['resource_type']
-        url = chunk['url']
+        original_url = chunk['url']
+
+        parse_result = urlparse(original_url)
+        path = parse_result.path
+        # If under STATIC_URL rewrite using static tag so that we respect static file storage
+        # options, eg. ManifestStaticFileStorage
+        if settings.STATIC_URL and path.startswith(settings.STATIC_URL):
+            try:
+                path = static(path[len(settings.STATIC_URL):])
+            except ValueError:
+                # Allow url's that aren't managed by static files - eg. this will happen
+                # for ManifestStaticFileStorage if file is not in the manifest
+                pass
+        url = ParseResult(**dict(parse_result._asdict(), path=path)).geturl()
         if resource_type == 'js':
             tags.append(f'<script type="text/javascript" src="{url}" {attrs}></script>')
         if resource_type == 'css':
