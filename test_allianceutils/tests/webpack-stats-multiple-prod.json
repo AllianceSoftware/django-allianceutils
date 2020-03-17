@@ -1,0 +1,60 @@
+{
+  "status": "done",
+  "publicPath": "/static/webpack_dist/",
+  "entrypoints": {
+    "combined": [
+      {
+        "name": "combined.HASH.bundle.js",
+        "contentHash": "abc123"
+      },
+      {
+        "name": "vendor.HASH.bundle.js",
+        "contentHash": "abc123"
+      },
+      {
+        "name": "combined.HASH.bundle.css",
+        "contentHash": "abc123"
+      },
+      {
+        "name": "vendor.HASH.bundle.css",
+        "contentHash": "abc123"
+      },
+      {
+        "name": "combined.HASH.bundle.js.map",
+        "contentHash": "abc123"
+      },
+      {
+        "name": "combined.HASH.bundle.css.map",
+        "contentHash": "abc123"
+      }
+    ],
+    "cssonly": [
+      {
+        "name": "cssonly.HASH.bundle.css",
+        "contentHash": "abc123"
+      },
+      {
+        "name": "vendor.HASH.bundle.css",
+        "contentHash": "abc123"
+      },
+      {
+        "name": "cssonly.HASH.bundle.css.map",
+        "contentHash": "abc123"
+      }
+    ],
+    "jsonly": [
+      {
+        "name": "jsonly.HASH.bundle.js",
+        "contentHash": "abc123"
+      },
+      {
+        "name": "vendor.HASH.bundle.js",
+        "contentHash": "abc123"
+      },
+      {
+        "name": "jsonly.HASH.bundle.js.map",
+        "contentHash": "abc123"
+      }
+    ]
+  }
+}
