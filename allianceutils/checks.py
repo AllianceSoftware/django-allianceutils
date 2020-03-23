@@ -1,7 +1,6 @@
 import ast
 from collections import defaultdict
 import inspect
-import os
 from pathlib import Path
 import re
 from typing import Callable
@@ -147,10 +146,13 @@ def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[
 
 def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs):
     git_path = Path(settings.PROJECT_DIR, '.git')
+
     # handle the case where .git is a file rather than a directory
-    if os.path.isfile(git_path):
-        with open(git_path) as f:
-            git_path = f.readline()
+    try:
+        with git_path.open() as f:
+            git_path = Path(f.readline())
+    except OSError:
+        pass
 
     warnings = []
 
