@@ -10,6 +10,8 @@ from typing import Iterable
 from typing import Sequence
 from typing import Tuple
 
+from django.core.files import File
+
 _first_cap_re = re.compile('(.)([A-Z][a-z]+)')
 _all_cap_re = re.compile('([a-z0-9])([A-Z])')
 _re_underscore = re.compile(r'(?!^)(?<!_)_([^_])')
@@ -164,10 +166,12 @@ def _transform_data(data, transform_key: Callable, ignore_lookup: Dict):
         )
 
     # Iterable - we'll want to use iterable to cover all ... iterables, such as a list or a queryset,
-    #   but we'll want to ignore two common iterable types: str & bytes.
+    # but we'll want to ignore two common iterable types: str & bytes. We also ignore File specifically for
+    # the case in djrad where it will transform incoming multipart form data from the frontend into a dict
+    # containing File objects for any file fields.
     # At least for now we don't support numeric indices in ignores, so '*' is the only ignore lookup index
     # that can match a list/iterable
-    if isinstance(data, Iterable) and not isinstance(data, str) and not isinstance(data, bytes):
+    if isinstance(data, Iterable) and not isinstance(data, (str, bytes, File)):
         ignore_lookup = ignore_lookup.get('*', _empty_dict)
         return [_transform_data(x, transform_key, ignore_lookup) for x in data]
 

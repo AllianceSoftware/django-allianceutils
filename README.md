@@ -756,6 +756,7 @@ FIXME
 * 0.7
     * 0.7.dev
         * `render_entry_point` now generates URLs to bundles using the `static` function. This makes it possible to use with `ManifestStaticFileStorage`.
+        * `camelize` & `underscorize` will no longer transform `File` objects. This resolves an issue when used with djrad forms containing file fields.
     * 0.7.0
         * Breaking Changes
             * `asynctask` table names have changed 
