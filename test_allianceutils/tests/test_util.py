@@ -1,4 +1,8 @@
+from io import StringIO
+
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.test import SimpleTestCase
+from django.test import TransactionTestCase
 
 from allianceutils.util import camel_to_underscore
 from allianceutils.util import camelize
@@ -8,6 +12,7 @@ from allianceutils.util import underscore_to_camel
 from allianceutils.util import underscoreize
 from allianceutils.util.camel_case import _create_ignore_lookup
 from allianceutils.util.camel_case import _debug_lookup
+from test_allianceutils.tests.serializers.models import Person
 
 
 class UtilTestCase(SimpleTestCase):
@@ -69,7 +74,7 @@ class DateFormatTestCase(SimpleTestCase):
         self.assertEqual(python_to_django_date_format('%'), '%')
 
 
-class CamelCaseTestCase(SimpleTestCase):
+class CamelCaseTestCase(TransactionTestCase):
 
     def test_camel_to_underscore(self):
         tests = {
@@ -315,9 +320,9 @@ class CamelCaseTestCase(SimpleTestCase):
     def test_camelize(self):
         tests = (
             (
-                [1, 'a_bc_d', {'a_bc_d': {'d_ef_g': ['h_ij_k'], 2: 2}, 1: 1}],
+                [1, 'a_bc_d', {'a_bc_d': {'d_ef_g': ['h_ij_k'], 2: 2}, 1: 1}, b"x"],
                 [],
-                [1, 'a_bc_d', {'aBcD':   {'dEfG':   ['h_ij_k'], 2: 2}, 1: 1}],
+                [1, 'a_bc_d', {'aBcD':   {'dEfG':   ['h_ij_k'], 2: 2}, 1: 1}, b"x"],
             ),
             (
                 [1, 'a_bc_d', {'a_bc_d': {'d_ef_g': {'h_ij_k': {'qr_s': 't_uv'}}}}, {'d_ef_g': {'h_ij_k': 4}}],
@@ -329,18 +334,60 @@ class CamelCaseTestCase(SimpleTestCase):
         for test_in, ignore, test_out in tests:
             self.assertEqual(camelize(test_in, ignore), test_out)
 
+    def test_camelize_file(self):
+        file1 = InMemoryUploadedFile(StringIO(), "name", "name", "content", 1, "utf8")
+        file2 = InMemoryUploadedFile(StringIO(), "name", "name", "content", 1, "utf8")
+        tests = (
+            (
+                [{'test_file': file1}, file2],
+                [],
+                [{'testFile': file1}, file2],
+            ),
+        )
+
+        for test_in, ignore, test_out in tests:
+            self.assertEqual(camelize(test_in, ignore), test_out)
+
+    def test_camelize_queryset(self):
+        p1 = Person.objects.create(username="tata", label="pang")
+        p2 = Person.objects.create(username="toto", label="ping")
+        tests = (
+            (
+                Person.objects.all().order_by('username').values('user_ptr', 'username', 'label'),
+                [],
+                [{'userPtr': p1.pk, 'username': 'tata', 'label': 'pang'}, {'userPtr': p2.pk, 'username': 'toto', 'label': 'ping'}],
+            ),
+        )
+
+        for test_in, ignore, test_out in tests:
+            self.assertEqual(camelize(test_in, ignore), test_out)
+
     def test_underscorize(self):
         tests = (
             (
-                [1, 'aBcD', {'aBcD': {'dEfG': ['hIjK'], 2: 2}, 1: 1}],
+                [1, 'aBcD', {'aBcD': {'dEfG': ['hIjK'], 2: 2}, 1: 1}, b"x"],
                 [],
-                [1, 'aBcD', {'a_bc_d': {'d_ef_g': ['hIjK'], 2: 2}, 1: 1}],
+                [1, 'aBcD', {'a_bc_d': {'d_ef_g': ['hIjK'], 2: 2}, 1: 1}, b"x"],
             ),
 
             (
                 {'aBc': {'dEf': {'hIj': {'kLm': 'nOp'}}}},
                 ['*', '*.dEf.hIj'],
                 {'aBc': {'d_ef': {'hIj': {'k_lm': 'nOp'}}}},
+            ),
+        )
+
+        for test_in, ignore, test_out in tests:
+            self.assertEqual(underscoreize(test_in, ignore), test_out)
+
+    def test_underscorize_file(self):
+        file1 = InMemoryUploadedFile(StringIO(), "name", "name", "content", 1, "utf8")
+        file2 = InMemoryUploadedFile(StringIO(), "name", "name", "content", 1, "utf8")
+        tests = (
+            (
+                [{'testFile': file1}, file2],
+                [],
+                [{'test_file': file1}, file2],
             ),
         )
 
