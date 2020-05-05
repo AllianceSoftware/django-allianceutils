@@ -755,6 +755,7 @@ FIXME
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.7
     * 0.7.dev
+    * 0.7.1
         * `render_entry_point` now generates URLs to bundles using the `static` function. This makes it possible to use with `ManifestStaticFileStorage`.
         * `camelize` & `underscorize` will no longer transform `File` objects. This resolves an issue when used with djrad forms containing file fields.
         * fixed MediaStorage not working properly with newer version of boto3
