@@ -1,4 +1,6 @@
 import ast
+import re
+
 from collections import defaultdict
 import inspect
 from pathlib import Path
@@ -40,6 +42,7 @@ ID_WARNING_GIT_HOOKS = 'allianceutils.W008'
 ID_ERROR_GIT_HOOKS = 'allianceutils.E008'
 ID_ERROR_EXPLICIT_TABLE_NAME = 'allianceutils.E009'
 ID_ERROR_EXPLICIT_TABLE_NAME_LOWERCASE = 'allianceutils.E010'
+ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY = 'allianceutils.E011'
 
 
 def find_candidate_models(
@@ -312,3 +315,53 @@ DEFAULT_TABLE_NAME_CHECK_IGNORE = [
     'auth',
 ]
 check_explicit_table_names = make_check_explicit_table_names(DEFAULT_TABLE_NAME_CHECK_IGNORE)
+
+
+def _check_field_names_on_model(model: Type[Model]) -> Iterable[Type[Error]]:
+    """
+    check whether field names on model are legit
+
+    currently contains only one check:
+    1. checks whether field name contains any number preceded by an underscore. the underscore will be lost when camelized then de-camelized again.
+       since camelize is performed automatically to/from frontend it leads to bugs.
+
+    """
+
+    errors = []
+
+    for field in model._meta.fields:
+        if re.search(r'_[0-9]', field.name):
+            errors.append(
+                Error(
+                    'Field names should not have underscore preceding a number',
+                    hint=f'Remove underscore before number in field {field.name} for {model._meta.label}',
+                    obj=model,
+                    id=ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY,
+                )
+            )
+
+    return errors
+
+
+def make_check_field_names(ignore_labels: Optional[Iterable[str]] = []) -> Callable:
+    """
+    Return a function that checks for illegal field names, see also: _check_field_names_on_model
+
+    Args:
+        ignore_labels: ignore apps or models matching supplied labels
+
+    Returns:
+        check function for use with django system checks
+    """
+
+    def _check_field_names(app_configs: Iterable[AppConfig], **kwargs):
+        candidate_models = find_candidate_models(app_configs, ignore_labels)
+        errors = []
+        for model in candidate_models.values():
+            errors += _check_field_names_on_model(model)
+        return errors
+
+    return _check_field_names
+
+
+check_field_names = make_check_field_names()

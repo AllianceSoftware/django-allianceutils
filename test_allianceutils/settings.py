@@ -66,6 +66,7 @@ INSTALLED_APPS = (
     'test_allianceutils.tests.checks_db_constraints',
     'test_allianceutils.tests.document_reverse_accessors',
     'test_allianceutils.tests.checks_explicit_table_names',
+    'test_allianceutils.tests.checks_field_names',
 
     'django_db_constraints',
 
