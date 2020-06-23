@@ -17,44 +17,6 @@ from django.db.models import Q
 from django.db.models import QuerySet
 
 
-def add_group_permissions(group_id: int, codenames: List[str]):
-    """
-    Add permissions to a group
-
-    Assumes permissions with codenames already exist
-    """
-    group = Group.objects.get(pk=group_id)
-
-    permissions = list(Permission.objects.filter(codename__in=codenames))
-
-    # Check that the permissions actually exist
-    missing = set(codenames) - set(p.codename for p in permissions)
-    if len(missing):
-        raise Permission.DoesNotExist(list(missing)[0])
-
-    group.permissions.add(*permissions)
-
-
-def get_users_with_permission(permission):
-    return get_users_with_permissions((permission,))
-
-
-def get_users_with_permissions(permissions: List[str]) -> Iterable[Model]:
-    """
-    Retrieves all users with specified static permissions (via a group or directly assigned)
-    """
-    query = Q(False)
-    for permission in permissions:
-        (app_label, codename) = permission.split('.', 1)
-        query = query | Q(codename=codename, app_label=app_label)
-    permissions = Permission.objects.filter(Q).values('pk')
-    User = get_user_model()
-    users = User.objects.filter(
-        Q(user_permissions__pk__in=permissions) |
-        Q(user__groups__permissions__pk__in=permissions)
-    ).distinct()
-    return users
-
 
 def combine_querysets_as_manager(*queryset_classes: List[QuerySet]) -> Manager:
     """

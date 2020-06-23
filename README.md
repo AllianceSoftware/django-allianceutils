@@ -313,14 +313,6 @@ def my_view(request, *args, **kwargs):
 
 #### Utility functions / classes
 
-##### Authentication functions
-* `add_group_permissions(group_id, codenames)`
-    * Add permissions to a given group (permissions must already exist)
-* `get_users_with_permission(permission)`
-    * Single-permission shorthand for `get_users_with_permissions` 
-* `get_users_with_permissions(permissions)`
-    * Gets all users with any of the specified static permissions
-
 ##### combine_querysets_as_manager
 * Replacement for django_permanent.managers.MultiPassThroughManager which no longer works in django 1.8
 * Returns a new Manager instance that passes through calls to multiple underlying queryset_classes via inheritance 
@@ -755,6 +747,8 @@ FIXME
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.7
     * 0.7.dev
+        * Breaking Changes
+            * `add_group_permissions`, `get_users_with_permission` and `get_users_with_permissions` are now removed in preference of CsvPermission
     * 0.7.1
         * `render_entry_point` now generates URLs to bundles using the `static` function. This makes it possible to use with `ManifestStaticFileStorage`.
         * `camelize` & `underscorize` will no longer transform `File` objects. This resolves an issue when used with djrad forms containing file fields.
