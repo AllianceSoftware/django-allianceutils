@@ -749,6 +749,7 @@ FIXME
     * 0.7.dev
         * Breaking Changes
             * `add_group_permissions`, `get_users_with_permission` and `get_users_with_permissions` are now removed in preference of CsvPermission
+            * ProfileModelBackend is now behaving differently, namely suppressing all calls to .user_permissions and .groups.
     * 0.7.1
         * `render_entry_point` now generates URLs to bundles using the `static` function. This makes it possible to use with `ManifestStaticFileStorage`.
         * `camelize` & `underscorize` will no longer transform `File` objects. This resolves an issue when used with djrad forms containing file fields.
