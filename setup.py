@@ -1,6 +1,7 @@
 import re
 import sys
 
+from pathlib import Path
 from pkg_resources import parse_version
 import setuptools
 
@@ -41,12 +42,21 @@ if parse_version(setuptools.__version__) >= parse_version('20.3'):
 elif sys.version_info < (3, 5):
     install_requires.append('typing')
 
+packages = [package_name]
+
+root = Path(package_name).absolute()
+for fn in root.glob('*/**'):
+    # Add all dirs as packages except eg. __pycache__
+    if fn.is_dir() and not fn.name.startswith('_'):
+        p = str(fn).replace(str(root), '')
+        packages.append(f"{package_name}.{p.strip('/').replace('/', '.')}")
+
 setuptools.setup(
     name=package_name,
     version=__version__,
     author='Alliance Software',
     author_email='support@alliancesoftware.com.au',
-    packages=[package_name],
+    packages=packages,
     include_package_data=True,
     description='Alliance Software common utilities for django',
     # long_description=...,
