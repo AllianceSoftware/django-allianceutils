@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "allianceutils"
+version = "0.7.3"
+description = "Alliance Software common utilities for Django"
+authors = ["Alliance Software <support@alliancesoftware.com.au>"]
+license = "BSD-2-Clause"
+readme = "README.md"
+include = [
+    "CHANGELOG.md",
+]
+keywords = [
+    "django",
+    'alliance',
+    'alliancesoftware',
+]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+
+# the only hard dependency is django; everything else is only required
+# if you use functions/classes that require them
+Django = "^2.2"
+isort = ">=4"
+
+[tool.poetry.dev-dependencies]
+tox = "*"
+tox-factor = "*"
+isort = ">=5"
+
+# requirements-tox.ini contains extra
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0a5"]
+build-backend = "poetry.core.masonry.api"
