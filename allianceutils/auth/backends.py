@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.db.models import Model
 
+
 def resolve_rule_name(module, entity, action, is_global) -> str:
     """
     Used by csv_permissions to calculate rule names for each row
