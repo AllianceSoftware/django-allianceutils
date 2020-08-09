@@ -5,13 +5,12 @@ from typing import Dict
 from typing import Optional
 from typing import Sequence
 from urllib.parse import ParseResult
-from urllib.parse import urljoin
-
-from django.templatetags.static import static
-from django.conf import settings
 from urllib.parse import quote
+from urllib.parse import urljoin
 from urllib.parse import urlparse
 
+from django.conf import settings
+from django.templatetags.static import static
 
 logger = logging.Logger('webpack')
 

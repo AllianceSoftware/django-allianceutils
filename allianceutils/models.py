@@ -17,7 +17,6 @@ from django.db.models import Q
 from django.db.models import QuerySet
 
 
-
 def combine_querysets_as_manager(*queryset_classes: List[QuerySet]) -> Manager:
     """
     Replacement for django_permanent.managers.MultiPassThroughManager which no longer works in django 1.8
