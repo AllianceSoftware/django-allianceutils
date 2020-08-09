@@ -6,7 +6,7 @@ import setuptools
 import sys
 
 # automatically detect the current version from the highest version in the changelog section of the README
-with open('README.md', 'r') as f:
+with open('CHANGELOG.md', 'r') as f:
     section = None
     highest_ver = parse_version('0')
     for line in f.readlines():
@@ -50,6 +50,10 @@ setuptools.setup(
     author_email='support@alliancesoftware.com.au',
     # note that find_packages needs to see __init__.py in each (sub)module
     packages=setuptools.find_packages(where='.', include=['allianceutils', 'allianceutils.*']),
+    data_files=[
+        # changelog contains the version number
+        ('', ['CHANGELOG.md']),
+    ],
     description='Alliance Software common utilities for django',
     # long_description=...,
     # license='??',
