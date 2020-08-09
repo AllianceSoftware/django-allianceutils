@@ -747,6 +747,7 @@ FIXME
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.7
     * 0.7.dev
+        * Fix `setup.py` `packages` only including the root package 
     * 0.7.2
         * Breaking Changes
             * `add_group_permissions`, `get_users_with_permission` and `get_users_with_permissions` are now removed in preference of CsvPermission
