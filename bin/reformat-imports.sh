@@ -1,4 +1,5 @@
-#!/bin/bash -e
+#!/bin/bash
+set -o errexit
 set -o pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.inc"
@@ -35,9 +36,13 @@ if ! [ -x "$isort_cmd" ] ; then
 	exit 1
 fi
 
+# check isort version
+# we can't support both for local dev because .isort.cfg configs are incompatible
+isort_ver=$( pip list | grep -E '^isort ' | sed -E 's/[^0-9]*([0-9]*).*/\1/' )
+[[ $isort_ver -ge 5 ]] || "ERROR: local dev must be done with isort >=5"
+
 "$isort_cmd" \
 	--settings-path "$project_dir" \
-	--recursive \
 	--filter-files \
 	$check_only \
 	"${@:-$base_dir}"
