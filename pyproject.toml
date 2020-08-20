@@ -19,13 +19,14 @@ python = "^3.6"
 
 # the only hard dependency is django; everything else is only required
 # if you use functions/classes that require them
-Django = "^2.2"
+Django = ">=2.2"
 isort = ">=4"
 
 [tool.poetry.dev-dependencies]
 tox = "*"
 tox-factor = "*"
 isort = ">=5"
+Django = "^2.2"
 
 # requirements-tox.ini contains extra
 
