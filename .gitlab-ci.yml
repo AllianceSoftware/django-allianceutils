@@ -1,5 +1,6 @@
 variables:
   PYTHON_VERSION: "3.6"
+  POSTGRES_PASSWORD: password
 
 cache:
   key: global
@@ -29,7 +30,7 @@ lint:
 # unit tests
 test-python-postgres:
   services:
-    - postgres
+    - postgres:12
   script:
     - pip install tox tox-factor
     - time bin/runtests.sh -f postgresql
