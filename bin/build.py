@@ -1,10 +1,13 @@
+#!/usr/bin/env python3
+from pathlib import Path
 import os
 from pkg_resources import parse_version
 import re
 import subprocess
 
+
 # automatically detect the current version from the highest version in the changelog section of the README
-with open("CHANGELOG.md", "r") as f:
+with (Path(__file__).parent.parent / "CHANGELOG.md").open("r") as f:
     section = None
     highest_ver = parse_version("0")
     for line in f.readlines():
