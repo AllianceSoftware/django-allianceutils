@@ -160,7 +160,7 @@ customer = MultipleFieldCharFilter(names=('customer__first_name', 'customer__las
 
 #### Checks
 
-##### check_url_trailing_slash
+##### check\_url\_trailing\_slash
 
 * Checks that your URLs are consistent with the `settings.APPEND_SLASH` using a [django system check](https://docs.djangoproject.com/en/dev/ref/checks/)
 * In your [app config](https://docs.djangoproject.com/en/1.11/ref/applications/#for-application-authors) 

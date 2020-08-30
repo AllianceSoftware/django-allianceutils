@@ -287,7 +287,7 @@ def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: 
     return errors
 
 
-def make_check_explicit_table_names(ignore_labels: Optional[Iterable[str]], enforce_lowercase: bool=True) -> Callable:
+def make_check_explicit_table_names(ignore_labels: Iterable[str], enforce_lowercase: bool = True) -> Callable:
     """
     Return a function that checks for models with missing or invalid db_table settings
 
