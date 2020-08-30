@@ -1,9 +1,8 @@
 import ast
-import re
-
 from collections import defaultdict
 import inspect
 from pathlib import Path
+import re
 from typing import Callable
 from typing import Dict
 from typing import Iterable
@@ -21,7 +20,9 @@ from django.core.checks import Warning
 from django.db.models import Model
 from django.urls import get_resolver
 
+from allianceutils.util import camel_to_underscore
 from allianceutils.util import get_firstparty_apps
+from allianceutils.util import underscore_to_camel
 
 if django.VERSION >= (2, 0):
     from django.urls import URLResolver
@@ -330,11 +331,14 @@ def _check_field_names_on_model(model: Type[Model]) -> Iterable[Type[Error]]:
     errors = []
 
     for field in model._meta.fields:
-        if re.search(r'_[0-9]', field.name):
+        if camel_to_underscore(underscore_to_camel(field.name)) != field.name:
+            hint = None
+            if re.search(r'_[0-9]', field.name):
+                hint = f'Underscore before a number in {model._meta.label}.{field.name}'
             errors.append(
                 Error(
-                    'Field names should not have underscore preceding a number',
-                    hint=f'Remove underscore before number in field {field.name} for {model._meta.label}',
+                    f"Field name is not reversible with underscore_to_camel()/camel_to_underscore()",
+                    hint=hint,
                     obj=model,
                     id=ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY,
                 )
@@ -343,7 +347,7 @@ def _check_field_names_on_model(model: Type[Model]) -> Iterable[Type[Error]]:
     return errors
 
 
-def make_check_field_names(ignore_labels: Optional[Iterable[str]] = []) -> Callable:
+def make_check_field_names(ignore_labels: Iterable[str]) -> Callable:
     """
     Return a function that checks for illegal field names, see also: _check_field_names_on_model
 
@@ -364,4 +368,4 @@ def make_check_field_names(ignore_labels: Optional[Iterable[str]] = []) -> Calla
     return _check_field_names
 
 
-check_field_names = make_check_field_names()
+check_field_names = make_check_field_names(ignore_labels=[])

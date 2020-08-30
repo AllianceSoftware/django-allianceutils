@@ -20,17 +20,17 @@ class TestCheckFieldNames(SimpleTestCase):
 
         expected_errors = [
             Error(
-                'Field names should not have underscore preceding a number',
-                hint='Remove underscore before number in field name_complex_1_field for checks_field_names.NameWithUnderscoreNumberInMiddle',
-                obj=NameWithUnderscoreNumberInMiddle,
+                'Field name is not reversible with underscore_to_camel()/camel_to_underscore()',
+                hint='Underscore before a number in checks_field_names.NameWithUnderscoreRightBeforeNumber.name_1',
+                obj=NameWithUnderscoreRightBeforeNumber,
                 id=ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY,
             ),
             Error(
-                'Field names should not have underscore preceding a number',
-                hint='Remove underscore before number in field name_1 for checks_field_names.NameWithUnderscoreRightBeforeNumber',
-                obj=NameWithUnderscoreRightBeforeNumber,
+                'Field name is not reversible with underscore_to_camel()/camel_to_underscore()',
+                hint='Underscore before a number in checks_field_names.NameWithUnderscoreNumberInMiddle.name_complex_1_field',
+                obj=NameWithUnderscoreNumberInMiddle,
                 id=ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY,
-            )
+            ),
         ]
 
         for error in expected_errors:

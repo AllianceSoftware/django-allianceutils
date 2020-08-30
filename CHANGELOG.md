@@ -3,6 +3,7 @@
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.7
     * 0.7.dev
+        * Added `check_field_names`
         * `CurrentUserMiddleware` now uses thread-local storage
     * 0.7.3
         * Fix `util.get_firstparty_apps` not working with isort >=5
