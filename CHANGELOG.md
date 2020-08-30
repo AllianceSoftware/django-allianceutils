@@ -3,6 +3,7 @@
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.7
     * 0.7.dev
+        * Handle .git files that are pointers to the real git dir in `check_git_hooks()`
         * Added `check_field_names`
         * `CurrentUserMiddleware` now uses thread-local storage
     * 0.7.3
