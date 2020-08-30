@@ -745,3 +745,11 @@ FIXME
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md)
+
+## Development
+
+* After changes made update CHANGELOG.md with details of changes and new version
+* Run `bin/build.py`. This will extract version from CHANGELOG.md, bump verion in `pyproject.toml` and generate a build for publishing
+* TODO: Publishing to pypi
+
+
