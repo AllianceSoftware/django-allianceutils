@@ -1,17 +1,20 @@
 from io import StringIO
 
+from django.apps import apps
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.test import SimpleTestCase
 from django.test import TransactionTestCase
 
 from allianceutils.util import camel_to_underscore
 from allianceutils.util import camelize
+from allianceutils.util import get_firstparty_apps
 from allianceutils.util import python_to_django_date_format
 from allianceutils.util import retry_fn
 from allianceutils.util import underscore_to_camel
 from allianceutils.util import underscoreize
 from allianceutils.util.camel_case import _create_ignore_lookup
 from allianceutils.util.camel_case import _debug_lookup
+from allianceutils.util.get_firstparty_apps import is_firstparty_app
 from test_allianceutils.tests.serializers.models import Person
 
 
@@ -393,3 +396,16 @@ class CamelCaseTestCase(TransactionTestCase):
 
         for test_in, ignore, test_out in tests:
             self.assertEqual(underscoreize(test_in, ignore), test_out)
+
+
+class IsortTestCase(SimpleTestCase):
+
+    def test_get_firstparty_apps(self):
+        self.assertEqual(list(get_firstparty_apps()), [apps.get_app_config("allianceutils")])
+
+    def test_is_firstparty_app(self):
+        allianceutils_app = apps.get_app_config("allianceutils")
+        sessions_app = apps.get_app_config("sessions")
+        self.assertTrue(is_firstparty_app(allianceutils_app))
+        self.assertFalse(is_firstparty_app(sessions_app))
+
