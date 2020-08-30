@@ -160,7 +160,7 @@ customer = MultipleFieldCharFilter(names=('customer__first_name', 'customer__las
 
 #### Checks
 
-##### check_url_trailing_slash
+##### check\_url\_trailing\_slash
 
 * Checks that your URLs are consistent with the `settings.APPEND_SLASH` using a [django system check](https://docs.djangoproject.com/en/dev/ref/checks/)
 * In your [app config](https://docs.djangoproject.com/en/1.11/ref/applications/#for-application-authors) 
@@ -238,6 +238,25 @@ class MyAppConfig(AppConfig):
 		register(check=check_explicit_table_names, tags=Tags.models)
 ```
 
+##### check\_field\_names
+
+* Checks that all models have fields names that are reversible with `underscorize`/`camelize`/`camel_to_underscore`/`underscore_to_camel`
+* `allianceutils.checks.make_check_field_names` allows you to ignore specified apps or models
+    * `allianceutils.checks.check_field_names` is shorthand for `make_check_field_names(ignore_labels=DEFAULT_TABLE_NAME_CHECK_IGNORE)` which has a predefined set of apps to ignore
+
+```python
+from django.apps import AppConfig
+from django.core.checks import Tags
+
+from allianceutils.util.checks import check_field_names
+
+class MyAppConfig(AppConfig):
+    name = 'myapp'
+    verbose_name = "My App"
+
+	def ready(self):
+		register(check=check_field_names, tags=Tags.models)
+```
 ### Middleware
 
 #### HttpAuthMiddleware

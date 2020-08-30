@@ -2,7 +2,6 @@ import threading
 
 from django.utils.deprecation import MiddlewareMixin
 
-
 GLOBAL_USER = threading.local()
 
 class CurrentUserMiddleware(MiddlewareMixin):

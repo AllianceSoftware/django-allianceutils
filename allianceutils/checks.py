@@ -2,6 +2,7 @@ import ast
 from collections import defaultdict
 import inspect
 from pathlib import Path
+import re
 from typing import Callable
 from typing import Dict
 from typing import Iterable
@@ -19,7 +20,9 @@ from django.core.checks import Warning
 from django.db.models import Model
 from django.urls import get_resolver
 
+from allianceutils.util import camel_to_underscore
 from allianceutils.util import get_firstparty_apps
+from allianceutils.util import underscore_to_camel
 
 if django.VERSION >= (2, 0):
     from django.urls import URLResolver
@@ -40,6 +43,7 @@ ID_WARNING_GIT_HOOKS = 'allianceutils.W008'
 ID_ERROR_GIT_HOOKS = 'allianceutils.E008'
 ID_ERROR_EXPLICIT_TABLE_NAME = 'allianceutils.E009'
 ID_ERROR_EXPLICIT_TABLE_NAME_LOWERCASE = 'allianceutils.E010'
+ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY = 'allianceutils.E011'
 
 
 def find_candidate_models(
@@ -283,7 +287,7 @@ def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: 
     return errors
 
 
-def make_check_explicit_table_names(ignore_labels: Optional[Iterable[str]], enforce_lowercase: bool=True) -> Callable:
+def make_check_explicit_table_names(ignore_labels: Iterable[str], enforce_lowercase: bool = True) -> Callable:
     """
     Return a function that checks for models with missing or invalid db_table settings
 
@@ -312,3 +316,56 @@ DEFAULT_TABLE_NAME_CHECK_IGNORE = [
     'auth',
 ]
 check_explicit_table_names = make_check_explicit_table_names(DEFAULT_TABLE_NAME_CHECK_IGNORE)
+
+
+def _check_field_names_on_model(model: Type[Model]) -> Iterable[Type[Error]]:
+    """
+    check whether field names on model are legit
+
+    currently contains only one check:
+    1. checks whether field name contains any number preceded by an underscore. the underscore will be lost when camelized then de-camelized again.
+       since camelize is performed automatically to/from frontend it leads to bugs.
+
+    """
+
+    errors = []
+
+    for field in model._meta.fields:
+        if camel_to_underscore(underscore_to_camel(field.name)) != field.name:
+            hint = None
+            if re.search(r'_[0-9]', field.name):
+                hint = f'Underscore before a number in {model._meta.label}.{field.name}'
+            errors.append(
+                Error(
+                    f"Field name is not reversible with underscore_to_camel()/camel_to_underscore()",
+                    hint=hint,
+                    obj=model,
+                    id=ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY,
+                )
+            )
+
+    return errors
+
+
+def make_check_field_names(ignore_labels: Iterable[str]) -> Callable:
+    """
+    Return a function that checks for illegal field names, see also: _check_field_names_on_model
+
+    Args:
+        ignore_labels: ignore apps or models matching supplied labels
+
+    Returns:
+        check function for use with django system checks
+    """
+
+    def _check_field_names(app_configs: Iterable[AppConfig], **kwargs):
+        candidate_models = find_candidate_models(app_configs, ignore_labels)
+        errors = []
+        for model in candidate_models.values():
+            errors += _check_field_names_on_model(model)
+        return errors
+
+    return _check_field_names
+
+
+check_field_names = make_check_field_names(ignore_labels=[])
