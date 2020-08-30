@@ -3,11 +3,9 @@ import threading
 from django.utils.deprecation import MiddlewareMixin
 
 
-class CurrentUserMiddleware(MiddlewareMixin):
+GLOBAL_USER = threading.local()
 
-    # mapping of thread id to current user id
-    # Based on https://github.com/Alir3z4/django-crequest
-    _users = {}
+class CurrentUserMiddleware(MiddlewareMixin):
 
     def __init__(self, get_response=None):
         self.get_response = get_response
@@ -44,8 +42,7 @@ class CurrentUserMiddleware(MiddlewareMixin):
 
     @classmethod
     def _set_user(cls, user_id, remote_ip):
-        thread_id = threading.current_thread().ident
-        CurrentUserMiddleware._users[thread_id] = {
+        GLOBAL_USER.user = {
             'user_id': user_id,
             'remote_ip': remote_ip,
         }
@@ -54,12 +51,10 @@ class CurrentUserMiddleware(MiddlewareMixin):
     def get_user(cls):
         thread_id = threading.current_thread().ident
         try:
-            return CurrentUserMiddleware._users[thread_id]
-        except KeyError:
+            return GLOBAL_USER.user
+        except AttributeError:
             raise KeyError('Thread {} not already registered with CurrentUserMiddleware.'.format(thread_id))
 
     @classmethod
     def _del_user(cls):
-        thread_id = threading.current_thread().ident
-        if thread_id in CurrentUserMiddleware._users:
-            del CurrentUserMiddleware._users[thread_id]
+        del GLOBAL_USER.user

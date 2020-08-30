@@ -14,6 +14,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 # Compensation for the fact that django or other middleware may do some internal queries
+from allianceutils.middleware import CurrentUserMiddleware
 from test_allianceutils.tests.middleware.views import reset_thread_wait_barrier
 
 QUERY_COUNT_OVERHEAD = 0
@@ -118,6 +119,10 @@ class CurrentUserMiddlewareTestCase(TestCase):
         usernames = set([response.json()['username'] for response in responses])
         expected_usernames = set([str(i) for i in range(THREAD_COUNTS)])
         self.assertEqual(usernames, expected_usernames)
+
+    def test_not_active_for_thread(self):
+        with self.assertRaisesRegex(KeyError, f"Thread .* not already registered with CurrentUserMiddleware"):
+            CurrentUserMiddleware.get_user()
 
 
 class QueryCountMiddlewareTestCase(TestCase):
