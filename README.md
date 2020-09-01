@@ -109,7 +109,19 @@ viewsets, eg. viewsets.ViewSet.
 
 ### Auth
 
-FIXME
+#### MinimalModelBackend
+
+* `allianceutils.auth.backends.MinimalModelBackend`
+    * Replaces the built-in django [ModelBackend](https://docs.djangoproject.com/en/dev/ref/contrib/auth/#django.contrib.auth.backends.ModelBackend)
+    * Provides django model-based authentication
+    * Removes the default authorization (permissions checks) except for checking `is_superuser` 
+
+#### ProfileModelBackend
+
+* Backends for use with [GenericUserProfile](#GenericUserProfile); see code examples there
+* `allianceutils.auth.backends.ProfileModelBackend`
+    * `allianceutils.auth.backends.ProfileModelBackendMixin`
+    
 
 ### Decorators
 
