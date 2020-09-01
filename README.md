@@ -103,7 +103,7 @@ viewsets, eg. viewsets.ViewSet.
 
 ### asynctask
 
-**Status: No unit tests**
+**Status: Experimental. No unit tests**
 
 * See [asynctask documentation](allianceutils/asynctask/README.md)
 
@@ -524,6 +524,8 @@ SERIALIZATION_MODULES = {
 
 #### JSON ORM Inheritance Fix
 
+**Status: To Remove**
+
 * Django does not properly handle (de)serialise models with natural keys where the PK is a FK
     * This shows up particularly with multi-table inheritance and the user profile pattern
     * https://code.djangoproject.com/ticket/24607
@@ -539,6 +541,8 @@ SERIALIZATION_MODULES = {
 ```
 
 ### Storage
+
+**Status: To Remove** 
 
 * Requires `django-storages` and `boto3` to be installed
 
@@ -770,6 +774,8 @@ for app_config in app_configs:
 
 #### JSONExceptionAPIView
 
+**Status: To Remove**
+
 FIXME
 
 
@@ -779,8 +785,15 @@ See [CHANGELOG.md](CHANGELOG.md)
 
 ## Development
 
-* After changes made update CHANGELOG.md with details of changes and new version
-* Run `bin/build.py`. This will extract version from CHANGELOG.md, bump verion in `pyproject.toml` and generate a build for publishing
-* TODO: Publishing to pypi
+* Release Process
+    * Update CHANGELOG.md with details of changes and new version
+    * Run `bin/build.py`. This will extract version from CHANGELOG.md, bump version in `pyproject.toml` and generate a build for publishing
+    * Tag with new version and update the version branch:
+        * `ver=$( poetry version --short ) && echo "Version: $ver"`
+        * `ver_short=$( poetry version --short | sed -E 's/([0-9]+\.[0-9]+).*/\1/' ) && echo "Short Version: $ver_short"`
+        * `git tag v/$ver`
+        * `git checkout -b v/$ver_short`
+        * `git merge --ff-only v/$ver` 
+    * TODO: Publishing to pypi
 
 
