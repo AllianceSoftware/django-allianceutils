@@ -4,6 +4,7 @@ from django.contrib.auth.views import LoginView
 from django.contrib.auth.views import LogoutView
 
 import test_allianceutils.tests.middleware.urls
+import test_allianceutils.tests.object_cache.urls
 import test_allianceutils.tests.profile_auth.urls
 
 urlpatterns = [
@@ -11,4 +12,5 @@ urlpatterns = [
     url(r'^accounts/logout/$', LogoutView.as_view(), name='logout'),
     url(r'^profile_auth/', include(test_allianceutils.tests.profile_auth.urls)),
     url(r'^middleware/', include(test_allianceutils.tests.middleware.urls)),
+    url(r'^object_cache/', include(test_allianceutils.tests.object_cache.urls)),
 ]

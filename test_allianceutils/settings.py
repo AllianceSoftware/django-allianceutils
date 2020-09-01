@@ -61,6 +61,7 @@ INSTALLED_APPS = (
     'authtools',
     'test_allianceutils',
     'test_allianceutils.tests.middleware',
+    'test_allianceutils.tests.object_cache',
     'test_allianceutils.tests.profile_auth',
     'test_allianceutils.tests.serializers',
     'test_allianceutils.tests.checks_db_constraints',

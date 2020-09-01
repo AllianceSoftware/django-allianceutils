@@ -32,10 +32,10 @@ A collection of utilities for django projects.
 
 #### CacheObjectMixin
 
-**Status: No unit tests**
+**Status: To Remove**
 
-Caches the result of `get_object()` in the request
-* TODO: Why cache this on `request` and not on `self`?
+* Caches the result of `get_object()` on the object
+* Note that if you override `get_object()` this will only affect calls to `super().get_object()`
     * If you are customising `get_object()`, `django.utils.functional.cached_property` is probably simpler 
 
 ```python
