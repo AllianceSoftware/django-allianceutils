@@ -32,7 +32,7 @@ A collection of utilities for django projects.
 
 #### CacheObjectMixin
 
-**Status: To Remove**
+**Status: To Remove with 1.0**
 
 * Caches the result of `get_object()` on the object
 * Note that if you override `get_object()` this will only affect calls to `super().get_object()`
@@ -524,7 +524,7 @@ SERIALIZATION_MODULES = {
 
 #### JSON ORM Inheritance Fix
 
-**Status: To Remove**
+**Status: To Remove with 1.0**
 
 * Django does not properly handle (de)serialise models with natural keys where the PK is a FK
     * This shows up particularly with multi-table inheritance and the user profile pattern
@@ -542,7 +542,7 @@ SERIALIZATION_MODULES = {
 
 ### Storage
 
-**Status: To Remove** 
+**Status: To Remove with 1.0** 
 
 * Requires `django-storages` and `boto3` to be installed
 
@@ -774,7 +774,7 @@ for app_config in app_configs:
 
 #### JSONExceptionAPIView
 
-**Status: To Remove**
+**Status: To Remove with 1.0**
 
 FIXME
 
