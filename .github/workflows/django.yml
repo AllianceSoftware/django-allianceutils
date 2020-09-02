@@ -1,0 +1,110 @@
+name: Django CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # the combinations can run in parallel by adjusting this value
+      max-parallel: 2
+      # all combinations of the matrix choices below are combined to create jobs. The max combinations is 256
+      matrix:
+        python-version: ['36', '37', '38']
+        django-version: ['22']
+        isort-version: [5]
+        database-type: ['postgresql', 'mysql']
+        # include/exclude test combinations from above matrix
+        include:
+          # test under isort4, but not on all python versions
+          - python-version: '38'
+            django-version: '22'
+            database-type: 'postgresql'
+            isort-version: 4
+
+    services:
+
+      postgresql:
+        # Docker Hub image
+        image: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps tcp port 5432 on service container to the host
+          - 5432:5432
+        env:
+          # Override Django DB settings
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_HOST: localhost
+
+      mysql:
+        image: mysql
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_HOST: 127.0.0.1
+        ports:
+          - 33306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      # Downloads a copy of the code in the repository before running CI tests
+      - name: Check out repository code
+        uses: actions/checkout@v2
+
+      # Setup the next version of python in the versions matrix
+      - name: Set up Python 3.6
+        if: ${{ matrix.python-version == '36' }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+
+      - name: Set up Python 3.7
+        if: ${{ matrix.python-version == '37' }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: Set up Python 3.8
+        if: ${{ matrix.python-version == '38' }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install tox tox-factor
+
+      - name: Run PostgreSQL Tests (py${{ matrix.python-version }}/django${{ matrix.django-version }})
+        if: ${{ matrix.database-type == 'postgresql' }}
+        run: bin/runtests.sh -e $TOX_ENV
+        env:
+          CI_SERVER: yes
+          TOX_ENV: py${{ matrix.python-version }}-django${{ matrix.django-version }}-isort${{ matrix.isort-version }}-${{ matrix.database-type }}
+          DB_HOST: localhost
+          DB_PORT: ${{ job.services.postgresql.ports[5432] }}
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          DB_NAME: postgres
+
+      - name: Start MySQL service
+        if: ${{ matrix.database-type == 'mysql' }}
+        run: sudo /etc/init.d/mysql start
+
+      - name: Run MySQL Tests (py${{ matrix.python-version }}/django${{ matrix.django-version }})
+        if: ${{ matrix.database-type == 'mysql' }}
+        run: bin/runtests.sh -e $TOX_ENV
+        env:
+          CI_SERVER: yes
+          TOX_ENV: py${{ matrix.python-version }}-django${{ matrix.django-version }}-isort${{ matrix.isort-version }}-${{ matrix.database-type }}
+          DB_HOST: 127.0.0.1
+          DB_PORT: ${{ job.services.mysql.ports[3306] }}
+          DB_USER: root
+          DB_PASSWORD: password
