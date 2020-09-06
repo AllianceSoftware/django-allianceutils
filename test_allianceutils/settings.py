@@ -84,7 +84,7 @@ if _engine == 'django.db.backends.postgresql':
 
 AUTH_USER_MODEL = 'profile_auth.User'
 AUTHENTICATION_BACKENDS = [
-    'allianceutils.auth.backends.ProfileModelBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 MIDDLEWARE = ()
