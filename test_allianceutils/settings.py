@@ -69,6 +69,7 @@ INSTALLED_APPS = (
     'test_allianceutils.tests.object_cache',
     'test_allianceutils.tests.profile_auth',
     'test_allianceutils.tests.serializers',
+    'test_allianceutils.tests.viewset_permissions',
 
     'django_db_constraints',
 

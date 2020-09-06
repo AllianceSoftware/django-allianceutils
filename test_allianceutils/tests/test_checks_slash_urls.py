@@ -66,7 +66,6 @@ class TestUrls(SimpleTestCase):
             sorted(expected)
         )
 
-
     @override_settings(**check_urls_settings)
     def test_missing_slash(self):
         """
