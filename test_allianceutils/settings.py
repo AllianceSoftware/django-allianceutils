@@ -59,15 +59,16 @@ DATABASES = {'default': _db_vars}
 INSTALLED_APPS = (
     'allianceutils',
     'authtools',
+
     'test_allianceutils',
+    'test_allianceutils.tests.checks_db_constraints',
+    'test_allianceutils.tests.checks_explicit_table_names',
+    'test_allianceutils.tests.checks_field_names',
+    'test_allianceutils.tests.document_reverse_accessors',
     'test_allianceutils.tests.middleware',
     'test_allianceutils.tests.object_cache',
     'test_allianceutils.tests.profile_auth',
     'test_allianceutils.tests.serializers',
-    'test_allianceutils.tests.checks_db_constraints',
-    'test_allianceutils.tests.document_reverse_accessors',
-    'test_allianceutils.tests.checks_explicit_table_names',
-    'test_allianceutils.tests.checks_field_names',
 
     'django_db_constraints',
 
