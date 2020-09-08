@@ -32,10 +32,10 @@ A collection of utilities for django projects.
 
 #### CacheObjectMixin
 
-**Status: No unit tests**
+**Status: To Remove with 1.0**
 
-Caches the result of `get_object()` in the request
-* TODO: Why cache this on `request` and not on `self`?
+* Caches the result of `get_object()` on the object
+* Note that if you override `get_object()` this will only affect calls to `super().get_object()`
     * If you are customising `get_object()`, `django.utils.functional.cached_property` is probably simpler 
 
 ```python
@@ -45,71 +45,111 @@ class MyViewSet(allianceutils.api.mixins.CacheObjectMixin, GenericViewSet):
 
 #### Permissions
 
-##### SimpleDjangoObjectPermissions
+##### register_custom_permissions
 
-**Status: No unit tests**
+* Creates permissions that have no model by linking them to an empty content type
+* Django creates permissions as part of the [`post_migrate` signal](https://docs.djangoproject.com/en/dev/ref/signals/#post-migrate)
+
+Usage
+
+```py
+def on_post_migrate(sender, **kwargs):
+    register_custom_permissions("myapp", ("my_perm", "My Permission"))
+```
+
+##### SimpleDjangoObjectPermissions
 
 Permission class for Django Rest Framework that adds support for object level permissions.
 
-Differs from just using DjangoObjectPermissions because it
+Differs from just DRF's [DjangoObjectPermissions](https://www.django-rest-framework.org/api-guide/permissions/#object-level-permissions) because it
 * does not require a queryset
-* uses a single permission for all request methods
+* uses the same permission for every request http method and ViewSet method 
 
 Notes
+* The default django permissions system will [always return False](https://docs.djangoproject.com/en/3.1/topics/auth/customizing/#handling-object-permissions) if given an object; you must be using another permissions backend
 * As per [DRF documentation](http://www.django-rest-framework.org/api-guide/permissions/#object-level-permissions): get_object() is only required if you want to implement object-level permissions
 * **WARNING** If you override `get_object()` then you need to *manually* invoke `self.check_object_permissions(self.request, obj)`
+* Will attempt to check permission both globally and on a per-object basis but considers it an error if the check returns True for both
+*   
 
-Setup
-* To apply to all classes in django rest framework:
+Usage
+* See [DRF permissions policy](https://www.django-rest-framework.org/api-guide/permissions/#setting-the-permission-policy) for details on apply Permissions policies globally
 
+* To apply to a specific view you need to set `permission_required`
 ```python
-REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': (
-        # default to requiring authentication & a role
-        # you can override this by setting the permission_classes to AllowAny in the view
-        'rest_framework.permissions.IsAuthenticated',
-        'allianceutils.api.permissions.SimpleDjangoObjectPermissions',
-    ),
-}
-```
-
-* To apply to one particular view, override `permission_required`
-```python
-class MyAPIView(PermissionRequiredAPIMixin, APIView):
+class MyAPIView(SimpleDjangoObjectPermissions, APIView):
         permission_required = 'my_module.my_permission'
-
-        # You do not have to override get_object() but if you do you must explicitly call check_object_permissions() 
-        def get_object(self):
-            obj = get_object_or_404(self.get_queryset())
-            self.check_object_permissions(self.request, obj)
-            return obj
+        permission_classes = [allianceutils.api.permissions.SimpleDjangoObjectPermissions] 
 ```
 
 If you have no object level permissions (eg. from rules) then it will just do a static permission check.
 
+##### PermissionRequiredAPIMixin
+
+* Mixin that sets `permission_classes` to include `SimpleDjangoObjectPermissions`
+
+**Status: To Remove with 1.0**
 
 ##### GenericDjangoViewsetPermissions
 
-**Status: No unit tests**
+* Map viewset actions to Django permissions.
+* Usage example:
+```
+class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
+    queryset = MyModel.objects.all()
+    serializer_class = MySerializer
+```
+* `GenericDjangoViewsetPermissions.default_actions_to_perms_map` defines the default set of permissions. These can be extended or overridden using `actions_to_perms_map`:
+```
+class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
 
-FIXME
+    # ...
+
+    actions_to_perms_map = {
+        'create': []
+    }
+```
+* no permissions will be required for the create action, but permissions for other actions will remain unchanged.
+* By default permissions checks are passed the relevant model instance for per-object permission checks
+    * This assumes that your backend doesn't ignore the model object (default django permissions simply ignore any object passed to a permissions check)
+    * Since there is no model object, functions decorated with `@list_route` will pass `None` as the permissions check object    
+ 
 
 ##### GenericDjangoViewsetWithoutModelPermissions
 
+**Status: To Remove with 1.0**
+
 **Status: No unit tests**
 
-Works like GenericDjangoViewsetPermissions, except it does not require a queryset and hence can be used on model-free
-viewsets, eg. viewsets.ViewSet.
-
+* If you use `GenericDjangoViewset` with viewsets without a queryset eg. `viewsets.ViewSet` there will be no model. You'll need to provide an `actions_to_perms_map` attribute:
+```
+    actions_to_perms_map = {
+        'retrieve': ['myapp.mypermission']
+    }
+```
 ### asynctask
 
-**Status: No unit tests**
+**Status: To Remove with 1.0**
+
+**Status: Experimental. No unit tests**
 
 * See [asynctask documentation](allianceutils/asynctask/README.md)
 
 ### Auth
 
-FIXME
+#### MinimalModelBackend
+
+* `allianceutils.auth.backends.MinimalModelBackend`
+    * Replaces the built-in django [ModelBackend](https://docs.djangoproject.com/en/dev/ref/contrib/auth/#django.contrib.auth.backends.ModelBackend)
+    * Provides django model-based authentication
+    * Removes the default authorization (permissions checks) except for checking `is_superuser` 
+
+#### ProfileModelBackend
+
+* Backends for use with [GenericUserProfile](#GenericUserProfile); see code examples there
+* `allianceutils.auth.backends.ProfileModelBackend`
+    * `allianceutils.auth.backends.ProfileModelBackendMixin`
+    
 
 ### Decorators
 
@@ -512,6 +552,8 @@ SERIALIZATION_MODULES = {
 
 #### JSON ORM Inheritance Fix
 
+**Status: To Remove with 1.0**
+
 * Django does not properly handle (de)serialise models with natural keys where the PK is a FK
     * This shows up particularly with multi-table inheritance and the user profile pattern
     * https://code.djangoproject.com/ticket/24607
@@ -527,6 +569,8 @@ SERIALIZATION_MODULES = {
 ```
 
 ### Storage
+
+**Status: To Remove with 1.0** 
 
 * Requires `django-storages` and `boto3` to be installed
 
@@ -758,6 +802,8 @@ for app_config in app_configs:
 
 #### JSONExceptionAPIView
 
+**Status: To Remove with 1.0**
+
 FIXME
 
 
@@ -767,8 +813,15 @@ See [CHANGELOG.md](CHANGELOG.md)
 
 ## Development
 
-* After changes made update CHANGELOG.md with details of changes and new version
-* Run `bin/build.py`. This will extract version from CHANGELOG.md, bump verion in `pyproject.toml` and generate a build for publishing
-* TODO: Publishing to pypi
+* Release Process
+    * Update CHANGELOG.md with details of changes and new version
+    * Run `bin/build.py`. This will extract version from CHANGELOG.md, bump version in `pyproject.toml` and generate a build for publishing
+    * Tag with new version and update the version branch:
+        * `ver=$( poetry version --short ) && echo "Version: $ver"`
+        * `ver_short=$( poetry version --short | sed -E 's/([0-9]+\.[0-9]+).*/\1/' ) && echo "Short Version: $ver_short"`
+        * `git tag v/$ver`
+        * `git checkout -b v/$ver_short`
+        * `git merge --ff-only v/$ver` 
+    * TODO: Publishing to pypi
 
 

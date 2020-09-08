@@ -1,5 +1,4 @@
-from django.contrib.admin.views.decorators import \
-    staff_member_required as original_staff_member_required
+from django.contrib.admin.views.decorators import staff_member_required as original_staff_member_required
 from django.contrib.auth import REDIRECT_FIELD_NAME
 
 

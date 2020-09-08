@@ -18,7 +18,8 @@ UserModel = get_user_model()
 
 class ProfileModelBackendMixin:
     """
-    Will use User.profiles & get_profile() if present otherwise will fall back to default get_user() behaviour
+    Backend that provides authentication using User.profiles & get_profile().
+    Will fall back to default get_user() behaviour if no profiles manager available
     """
 
     def get_user(self, user_id):
@@ -37,9 +38,11 @@ class ProfileModelBackendMixin:
 
 class MinimalModelBackend:
     """
-    We've using this backend rather than just extending ModelBackend because the built-in django
-    one requires the default django groups, permissions and user_permissions tables but we're
-    using CSVPermissions instead
+    Minimal backend for using built-in django User table for authentication but without using django's
+    groups/permissions
+
+    We don't extend ModelBackend because the built-in django one has various permissions-related functions we
+    want to exclude entirely
     """
 
     authenticate = ModelBackend.authenticate

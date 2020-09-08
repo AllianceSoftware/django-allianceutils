@@ -1,6 +1,5 @@
 from django import db
 from django.db import models
-from django.db.models import CharField
 
 
 class Person(models.Model):

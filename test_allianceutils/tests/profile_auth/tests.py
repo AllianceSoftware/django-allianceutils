@@ -29,7 +29,10 @@ from .models import UserFKIndirectModel
     ],
     PASSWORD_HASHERS=(
         'django.contrib.auth.hashers.UnsaltedSHA1PasswordHasher',
-    )
+    ),
+    AUTHENTICATION_BACKENDS=(
+        'allianceutils.auth.backends.ProfileModelBackend',
+    ),
 )
 class AuthTestCase(TestCase):
     def setUp(self):
