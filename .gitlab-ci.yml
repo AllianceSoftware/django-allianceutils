@@ -15,7 +15,7 @@ before_script:
       # --verbose
 
 
-image: alliance/python
+image: alliance/python:bionic
 
 
 # linting
