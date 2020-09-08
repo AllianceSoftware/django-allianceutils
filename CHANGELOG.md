@@ -8,6 +8,7 @@
         * Handle .git files that are pointers to the real git dir in `check_git_hooks()`
         * Added `check_field_names`
         * `CurrentUserMiddleware` now uses thread-local storage
+        * Improved efficiency of `SimpleDjangoObjectPermissions`
     * 0.7.3
         * Fix `util.get_firstparty_apps` not working with isort >=5
         * Fix `setup.py` `packages` only including the root package 
