@@ -54,11 +54,11 @@ class ViewsetPermissionsTestCase(TestCase):
             shell_size=Decimal("12.1"),
         )
 
-    def grant_permission(self, codename: str):
+    def grant_permission(self, codename: str, model=NinjaTurtleModel):
         perm = Permission.objects.get_by_natural_key(
             codename=codename,
-            app_label=NinjaTurtleModel._meta.app_label,
-            model=NinjaTurtleModel._meta.model_name
+            app_label=model._meta.app_label,
+            model=model._meta.model_name
         )
         self.user.user_permissions.add(perm)
         # refresh_from_db() doesn't refresh the user permissions cache, need to reload from scratch
@@ -137,9 +137,27 @@ class ViewsetPermissionsTestCase(TestCase):
 
         test_methods("delete_ninjaturtlemodel", {"delete"})
 
-    @skip('not implemented yet')
+    @skip("This test is currently incomplete and GenericDjangoViewsetWithoutModelPermissions will be removed in v1.0")
     def test_no_model_permissions_viewset(self):
         """
         Check permissions on a GenericDjangoViewsetWithoutModelPermissions
+        This is used when the view has no model associated with it but you still want to implement permissions
         """
-        pass
+        from django.contrib.contenttypes.models import ContentType
+
+        client = Client()
+        client.force_login(self.user)
+
+        # request should not succeed
+        response = client.get(reverse('permissions:no-model-list'))
+        self.assertEqual(response.status_code, 403)
+
+        # once you add the permission to that user it should now pass
+        content_type = ContentType.objects.create(app_label='permissions', model='')
+        permission = Permission.objects.create(codename='viewset_permissions.can_list', name='Can See List', content_type=content_type)
+        self.grant_permission(permission)
+        self.user.refresh_from_db()
+
+        response = client.get(reverse('permissions:no-model-list'))
+        self.assertEqual(response.status_code, 200)
+
