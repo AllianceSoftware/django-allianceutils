@@ -13,6 +13,7 @@
             * Removed `MediaStorage`, `StaticStorage` 
             * Removed `mysqlquickdump`, `mysqlquickload` 
             * Removed `PermissionRequiredAPIMixin`
+            * Removed `script_json`
             * Removed `staff_member_required`
         * First stable 1.0 release
 * 0.7
