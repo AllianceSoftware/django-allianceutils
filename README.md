@@ -15,7 +15,6 @@ A collection of utilities for django projects.
     * [Migrations](#migrations)
     * [Models](#models)
     * [Serializers](#serializers)
-    * [Storage](#storage)
     * [Template Tags](#template-tags)
     * [Util](#util)
     * [Views](#views)
@@ -566,51 +565,6 @@ def my_view(request):
 SERIALIZATION_MODULES = {
     'json_ordered': 'allianceutils.serializers.json_ordered',
 }
-```
-
-### Storage
-
-**Status: To Remove with 1.0** 
-
-* Requires `django-storages` and `boto3` to be installed
-
-* Use the below if you are using S3 for file storage and want to prefix media and / or static files - otherwise they will all be dumped unprefixed in the bucket.
-
-* Configure S3 for use with S3 Boto3
-
-```python
-AWS_ACCESS_KEY_ID = 'ACCESS_KEY'
-AWS_STORAGE_BUCKET_NAME = 'bucket-name'
-AWS_DEFAULT_REGION = 'ap-southeast-2'
-AWS_DEFAULT_ACL = None
-```
-
-#### StaticStorage
-
-* An extension to S3Boto3Storage that specifies a prefix for static files.
-* Allows you to put static files and media files in S3 without worrying about clobbering each other.
-* Note that if using on Heroku this doesn't play nice with pipelines so you probably don't want to use it
-* Configuration
-
-```python
-STATICFILES_STORAGE = 'allianceutils.storage.StaticStorage'
-STATICFILES_LOCATION="static"
-
-STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/"
-```
-
-#### MediaStorage
-
-* An extension to S3Boto3Storage that specifies a prefix for static files.
-* Allows you to put static files and media files in S3 without worrying about clobbering each other.
-
-Configuration:
-
-```python
-DEFAULT_FILE_STORAGE = 'allianceutils.storage.MediaStorage'
-MEDIAFILES_LOCATION="media"
-
-MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/"
 ```
 
 ### Template Tags

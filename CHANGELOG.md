@@ -7,6 +7,7 @@
         * Breaking Changes
             * Removed `asynctask` 
             * Removed `json_orminheritancefix`
+            * Removed `MediaStorage`, `StaticStorage` 
         * First stable 1.0 release
 * 0.7
     * 0.7.4
