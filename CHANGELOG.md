@@ -1,8 +1,11 @@
 # CHANGELOG
 
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
+
+* 1.0
+    * 1.0.0-dev
+        * First stable 1.0 release
 * 0.7
-    * 0.7.dev
     * 0.7.4
         * Breaking Changes
             * Internal implementation of `CacheObjectMixin` changed; now caches on the ViewSet instead of the request   

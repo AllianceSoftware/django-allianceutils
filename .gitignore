@@ -3,5 +3,6 @@
 .idea/
 .tox/
 allianceutils.egg-info/
+dist/
 test_allianceutils/tests/autodumpdata/fixtures/publication.json
 test_allianceutils/tests/autodumpdata/fixtures/publication.sql
