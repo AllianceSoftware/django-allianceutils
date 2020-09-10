@@ -101,7 +101,6 @@ STATIC_ROOT = _Path(BASE_DIR, 'static')
 
 SERIALIZATION_MODULES = {
     'json_ordered': 'allianceutils.serializers.json_ordered',
-    'json': 'allianceutils.serializers.json_orminheritancefix',
 }
 
 ROOT_URLCONF = 'test_allianceutils.urls'

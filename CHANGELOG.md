@@ -6,6 +6,7 @@
     * 1.0.0-dev
         * Breaking Changes
             * Removed `asynctask` 
+            * Removed `json_orminheritancefix`
         * First stable 1.0 release
 * 0.7
     * 0.7.4
