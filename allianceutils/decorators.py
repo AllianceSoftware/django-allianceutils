@@ -11,13 +11,44 @@ def staff_member_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAM
     return original_staff_member_required(view_func, redirect_field_name, login_url)
 
 
+class _CachedMethodDescriptor:
+    fn: Callable
+    cache_attr: str
+
+    def __init__(self, fn: Callable):
+        self.fn = fn
+        self.cache_attr = f'_cache__{fn.__name__}'
+
+    def __get__(self, obj, objtype):
+        f = functools.partial(self.__call__, obj)
+        f.clear_cache = functools.partial(self.clear_cache, obj)
+        return f
+
+    def __call__(self, obj, *args, **kwargs):
+        if not hasattr(obj, self.cache_attr):
+            setattr(obj, self.cache_attr, self.fn(obj, *args, **kwargs))
+        return getattr(obj, self.cache_attr)
+
+    def __set_name__(self, cls, name):
+        cls.name = name
+
+    def clear_cache(self, obj):
+        try:
+            delattr(obj, self.cache_attr)
+        except AttributeError as ae:
+            # if obj is None then this was called on the class and not the
+            # object instance
+            if obj is None:
+                raise AttributeError("clear_cache() should be called via a class instance, not a class") from ae
+
+
 def method_cache(fn: Callable) -> Callable:
     """
     Method decorator to cache function results.
 
     Only works on methods with no parameters (other than self)
 
-    Clear cache for MyObject.my_method with my_object.my_method(_cache=False)
+    Clear cache for MyObject.my_method with my_object.clear_cache()
     """
     if isinstance(fn, (staticmethod, classmethod)):
         # if staticmethod or classmethod then inspect.signature() fails even trying to introspect the function
@@ -30,16 +61,4 @@ def method_cache(fn: Callable) -> Callable:
         # "self" we'll assume it's a method
         assert "self" in sig.parameters, "method_cache works on methods, not functions"
 
-    cache_attr = f"_cache_{fn.__name__}"
-
-    @functools.wraps(fn)
-    def wrapper(self, *args, **kwargs):
-        if "_from_cache" in kwargs:
-            if not kwargs["_from_cache"]:
-                delattr(self, cache_attr)
-            del kwargs["_from_cache"]
-        if not hasattr(self, cache_attr):
-            setattr(self, cache_attr, fn(self))
-        return getattr(self, cache_attr)
-
-    return wrapper
+    return _CachedMethodDescriptor(fn)

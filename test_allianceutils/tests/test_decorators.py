@@ -20,9 +20,16 @@ class DecoratorsTest(SimpleTestCase):
         self.assertEqual(obj.my_method(), 1)
         self.assertEqual(obj.my_method(), 1)
 
-        obj.my_method(_from_cache=False)
+        obj.my_method.clear_cache()
         self.assertEqual(obj.my_method(), 2)
         self.assertEqual(obj.my_method(), 2)
+        obj.my_method.clear_cache()
+        self.assertEqual(obj.my_method(), 3)
+
+        with self.assertRaises(AttributeError):
+            # Trying to clear the class method doesn't work (we'd have
+            # to keep track of every single MyClass instance to do this)
+            MyClass.my_method.clear_cache()
 
     def test_method_cache_validation(self):
         # extra arguments
