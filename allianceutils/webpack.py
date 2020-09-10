@@ -50,7 +50,7 @@ def get_chunk_tags(chunks: Dict, attrs: str):
     return tags
 
 
-class WebpackEntryPointLoader():
+class WebpackEntryPointLoader:
 
     extensions_by_resource_type = {
         'js': ('js', 'js.gz'),

@@ -132,7 +132,6 @@ class QueryCountMiddlewareTestCase(TestCase):
         # (ie it's as if every request is running in a new preocess)
         self.client = Client()
 
-
     def assert_warning_count(self,
         expected_warnings: int,
         expected_log_warnings: int,

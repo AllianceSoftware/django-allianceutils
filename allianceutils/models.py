@@ -1,11 +1,9 @@
 from typing import Callable
 from typing import Dict
-from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Union
 
-from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import Permission
 from django.core.exceptions import NON_FIELD_ERRORS
@@ -13,7 +11,6 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.db.models import Manager
 from django.db.models import Model
-from django.db.models import Q
 from django.db.models import QuerySet
 
 
@@ -56,6 +53,7 @@ class NoDeleteModel(Model):
 
     class Meta:
         abstract = True
+
 
 # -------------------------------------------------------------------------------------------------------------------
 
