@@ -164,20 +164,6 @@ customer = MultipleFieldCharFilter(names=('customer__first_name', 'customer__las
 
 #### Commands
 
-##### mysqlquickdump
-
-* Command to quickly dump a mysql database
-    * Significantly faster than django fixtures
-* Can be useful for saving & restoring the state of the database in test cases
-    * Not intended to be used on production servers
-* Expects that DB structure will not change
-* See `./manage.py mysqlquickdump --help` for usage details
-
-##### mysqlquickload
-
-* Load a database dumped with `mysqlquickdump`
-* See `./manage.py mysqlquickload --help` for usage details
-
 ##### print_logging
 
 * Displays the current logging configuration in a hierarchical fashion
