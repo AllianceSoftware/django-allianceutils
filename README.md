@@ -111,12 +111,6 @@ class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
 
 ### Decorators
 
-#### staff_member_required
-
-* Similar to [`django.contrib.admin.views.decorators.staff_member_required`](https://docs.djangoproject.com/en/dev/ref/contrib/admin/#django.contrib.admin.views.decorators.staff_member_required) but redirects to the generic `login` url instead of `admin:login`.
-* Useful if you are not using the `django.contrib.admin` app
-* Useful in conjunction with [`django-hijack`](https://django-hijack.readthedocs.io/en/latest/): set `HIJACK_DECORATOR = "allianceutils.decorators.staff_member_required"` in your settings file
-
 #### method_cache
 
 * Caches the results of a method on the object instance
