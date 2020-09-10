@@ -18,6 +18,7 @@
             * Removed `script_json`
             * Removed `staff_member_required`
             * `python_to_django_date_format` now throws an exception on untranslatable formats
+            * `RunSQLFromFile` replaces `migrate_run_sql_file`
         * First stable 1.0 release
 * 0.7
     * 0.7.4

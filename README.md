@@ -320,18 +320,17 @@ def my_view(request, *args, **kwargs):
 ### Migrations
 
 #### Run SQL function
-    * allianceutils.migrations.migrate_run_sql_file
-    * Run arbitrary SQL from the migration/sql directory as part of a mgiration
-    * Usage:
-        ```python
-        migrations.RunPython(insert_my_table),
+* Wrapper to `RunSQL` that reads SQL from a file instead of inline in python
+* The reason you would do this as an external file & function is so that squashed migrations don't become unwieldy (django will inline and strip whitespace in the SQL)
 
-        def insert_my_table(_, schema_editor):
-            migrate_run_sql_file(schema_editor, 'my_app', '0001_my_table_sql_file')
-        ```
-    * The reason you would do this as an external file & function is so that squashed migrations don't become unwieldy (it will inline and strip whitespace the SQL even for large data files)
-    * Also much faster to load a prepared .sql compares to json loads via ORM
-
+Usage:
+```python
+class Migration(migrations.Migration):
+    # ...
+    operations = [
+        allianceutils.migrations.RunSQLFromFile('my_app', '0001_intial.sql'),
+    ]
+```
 
 ### Models
 
