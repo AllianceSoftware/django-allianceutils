@@ -8,6 +8,7 @@
             * Removed `asynctask` 
             * Removed `CacheObjectMixin`; use `@method_cache` instead
             * Removed `json_orminheritancefix`
+            * Removed `JSONExceptionAPIView`
             * Removed `MediaStorage`, `StaticStorage` 
         * First stable 1.0 release
 * 0.7

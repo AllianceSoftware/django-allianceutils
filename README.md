@@ -17,7 +17,6 @@ A collection of utilities for django projects.
     * [Serializers](#serializers)
     * [Template Tags](#template-tags)
     * [Util](#util)
-    * [Views](#views)
 * [Changelog](#changelog)
 
 ## Installation
@@ -737,16 +736,6 @@ for app_config in app_configs:
         in app_config.get_models()
     })
 ```
-
-
-### Views 
-
-#### JSONExceptionAPIView
-
-**Status: To Remove with 1.0**
-
-FIXME
-
 
 ## Changelog
 
