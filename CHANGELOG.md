@@ -11,6 +11,7 @@
             * Removed `json_orminheritancefix`
             * Removed `JSONExceptionAPIView`
             * Removed `MediaStorage`, `StaticStorage` 
+            * Removed `PermissionRequiredAPIMixin`
         * First stable 1.0 release
 * 0.7
     * 0.7.4

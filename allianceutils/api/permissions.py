@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from rest_framework.permissions import BasePermission
-from rest_framework.permissions import IsAuthenticated
 
 
 class SimpleDjangoObjectPermissions(BasePermission):
@@ -30,22 +29,6 @@ class SimpleDjangoObjectPermissions(BasePermission):
             "This may indicate a potential security issue with your permissions."
         )
         return has_perm_global or has_perm_obj
-
-
-class PermissionRequiredAPIMixin(object):
-    """
-    Glues django-rest-framework permissions checking together with simple django per-object permissions checks
-
-    Usage:
-    class MyAPIView(APIView):
-        permission_required = 'my_module.my_permission'
-
-        def get_object(self):
-            obj = get_object_or_404(self.get_queryset())
-            self.check_object_permissions(self.request, obj)
-            return obj
-    """
-    permission_classes = (IsAuthenticated, SimpleDjangoObjectPermissions,)
 
 
 class GenericDjangoViewsetPermissions(BasePermission):

@@ -68,12 +68,6 @@ class MyAPIView(SimpleDjangoObjectPermissions, APIView):
 
 If you have no object level permissions (eg. from rules) then it will just do a static permission check.
 
-##### PermissionRequiredAPIMixin
-
-* Mixin that sets `permission_classes` to include `SimpleDjangoObjectPermissions`
-
-**Status: To Remove with 1.0**
-
 ##### GenericDjangoViewsetPermissions
 
 * Map viewset actions to Django permissions.
