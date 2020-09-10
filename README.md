@@ -158,6 +158,27 @@ customer = MultipleFieldCharFilter(names=('customer__first_name', 'customer__las
 
 #### Commands
 
+##### OptionalAppCommand
+
+* A utility class that extends `django.core.management.base.BaseCommand` and adds optional argument(s) for django apps
+* If app names are passed on the command line `handle_app_config()` will be called with the `AppConfig` for each app otherwise it will be called with every first-party app (as determined by `isort`)
+
+
+Example:
+
+```
+class Command(allianceutils.management.commands.base.OptionalAppCommand):
+    def add_arguments(self, parser):
+        super().add_arguments(parser)
+        parser.add_argument('--type', choices=('name', 'label'), default='name')
+
+    def handle_app_config(self, app_config: AppConfig, **options):
+        if options['type'] == 'name':
+            print(f"Called with {app_config.name}")
+        if options['type'] == 'label':
+            print(f"Called with {app_config.label}")
+```  
+
 ##### print_logging
 
 * Displays the current logging configuration in a hierarchical fashion
