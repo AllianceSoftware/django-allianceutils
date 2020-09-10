@@ -7,6 +7,7 @@
         * Breaking Changes
             * Removed `asynctask` 
             * Removed `CacheObjectMixin`; use `@method_cache` instead
+            * Removed `GenericDjangoViewsetWithoutModelPermissions`
             * Removed `json_orminheritancefix`
             * Removed `JSONExceptionAPIView`
             * Removed `MediaStorage`, `StaticStorage` 

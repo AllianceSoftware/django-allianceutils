@@ -99,18 +99,6 @@ class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
     * Since there is no model object, functions decorated with `@list_route` will pass `None` as the permissions check object    
  
 
-##### GenericDjangoViewsetWithoutModelPermissions
-
-**Status: To Remove with 1.0**
-
-**Status: No unit tests**
-
-* If you use `GenericDjangoViewset` with viewsets without a queryset eg. `viewsets.ViewSet` there will be no model. You'll need to provide an `actions_to_perms_map` attribute:
-```
-    actions_to_perms_map = {
-        'retrieve': ['myapp.mypermission']
-    }
-```
 ### Auth
 
 #### MinimalModelBackend
