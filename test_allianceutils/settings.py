@@ -78,11 +78,6 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
 )
 
-if _engine == 'django.db.backends.postgresql':
-    INSTALLED_APPS += (
-        'allianceutils.asynctask',
-    )
-
 AUTH_USER_MODEL = 'profile_auth.User'
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',

@@ -5,7 +5,6 @@ A collection of utilities for django projects.
 * [Installation](#installation)
 * [Usage](#usage)
     * [API](#api)
-    * [Asynctask](#asynctask)
     * [Auth](#auth)
     * [Decorators](#decorators)
     * [Filters](#filters)
@@ -127,14 +126,6 @@ class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
         'retrieve': ['myapp.mypermission']
     }
 ```
-### asynctask
-
-**Status: To Remove with 1.0**
-
-**Status: Experimental. No unit tests**
-
-* See [asynctask documentation](allianceutils/asynctask/README.md)
-
 ### Auth
 
 #### MinimalModelBackend
