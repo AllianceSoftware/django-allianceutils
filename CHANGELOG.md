@@ -15,6 +15,7 @@
             * Removed `migrate_create_group`
             * Removed `mysqlquickdump`, `mysqlquickload` 
             * Removed `PermissionRequiredAPIMixin`
+            * Removed `register_custom_permissions`
             * Removed `script_json`
             * Removed `staff_member_required`
             * `python_to_django_date_format` now throws an exception on untranslatable formats
