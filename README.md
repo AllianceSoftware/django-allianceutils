@@ -110,6 +110,26 @@ class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
 
 ### Decorators
 
+#### gzip_page_ajax
+
+* Smarter version of django's [gzip_page](https://docs.djangoproject.com/en/dev/topics/http/decorators/#django.views.decorators.gzip.gzip_page):
+    * If settings.DEBUG not set, will always gzip
+    * If settings.DEBUG set, will gzip only if request is an ajax request
+* This allows you to use django-debug-toolbar in DEBUG mode (if you gzip a response then the debug toolbar middleware won't run)
+
+Example
+
+```
+
+@allianceutils.views.decorators.gzip_page_ajax
+def my_view(request: HttpRequest) -> httpResponse:
+    data = {
+        "message": "Hello World",
+    }
+    return django.http.JsonResponse(data) 
+
+```
+
 #### method_cache
 
 * Caches the results of a method on the object instance
