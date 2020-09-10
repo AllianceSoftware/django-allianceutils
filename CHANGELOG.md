@@ -6,6 +6,7 @@
     * 1.0.0-dev
         * Breaking Changes
             * Removed `asynctask` 
+            * Removed `CacheObjectMixin`; use `@method_cache` instead
             * Removed `json_orminheritancefix`
             * Removed `MediaStorage`, `StaticStorage` 
         * First stable 1.0 release

@@ -28,19 +28,6 @@ A collection of utilities for django projects.
 
 ### API
 
-#### CacheObjectMixin
-
-**Status: To Remove with 1.0**
-
-* Caches the result of `get_object()` on the object
-* Note that if you override `get_object()` this will only affect calls to `super().get_object()`
-    * If you are customising `get_object()`, `django.utils.functional.cached_property` is probably simpler 
-
-```python
-class MyViewSet(allianceutils.api.mixins.CacheObjectMixin, GenericViewSet):
-    # ...
-```  
-
 #### Permissions
 
 ##### register_custom_permissions
