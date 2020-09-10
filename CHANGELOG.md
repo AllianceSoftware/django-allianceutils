@@ -3,6 +3,7 @@
 * Note: `setup.py` reads the highest version number from this section, so use versioning compatible with setuptools
 * 0.7
     * 0.7.dev
+    * 0.7.4
         * Breaking Changes
             * Internal implementation of `CacheObjectMixin` changed; now caches on the ViewSet instead of the request   
         * Handle .git files that are pointers to the real git dir in `check_git_hooks()`
