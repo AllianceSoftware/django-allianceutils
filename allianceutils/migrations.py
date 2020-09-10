@@ -29,15 +29,3 @@ def migrate_run_sql_file(schema_editor, app_name, filename):
     schema_editor.execute(path.read_text())
 
 
-def migrate_create_group(schema_editor, groups):
-    """
-    Create authentication groups
-    :param schema_editor: schema editor passed in by migrations
-    :param groups: sequence of tuples of (group_id, group_name)
-    """
-    for group in groups:
-        group_id, group_name = group[0], group[1]
-        schema_editor.execute('INSERT IGNORE INTO auth_group VALUES (%s, %s)', (group_id, group_name))
-
-    # update postgres autoid
-    # schema_editor.execute("SELECT pg_catalog.setval('auth_group_id_seq', (SELECT MAX(id) FROM auth_group), TRUE)")

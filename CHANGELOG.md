@@ -12,6 +12,7 @@
             * Removed `json_orminheritancefix`
             * Removed `JSONExceptionAPIView`
             * Removed `MediaStorage`, `StaticStorage` 
+            * Removed `migrate_create_group`
             * Removed `mysqlquickdump`, `mysqlquickload` 
             * Removed `PermissionRequiredAPIMixin`
             * Removed `script_json`
