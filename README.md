@@ -1,6 +1,6 @@
 # Alliance Utils
 
-A collection of utilities for django projects.
+A collection of utilities for django projects from [Alliance Software](https://www.alliancesoftware.com.au/).
 
 * [Installation](#installation)
 * [Usage](#usage)
@@ -50,7 +50,7 @@ Differs from just DRF's [DjangoObjectPermissions](https://www.django-rest-framew
 * uses the same permission for every request http method and ViewSet method 
 
 Notes
-* The default django permissions system will [always return False](https://docs.djangoproject.com/en/3.1/topics/auth/customizing/#handling-object-permissions) if given an object; you must be using another permissions backend
+* The default django permissions system will [always return False](https://docs.djangoproject.com/en/dev/topics/auth/customizing/#handling-object-permissions) if given an object; you must be using another permissions backend
 * As per [DRF documentation](http://www.django-rest-framework.org/api-guide/permissions/#object-level-permissions): get_object() is only required if you want to implement object-level permissions
 * **WARNING** If you override `get_object()` then you need to *manually* invoke `self.check_object_permissions(self.request, obj)`
 * Will attempt to check permission both globally and on a per-object basis but considers it an error if the check returns True for both
@@ -105,9 +105,8 @@ class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
 #### ProfileModelBackend
 
 * Backends for use with [GenericUserProfile](#GenericUserProfile); see code examples there
-* `allianceutils.auth.backends.ProfileModelBackend`
-    * `allianceutils.auth.backends.ProfileModelBackendMixin`
-    
+* `allianceutils.auth.backends.ProfileModelBackendMixin` - in combo with [AuthenticationMiddleware](https://docs.djangoproject.com/en/dev/ref/middleware/#django.contrib.auth.middleware.AuthenticationMiddleware) will set user profiles on `request.user`  
+    * `allianceutils.auth.backends.ProfileModelBackend` - convenience class combined with case insensitive username & default django permissions backend 
 
 ### Decorators
 
@@ -189,7 +188,7 @@ class Command(allianceutils.management.commands.base.OptionalAppCommand):
 ##### check\_url\_trailing\_slash
 
 * Checks that your URLs are consistent with the `settings.APPEND_SLASH` using a [django system check](https://docs.djangoproject.com/en/dev/ref/checks/)
-* In your [app config](https://docs.djangoproject.com/en/1.11/ref/applications/#for-application-authors) 
+* In your [app config](https://docs.djangoproject.com/en/dev/ref/applications/#for-application-authors) 
 
 ```python
 from django.apps import AppConfig
@@ -299,7 +298,7 @@ class MyAppConfig(AppConfig):
 #### CurrentUserMiddleware
 
 * Middleware to enable accessing the currently logged-in user without a request object.
-    * Properly handles multithreaded python by keeping track of the current user in a `dict` of `{'threadId': User}` 
+    * Assumes that `threading.local` is not shared between requests (an assumption also made by django internationalisation) 
 
 * Setup
     * Add `allianceutils.middleware.CurrentUserMiddleware` to `MIDDLEWARE`.
@@ -358,14 +357,15 @@ class Migration(migrations.Migration):
 #### Utility functions / classes
 
 ##### combine_querysets_as_manager
+* `allianceutils.models.combine_querysets_as_manager(Iterable[Queryset]) -> Manager`
 * Replacement for django_permanent.managers.MultiPassThroughManager which no longer works in django 1.8
-* Returns a new Manager instance that passes through calls to multiple underlying queryset_classes via inheritance 
+* Returns a new Manager instance that passes through calls to multiple underlying queryset_classes via inheritance
 
 ##### NoDeleteModel
 
 * A model that blocks deletes in django
     * Can still be deleted with manual queries
-* Read django docs about [manager inheritance](https://docs.djangoproject.com/en/1.11/topics/db/managers/#custom-managers-and-model-inheritance)
+* Read django docs about [manager inheritance](https://docs.djangoproject.com/en/dev/topics/db/managers/#custom-managers-and-model-inheritance)
     * If you wish add your own manager, you need to combine the querysets:
 
 ```python
@@ -374,7 +374,7 @@ class MyModel(NoDeleteModel):
 ```  
 
 #### GenericUserProfile
-Allows you to iterate over a `User` table and have it return the corresponding `Profile` records without generating extra queries
+Allows you to iterate over a `User` table and have it return a corresponding `Profile` record without generating extra queries
 
 Minimal example:
 
@@ -522,7 +522,7 @@ def my_view(request):
 #### JSON Ordered
 
 * A version of django's core json serializer that outputs field in sorted order
-* The built-in one uses a standard `dict` with completely unpredictable order which makes fixture diffs often contain field ordering changes
+* The built-in one uses a standard `dict` with completely unpredictable order which causes json diffs to show spurious changes
 
 * Setup
     * Add to `SERIALIZATION_MODULES` in your settings
@@ -725,6 +725,11 @@ for app_config in app_configs:
         in app_config.get_models()
     })
 ```
+
+## Experimental
+
+* These are experimental and may change without notice
+    * `document_reverse_accessors` management comment  
 
 ## Changelog
 
