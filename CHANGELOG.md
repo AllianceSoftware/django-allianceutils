@@ -18,6 +18,10 @@
             * Removed `register_custom_permissions`
             * Removed `script_json`
             * Removed `staff_member_required`
+            * Checks
+                * Renamed `check_url_trailing_slash` => `CheckTrailingSlash`
+                * Renamed `make_check_explcit_table_names` => `CheckExplicitTableNames`, removed `check_explicit_table_names`
+                * Renamed `make_check_field_names` => `CheckReversibleFieldNames`, removed `check_field_names`
             * `python_to_django_date_format` now throws an exception on untranslatable formats
             * `RunSQLFromFile` replaces `migrate_run_sql_file`
         * First stable 1.0 release

@@ -206,28 +206,39 @@ class Command(allianceutils.management.commands.base.OptionalAppCommand):
 
 #### Checks
 
-##### check\_url\_trailing\_slash
+* Checks with no configuration are functions that can be passed directly to [register](https://docs.djangoproject.com/en/3.1/topics/checks/)
+* Checks that expect parameters are classes that need to be instantiated
 
-* Checks that your URLs are consistent with the `settings.APPEND_SLASH` using a [django system check](https://docs.djangoproject.com/en/dev/ref/checks/)
-* In your [app config](https://docs.djangoproject.com/en/dev/ref/applications/#for-application-authors) 
+Setting up django hooks:
 
 ```python
 from django.apps import AppConfig
 from django.core.checks import register
 from django.core.checks import Tags
 
-from allianceutils.checks import check_url_trailing_slash
+from allianceutils.checks import check_admins
+from allianceutils.checks import check_db_constraints
+from allianceutils.checks import CheckExplicitTableNames
+from allianceutils.checks import check_git_hooks
+from allianceutils.checks import CheckReversibleFieldNames
+from allianceutils.checks import CheckUrlTrailingSlash
 
 class MyAppConfig(AppConfig):
     # ...
 
     def ready(self):
-        # trigger checks to register
-        check = check_url_trailing_slash(expect_trailing_slash=True)
-        register(check=check, tags=Tags.url)
+        register(check=check_admins, tags=Tags.admin, deploy=True)
+        register(check=check_db_constraints, tags=Tags.database)
+        register(check=CheckExplicitTableNames(), tags=Tags.models)
+        register(check=check_git_hooks, tags=Tags.admin)
+        register(check=CheckReversibleFieldNames(), tags=Tags.models)
+        register(check=CheckUrlTrailingSlash(expect_trailing_slash=True), tags=Tags.url)        
 ```
 
-* Optional arguments to `check_url_trailing_slash`
+##### CheckUrlTrailingSlash
+
+* Checks that your URLs are consistent with the `settings.APPEND_SLASH`  
+* Arguments:
     * `ignore_attrs` - skip checks on url patterns where an attribute of the pattern matches something in here (see example above)
         * Most relevant attributes of a `RegexURLResolver`:
             * `_regex` - string used for regex matching. Defaults to `[r'^$']`
@@ -235,7 +246,7 @@ class MyAppConfig(AppConfig):
             * `namespace` - pattern defines a namespace
             * `lookup_str` - string defining view to use. Defaults to `['django.views.static.serve']`
         * Note that if you skip a resolver it will also skip checks on everything inside that resolver
-* If using Django REST Framework's [`DefaultRouter`](http://www.django-rest-framework.org/api-guide/routers/#defaultrouter) then you need to turn off `include_format_suffixes`:
+* Note: If using Django REST Framework's [`DefaultRouter`](http://www.django-rest-framework.org/api-guide/routers/#defaultrouter) then you need to turn off `include_format_suffixes`:
 
 ```
 router = routers.DefaultRouter(trailing_slash=True)
@@ -247,62 +258,33 @@ urlpatterns += router.urls
 
 ##### check\_admins
 
-* Checks that `settings.ADMINS` has been properly set in staging and production settings files.
+* Checks that `settings.ADMINS` has been properly set in settings files.
 
 ##### check\_git\_hooks
 
-* Checks that the `.git/hooks` directory has been sym-linked to the projects' `git-hooks` directory.
+* Checks that git hookshave been set up, one of:
+  * `.git/hooks` directory has been symlinked to the project's `git-hooks`
+  * [`husky`](https://github.com/typicode/husky) hooks have been installed 
+* 
 
 ##### check\_db\_constraints
 
 * Checks that all models that specify `db_constraints` in their Meta will generate unique constraint names when truncated by the database.
 
-##### check\_explicit\_table\_names
+##### CheckExplicitTableNames
 
-* Checks that all models have `db_table` explicitly defined on their Meta class, and the table name is in lowercase
-* `allianceutils.checks.make_check_explicit_table_names` allows you to ignore specified apps or models, or bypass the lowercase requirement
-	* `allianceutils.checks.check_explicit_table_names` is shorthand for `make_check_explicit_table_names(ignore_labels=DEFAULT_TABLE_NAME_CHECK_IGNORE, enforce_lowercase=True)` which has a predefined set of apps to ignore
+* Checks that all first-party models have `db_table` explicitly defined on their Meta class, and the table name is in lowercase
+* Arguments:
+    * `enforce_lowercase` - check that there are no uppercase characters in the table name
+    * `ignore_labels` - app labels (eg `silk`) or app_label + model labels (eg `silk.request`) to ignore.
+        * `allianceutils.checks.DEFAULT_TABLE_NAME_CHECK_IGNORE` contains a default list of apps/models to ignore
 
-```python
-from django.apps import AppConfig
-from django.core.checks import Tags
-
-from allianceutils.util.checks import DEFAULT_TABLE_NAME_CHECK_IGNORE
-from allianceutils.util.checks import make_check_explicit_table_names
-
-class MyAppConfig(AppConfig):
-    name = 'myapp'
-    verbose_name = "My App"
-
-	def ready(self):
-		check_explicit_table_names = make_check_explicit_table_names(ignore_labels=DEFAULT_TABLE_NAME_CHECK_IGNORE + [
-			'some_app',
-			'another_app.my_model',
-			'another_app.your_model',
-		])
-
-		register(check=check_explicit_table_names, tags=Tags.models)
-```
-
-##### check\_field\_names
+##### CheckReversibleFieldNames
 
 * Checks that all models have fields names that are reversible with `underscorize`/`camelize`/`camel_to_underscore`/`underscore_to_camel`
-* `allianceutils.checks.make_check_field_names` allows you to ignore specified apps or models
-    * `allianceutils.checks.check_field_names` is shorthand for `make_check_field_names(ignore_labels=DEFAULT_TABLE_NAME_CHECK_IGNORE)` which has a predefined set of apps to ignore
+* Arguments:
+    * `ignore_labels` - ignore these apps/models: see `CheckExplicitTableNames`
 
-```python
-from django.apps import AppConfig
-from django.core.checks import Tags
-
-from allianceutils.util.checks import check_field_names
-
-class MyAppConfig(AppConfig):
-    name = 'myapp'
-    verbose_name = "My App"
-
-	def ready(self):
-		register(check=check_field_names, tags=Tags.models)
-```
 ### Middleware
 
 #### HttpAuthMiddleware
