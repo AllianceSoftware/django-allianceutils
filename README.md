@@ -657,7 +657,14 @@ output_tree == {
 
 #### python_to_django_date_format
 
-Converts a python [strftime/strptime](https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior) datetime format string into a []django template/PHP](https://docs.djangoproject.com/en/dev/ref/templates/builtins/#std:templatefilter-date) date format string
+* Converts a python [strftime/strptime](https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior) datetime format string into a [django template/PHP](https://docs.djangoproject.com/en/dev/ref/templates/builtins/#std:templatefilter-date) date format string
+* Codes with no equivalent will be dropped
+
+Example:
+```python
+allianceutils.util.date.python_to_django_date_format("%Y%m%d %H%M%S")
+# returns "Ymd His"
+```
 
 #### retry_fn
 

@@ -1,3 +1,4 @@
+from contextlib import ExitStack as nullcontext  # want this to work with python <3.7 so not using nullcontext directly
 from io import StringIO
 
 from django.apps import apps
@@ -48,7 +49,10 @@ class DateFormatTestCase(SimpleTestCase):
     def test_date_format(self):
         formats = {
             # no django equivalent:
-            '%x%X': '',
+            '%X': None,
+            '%x': None,
+            '%Y%X': None,
+            '%X%Y': None,
 
             # nothing special:
             '%a%A%b%B': 'DlMF',
@@ -67,10 +71,11 @@ class DateFormatTestCase(SimpleTestCase):
         }
 
         for format_in, format_out in formats.items():
-            self.assertEqual(python_to_django_date_format(format_in), format_out)
+            with self.assertRaises(ValueError) if format_out is None else nullcontext():
+                self.assertEqual(python_to_django_date_format(format_in), format_out)
 
-        format_in = ''.join(formats.keys())
-        format_out = ''.join(formats.values())
+        format_in = ''.join(key for key, value in formats.items() if value is not None)
+        format_out = ''.join(value for key, value in formats.items() if value is not None)
         self.assertEqual(python_to_django_date_format(format_in), format_out)
 
         # incomplete % at the end of a string (can't include above because it gets joined and is no longer at the end)
