@@ -14,6 +14,7 @@ A collection of utilities for django projects from [Alliance Software](https://w
     * [Middleware](#middleware)
     * [Migrations](#migrations)
     * [Models](#models)
+    * [Rules](#rules)
     * [Serializers](#serializers)
     * [Template Tags](#template-tags)
     * [Util](#util)
@@ -535,7 +536,25 @@ def my_view(request):
              with ve.capture_validation_error():
                  raise ValidationError('bad things')
             # all raised ValidationErrors will be collected, merged and raised at the end of this block
-```   
+```
+
+### Rules
+
+* Utility functions that return predicates for use with [django-rules](https://github.com/dfunckt/django-rules)
+
+```
+from allianceutils.rules import has_any_perms, has_perms, has_perm
+
+# requires at least 1 listed permission
+rules.add_perm('northwind.publish_book', has_any_perms('northwind.is_book_author', 'northwind.is_book_editor'))
+
+# requires listed permission
+rules.add_perm('northwind.unpublish_book', has_perm('northwind.is_book_editor'))
+
+# requires all listed permissions
+rules.add_perm('northwind.sublicense_book', has_perms('northwind.is_book_editor', 'northwind.can_sign_contracts'))
+
+```  
 
 ### Serializers
 
