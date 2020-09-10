@@ -159,6 +159,33 @@ class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
 * Useful if you are not using the `django.contrib.admin` app
 * Useful in conjunction with [`django-hijack`](https://django-hijack.readthedocs.io/en/latest/): set `HIJACK_DECORATOR = "allianceutils.decorators.staff_member_required"` in your settings file
 
+#### method_cache
+
+* Caches the results of a method on the object instance
+* Only works for regular object methods with no arguments other than `self`.
+    * Does not support `@classmethod` or `@staticmethod`
+    * If you want more powerful caching behaviour then you can wrap `cachetools` (examples [here](https://github.com/tkem/cachetools/issues/107))
+* Similar to [`@cached_property`](https://docs.python.org/3/library/functools.html#functools.cached_property) except that it works on methods instead of properties
+* Differs from [`@lru_cache()`](https://docs.python.org/3/library/functools.html#functools.lru_cache) in that
+    * `lru_cache` uses a single cache for each decorated function
+    * `lru_cache` will block garbage collection of values in the cache 
+    * A `cache_clear()` method is attached to the function but unlike `lru_cache` it is scoped to an object instance   
+
+Usage
+```python
+class MyViewSet(ViewSet):
+
+    # ...
+
+    @method_cache
+    def get_object(self):
+        return super().get_object()
+
+obj = MyViewSet()
+obj.get_object() is obj.get_object()
+obj.get_object.cache_clear()   
+```
+
 ### Filters
 
 #### MultipleFieldCharFilter
