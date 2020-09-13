@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-allianceutils"
-version = "1.0.0-dev"
+version = "1.0.0-rc1"
 description = "Alliance Software common utilities for Django"
 repository = "https://github.com/AllianceSoftware/django-allianceutils/"
 authors = ["Alliance Software <support@alliancesoftware.com.au>"]

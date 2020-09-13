@@ -9,24 +9,29 @@ RE_VER = r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z
 
 # automatically detect the current version from the highest version in the changelog section of the README
 with (Path(__file__).parent.parent / "CHANGELOG.md").open("r") as f:
-    section = None
+    file_contents = f.read()
+    # get rid of html comments
+    file_contents = re.sub('<!--.*?-->', '', file_contents, flags=re.MULTILINE | re.DOTALL)
+
     highest_ver = parse_version("0")
     ver_string = "0"
-    for line in f.readlines():
-        if re.match("^#", line):
-            section = line.strip("#").strip().upper()
-        match = re.match("^[ \t]+[*] (?P<ver>" + RE_VER + ")", line)
-        if section == "CHANGELOG" and match:
-            cur_ver = line.replace("*", " ").strip()
+    for line in file_contents.split("\n"):
+        if line.startswith("## "):
+            match = re.match(r"^##\s*(?P<ver>" + RE_VER + r")\s", line)
+            if not match:
+                raise ValueError(f"!!Cannot interpret header in {repr(line)}")
             try:
-                cur_ver = parse_version(cur_ver)
-            except ValueError:
-                pass
-            else:
-                if cur_ver >= highest_ver:
-                    highest_ver = cur_ver
-                    ver_string = match.groups('ver')[0]
+                cur_ver = parse_version(match.group("ver"))
+            except ValueError as e:
+                raise ValueError(f"Cannot interpret version in {repr(line)}") from e
+            if cur_ver >= highest_ver:
+                highest_ver = cur_ver
+                ver_string = match.group("ver")
 
+# Update version file
+version_file = Path(__file__).parent.parent / "allianceutils" / "__init__.py"
+subprocess.run(["sed", "-i", ".tmp", f's/__version__ *=.*/__version__ = "{ver_string}"/', str(version_file), ])
+version_file.with_suffix(version_file.suffix + ".tmp").unlink()
 # Update version in pyproject.toml
 subprocess.run(["poetry", "version", ver_string], check=True)
 # Generate build for distribution
