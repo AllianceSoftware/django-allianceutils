@@ -752,7 +752,7 @@ for app_config in app_configs:
 ## Experimental
 
 * These are experimental and may change without notice
-    * `document_reverse_accessors` management comment  
+    * `document_reverse_accessors` management command  
 
 ## Changelog
 
