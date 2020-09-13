@@ -27,7 +27,7 @@ so make sure you follow the template
 -->
 
 
-## 1.0.0-rc1 2020-??-??
+## 1.0.0-rc2 2020-09-14
 
 ### Breaking Changes
 * See [Legacy Changelog](CHANGELOG-legacy.md)
