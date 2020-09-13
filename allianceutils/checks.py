@@ -48,7 +48,7 @@ ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY = 'allianceutils.E011'
 
 def find_candidate_models(
         app_configs: Optional[Iterable[AppConfig]],
-        ignore_labels: List[str] = None
+        ignore_labels: Iterable[str] = None
 ) -> Dict[str, Type[Model]]:
     """
     Given a list of labels to ignore, return models whose app_label or label is NOT in ignore_labels.
@@ -74,9 +74,15 @@ def find_candidate_models(
     return candidate_models
 
 
-def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[str, Iterable[str]]={}):
+class CheckUrlTrailingSlash:
+    expect_trailing_slash: bool
+    ignore_attrs: Mapping[str, Iterable[str]]
 
-    def _check_url_trailing_slash(app_configs: Iterable[AppConfig], **kwargs):
+    def __init__(self, expect_trailing_slash: bool, ignore_attrs: Mapping[str, Iterable[str]]={}):
+        self.expect_trailing_slash = expect_trailing_slash
+        self.ignore_attrs = ignore_attrs
+
+    def __call__(self, app_configs: Iterable[AppConfig], **kwargs):
         # We ignore app_configs; so does django core check_url_settings()
         # Consider where ROOT_URLCONF points app A urlpatterns which include() app B urlpatterns
         # which define a URL to view in app C -- which app was the one that owned the URL?
@@ -92,7 +98,7 @@ def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[
                 'djdt',
             ],
         }
-        _ignore_attrs.update(ignore_attrs)
+        _ignore_attrs.update(self.ignore_attrs)
 
         def check_resolver(resolver: URLResolver, depth: int=0):
             warnings = []
@@ -122,7 +128,7 @@ def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[
                     # is a resolver, not a pattern: recurse
                     warnings.extend(check_resolver(url_pattern, depth+1))
 
-                elif regex_pattern.endswith('/$') != expect_trailing_slash:
+                elif regex_pattern.endswith('/$') != self.expect_trailing_slash:
                     try:
                         # django 2.0+ simplified urls
                         description = url_pattern.pattern.describe()
@@ -141,7 +147,6 @@ def check_url_trailing_slash(expect_trailing_slash: bool, ignore_attrs: Mapping[
             return warnings
 
         return check_resolver(get_resolver())
-    return _check_url_trailing_slash
 
 
 def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs):
@@ -255,7 +260,6 @@ def check_db_constraints(app_configs: Iterable[AppConfig], **kwargs):
 
     return errors
 
-
 def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: bool) -> Iterable[Type[Error]]:
     """
     Use an ast to check if a model has the db_table meta option set.
@@ -294,85 +298,75 @@ def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: 
     return errors
 
 
-def make_check_explicit_table_names(ignore_labels: Iterable[str], enforce_lowercase: bool = True) -> Callable:
-    """
-    Return a function that checks for models with missing or invalid db_table settings
-
-    Args:
-        ignore_labels: ignore apps or models matching supplied labels
-        enforce_lowercase: applies rule E010 which enforces table name to be all lowercase; defaults to True
-
-    Returns:
-        check function for use with django system checks
-    """
-
-    def _check_explicit_table_names(app_configs: Iterable[AppConfig], **kwargs):
-        """
-        Warn when models don't have Meta's db_table_name set in apps that require it.
-        """
-        candidate_models = find_candidate_models(app_configs, ignore_labels)
-        errors = []
-        for model in candidate_models.values():
-            errors += _check_explicit_table_names_on_model(model, enforce_lowercase)
-        return errors
-
-    return _check_explicit_table_names
-
-
 DEFAULT_TABLE_NAME_CHECK_IGNORE = [
     'auth',
 ]
-check_explicit_table_names = make_check_explicit_table_names(DEFAULT_TABLE_NAME_CHECK_IGNORE)
 
 
-def _check_field_names_on_model(model: Type[Model]) -> Iterable[Type[Error]]:
+class CheckExplicitTableNames:
     """
-    check whether field names on model are legit
-
-    currently contains only one check:
-    1. checks whether field name contains any number preceded by an underscore. the underscore will be lost when camelized then de-camelized again.
-       since camelize is performed automatically to/from frontend it leads to bugs.
-
+    A check for models with missing or invalid db_table settings
     """
 
-    errors = []
+    ignore_labels: Iterable[str]
+    enforce_lowercase: bool
 
-    for field in model._meta.fields:
-        if camel_to_underscore(underscore_to_camel(field.name)) != field.name:
-            hint = None
-            if re.search(r'_[0-9]', field.name):
-                hint = f'Underscore before a number in {model._meta.label}.{field.name}'
-            errors.append(
-                Error(
-                    f"Field name is not reversible with underscore_to_camel()/camel_to_underscore()",
-                    hint=hint,
-                    obj=model,
-                    id=ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY,
-                )
-            )
-
-    return errors
-
-
-def make_check_field_names(ignore_labels: Iterable[str]) -> Callable:
-    """
-    Return a function that checks for illegal field names, see also: _check_field_names_on_model
-
-    Args:
+    def __init__(self, ignore_labels: Iterable[str] = DEFAULT_TABLE_NAME_CHECK_IGNORE, enforce_lowercase: bool = True):
+        """
         ignore_labels: ignore apps or models matching supplied labels
+        enforce_lowercase: applies rule E010 which enforces table name to be all lowercase; defaults to True
+        """
+        self.ignore_labels = ignore_labels
+        self.enforce_lowercase = enforce_lowercase
 
-    Returns:
-        check function for use with django system checks
-    """
-
-    def _check_field_names(app_configs: Iterable[AppConfig], **kwargs):
-        candidate_models = find_candidate_models(app_configs, ignore_labels)
+    def __call__(self, app_configs: Iterable[AppConfig], **kwargs):
+        """
+        Warn when models don't have Meta's db_table_name set in apps that require it.
+        """
+        candidate_models = find_candidate_models(app_configs, self.ignore_labels)
         errors = []
         for model in candidate_models.values():
-            errors += _check_field_names_on_model(model)
+            errors += _check_explicit_table_names_on_model(model, self.enforce_lowercase)
         return errors
 
-    return _check_field_names
 
+class CheckReversibleFieldNames:
+    ignore_labels: Iterable[str]
 
-check_field_names = make_check_field_names(ignore_labels=[])
+    def __init__(self, ignore_labels: Iterable[str] = []):
+        self.ignore_labels = ignore_labels
+
+    def __call__(self, app_configs: Iterable[AppConfig], ** kwargs):
+        candidate_models = find_candidate_models(app_configs, self.ignore_labels)
+        errors = []
+        for model in candidate_models.values():
+            errors += self._check_field_names_on_model(model)
+        return errors
+
+    def _check_field_names_on_model(self, model: Type[Model]) -> Iterable[Type[Error]]:
+        """
+        check whether field names on model are legit
+
+        currently contains only one check:
+        1. checks whether field name contains any number preceded by an underscore. the underscore will be lost when
+           camelized then de-camelized again. Since camelize is performed automatically to/from frontend it leads to bugs.
+
+        """
+
+        errors = []
+
+        for field in model._meta.fields:
+            if camel_to_underscore(underscore_to_camel(field.name)) != field.name:
+                hint = None
+                if re.search(r'_[0-9]', field.name):
+                    hint = f'Underscore before a number in {model._meta.label}.{field.name}'
+                errors.append(
+                    Error(
+                        f"Field name is not reversible with underscore_to_camel()/camel_to_underscore()",
+                        hint=hint,
+                        obj=model,
+                        id=ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY,
+                    )
+                )
+
+        return errors

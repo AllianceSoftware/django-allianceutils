@@ -3,5 +3,8 @@
 .idea/
 .tox/
 allianceutils.egg-info/
+allianceutils/__init__.py.tmp
+dist/
 test_allianceutils/tests/autodumpdata/fixtures/publication.json
 test_allianceutils/tests/autodumpdata/fixtures/publication.sql
+venv

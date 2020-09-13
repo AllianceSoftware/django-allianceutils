@@ -2,7 +2,7 @@ from django.apps import apps
 from django.core.checks import Error
 from django.test import SimpleTestCase
 
-from allianceutils.checks import check_field_names
+from allianceutils.checks import CheckReversibleFieldNames
 from allianceutils.checks import ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY
 
 from .checks_field_names.models import NameWithUnderscoreNumberInMiddle
@@ -15,7 +15,7 @@ class TestCheckFieldNames(SimpleTestCase):
         self.app_configs = [apps.get_app_config('checks_field_names')]
 
     def test_for_underscores_preceding_numbers_gets_reported_correctly(self):
-        errors = check_field_names(self.app_configs)
+        errors = CheckReversibleFieldNames()(self.app_configs)
         self.assertEqual(len(errors), 2)
 
         expected_errors = [

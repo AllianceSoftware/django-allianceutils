@@ -1,11 +1,12 @@
 # Alliance Utils
 
-A collection of utilities for django projects.
+![CI Tests](https://github.com/AllianceSoftware/django-allianceutils/workflows/Django%20CI/badge.svg)
+
+A collection of utilities for django projects from [Alliance Software](https://www.alliancesoftware.com.au/).
 
 * [Installation](#installation)
 * [Usage](#usage)
     * [API](#api)
-    * [Asynctask](#asynctask)
     * [Auth](#auth)
     * [Decorators](#decorators)
     * [Filters](#filters)
@@ -15,11 +16,10 @@ A collection of utilities for django projects.
     * [Middleware](#middleware)
     * [Migrations](#migrations)
     * [Models](#models)
+    * [Rules](#rules)
     * [Serializers](#serializers)
-    * [Storage](#storage)
     * [Template Tags](#template-tags)
     * [Util](#util)
-    * [Views](#views)
 * [Changelog](#changelog)
 
 ## Installation
@@ -29,19 +29,6 @@ A collection of utilities for django projects.
 ## Usage
 
 ### API
-
-#### CacheObjectMixin
-
-**Status: To Remove with 1.0**
-
-* Caches the result of `get_object()` on the object
-* Note that if you override `get_object()` this will only affect calls to `super().get_object()`
-    * If you are customising `get_object()`, `django.utils.functional.cached_property` is probably simpler 
-
-```python
-class MyViewSet(allianceutils.api.mixins.CacheObjectMixin, GenericViewSet):
-    # ...
-```  
 
 #### Permissions
 
@@ -66,7 +53,7 @@ Differs from just DRF's [DjangoObjectPermissions](https://www.django-rest-framew
 * uses the same permission for every request http method and ViewSet method 
 
 Notes
-* The default django permissions system will [always return False](https://docs.djangoproject.com/en/3.1/topics/auth/customizing/#handling-object-permissions) if given an object; you must be using another permissions backend
+* The default django permissions system will [always return False](https://docs.djangoproject.com/en/dev/topics/auth/customizing/#handling-object-permissions) if given an object; you must be using another permissions backend
 * As per [DRF documentation](http://www.django-rest-framework.org/api-guide/permissions/#object-level-permissions): get_object() is only required if you want to implement object-level permissions
 * **WARNING** If you override `get_object()` then you need to *manually* invoke `self.check_object_permissions(self.request, obj)`
 * Will attempt to check permission both globally and on a per-object basis but considers it an error if the check returns True for both
@@ -83,12 +70,6 @@ class MyAPIView(SimpleDjangoObjectPermissions, APIView):
 ```
 
 If you have no object level permissions (eg. from rules) then it will just do a static permission check.
-
-##### PermissionRequiredAPIMixin
-
-* Mixin that sets `permission_classes` to include `SimpleDjangoObjectPermissions`
-
-**Status: To Remove with 1.0**
 
 ##### GenericDjangoViewsetPermissions
 
@@ -115,26 +96,6 @@ class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
     * Since there is no model object, functions decorated with `@list_route` will pass `None` as the permissions check object    
  
 
-##### GenericDjangoViewsetWithoutModelPermissions
-
-**Status: To Remove with 1.0**
-
-**Status: No unit tests**
-
-* If you use `GenericDjangoViewset` with viewsets without a queryset eg. `viewsets.ViewSet` there will be no model. You'll need to provide an `actions_to_perms_map` attribute:
-```
-    actions_to_perms_map = {
-        'retrieve': ['myapp.mypermission']
-    }
-```
-### asynctask
-
-**Status: To Remove with 1.0**
-
-**Status: Experimental. No unit tests**
-
-* See [asynctask documentation](allianceutils/asynctask/README.md)
-
 ### Auth
 
 #### MinimalModelBackend
@@ -147,17 +108,30 @@ class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
 #### ProfileModelBackend
 
 * Backends for use with [GenericUserProfile](#GenericUserProfile); see code examples there
-* `allianceutils.auth.backends.ProfileModelBackend`
-    * `allianceutils.auth.backends.ProfileModelBackendMixin`
-    
+* `allianceutils.auth.backends.ProfileModelBackendMixin` - in combo with [AuthenticationMiddleware](https://docs.djangoproject.com/en/dev/ref/middleware/#django.contrib.auth.middleware.AuthenticationMiddleware) will set user profiles on `request.user`  
+    * `allianceutils.auth.backends.ProfileModelBackend` - convenience class combined with case insensitive username & default django permissions backend 
 
 ### Decorators
 
-#### staff_member_required
+#### gzip_page_ajax
 
-* Similar to [`django.contrib.admin.views.decorators.staff_member_required`](https://docs.djangoproject.com/en/dev/ref/contrib/admin/#django.contrib.admin.views.decorators.staff_member_required) but redirects to the generic `login` url instead of `admin:login`.
-* Useful if you are not using the `django.contrib.admin` app
-* Useful in conjunction with [`django-hijack`](https://django-hijack.readthedocs.io/en/latest/): set `HIJACK_DECORATOR = "allianceutils.decorators.staff_member_required"` in your settings file
+* Smarter version of django's [gzip_page](https://docs.djangoproject.com/en/dev/topics/http/decorators/#django.views.decorators.gzip.gzip_page):
+    * If settings.DEBUG not set, will always gzip
+    * If settings.DEBUG set, will gzip only if request is an ajax request
+* This allows you to use django-debug-toolbar in DEBUG mode (if you gzip a response then the debug toolbar middleware won't run)
+
+Example
+
+```
+
+@allianceutils.views.decorators.gzip_page_ajax
+def my_view(request: HttpRequest) -> httpResponse:
+    data = {
+        "message": "Hello World",
+    }
+    return django.http.JsonResponse(data) 
+
+```
 
 #### method_cache
 
@@ -206,19 +180,26 @@ customer = MultipleFieldCharFilter(names=('customer__first_name', 'customer__las
 
 #### Commands
 
-##### mysqlquickdump
+##### OptionalAppCommand
 
-* Command to quickly dump a mysql database
-    * Significantly faster than django fixtures
-* Can be useful for saving & restoring the state of the database in test cases
-    * Not intended to be used on production servers
-* Expects that DB structure will not change
-* See `./manage.py mysqlquickdump --help` for usage details
+* A utility class that extends `django.core.management.base.BaseCommand` and adds optional argument(s) for django apps
+* If app names are passed on the command line `handle_app_config()` will be called with the `AppConfig` for each app otherwise it will be called with every first-party app (as determined by `isort`)
 
-##### mysqlquickload
 
-* Load a database dumped with `mysqlquickdump`
-* See `./manage.py mysqlquickload --help` for usage details
+Example:
+
+```
+class Command(allianceutils.management.commands.base.OptionalAppCommand):
+    def add_arguments(self, parser):
+        super().add_arguments(parser)
+        parser.add_argument('--type', choices=('name', 'label'), default='name')
+
+    def handle_app_config(self, app_config: AppConfig, **options):
+        if options['type'] == 'name':
+            print(f"Called with {app_config.name}")
+        if options['type'] == 'label':
+            print(f"Called with {app_config.label}")
+```  
 
 ##### print_logging
 
@@ -227,28 +208,39 @@ customer = MultipleFieldCharFilter(names=('customer__first_name', 'customer__las
 
 #### Checks
 
-##### check\_url\_trailing\_slash
+* Checks with no configuration are functions that can be passed directly to [register](https://docs.djangoproject.com/en/3.1/topics/checks/)
+* Checks that expect parameters are classes that need to be instantiated
 
-* Checks that your URLs are consistent with the `settings.APPEND_SLASH` using a [django system check](https://docs.djangoproject.com/en/dev/ref/checks/)
-* In your [app config](https://docs.djangoproject.com/en/1.11/ref/applications/#for-application-authors) 
+Setting up django hooks:
 
 ```python
 from django.apps import AppConfig
 from django.core.checks import register
 from django.core.checks import Tags
 
-from allianceutils.checks import check_url_trailing_slash
+from allianceutils.checks import check_admins
+from allianceutils.checks import check_db_constraints
+from allianceutils.checks import CheckExplicitTableNames
+from allianceutils.checks import check_git_hooks
+from allianceutils.checks import CheckReversibleFieldNames
+from allianceutils.checks import CheckUrlTrailingSlash
 
 class MyAppConfig(AppConfig):
     # ...
 
     def ready(self):
-        # trigger checks to register
-        check = check_url_trailing_slash(expect_trailing_slash=True)
-        register(check=check, tags=Tags.url)
+        register(check=check_admins, tags=Tags.admin, deploy=True)
+        register(check=check_db_constraints, tags=Tags.database)
+        register(check=CheckExplicitTableNames(), tags=Tags.models)
+        register(check=check_git_hooks, tags=Tags.admin)
+        register(check=CheckReversibleFieldNames(), tags=Tags.models)
+        register(check=CheckUrlTrailingSlash(expect_trailing_slash=True), tags=Tags.url)        
 ```
 
-* Optional arguments to `check_url_trailing_slash`
+##### CheckUrlTrailingSlash
+
+* Checks that your URLs are consistent with the `settings.APPEND_SLASH`  
+* Arguments:
     * `ignore_attrs` - skip checks on url patterns where an attribute of the pattern matches something in here (see example above)
         * Most relevant attributes of a `RegexURLResolver`:
             * `_regex` - string used for regex matching. Defaults to `[r'^$']`
@@ -256,7 +248,7 @@ class MyAppConfig(AppConfig):
             * `namespace` - pattern defines a namespace
             * `lookup_str` - string defining view to use. Defaults to `['django.views.static.serve']`
         * Note that if you skip a resolver it will also skip checks on everything inside that resolver
-* If using Django REST Framework's [`DefaultRouter`](http://www.django-rest-framework.org/api-guide/routers/#defaultrouter) then you need to turn off `include_format_suffixes`:
+* Note: If using Django REST Framework's [`DefaultRouter`](http://www.django-rest-framework.org/api-guide/routers/#defaultrouter) then you need to turn off `include_format_suffixes`:
 
 ```
 router = routers.DefaultRouter(trailing_slash=True)
@@ -268,62 +260,33 @@ urlpatterns += router.urls
 
 ##### check\_admins
 
-* Checks that `settings.ADMINS` has been properly set in staging and production settings files.
+* Checks that `settings.ADMINS` has been properly set in settings files.
 
 ##### check\_git\_hooks
 
-* Checks that the `.git/hooks` directory has been sym-linked to the projects' `git-hooks` directory.
+* Checks that git hookshave been set up, one of:
+  * `.git/hooks` directory has been symlinked to the project's `git-hooks`
+  * [`husky`](https://github.com/typicode/husky) hooks have been installed 
+* 
 
 ##### check\_db\_constraints
 
 * Checks that all models that specify `db_constraints` in their Meta will generate unique constraint names when truncated by the database.
 
-##### check\_explicit\_table\_names
+##### CheckExplicitTableNames
 
-* Checks that all models have `db_table` explicitly defined on their Meta class, and the table name is in lowercase
-* `allianceutils.checks.make_check_explicit_table_names` allows you to ignore specified apps or models, or bypass the lowercase requirement
-	* `allianceutils.checks.check_explicit_table_names` is shorthand for `make_check_explicit_table_names(ignore_labels=DEFAULT_TABLE_NAME_CHECK_IGNORE, enforce_lowercase=True)` which has a predefined set of apps to ignore
+* Checks that all first-party models have `db_table` explicitly defined on their Meta class, and the table name is in lowercase
+* Arguments:
+    * `enforce_lowercase` - check that there are no uppercase characters in the table name
+    * `ignore_labels` - app labels (eg `silk`) or app_label + model labels (eg `silk.request`) to ignore.
+        * `allianceutils.checks.DEFAULT_TABLE_NAME_CHECK_IGNORE` contains a default list of apps/models to ignore
 
-```python
-from django.apps import AppConfig
-from django.core.checks import Tags
-
-from allianceutils.util.checks import DEFAULT_TABLE_NAME_CHECK_IGNORE
-from allianceutils.util.checks import make_check_explicit_table_names
-
-class MyAppConfig(AppConfig):
-    name = 'myapp'
-    verbose_name = "My App"
-
-	def ready(self):
-		check_explicit_table_names = make_check_explicit_table_names(ignore_labels=DEFAULT_TABLE_NAME_CHECK_IGNORE + [
-			'some_app',
-			'another_app.my_model',
-			'another_app.your_model',
-		])
-
-		register(check=check_explicit_table_names, tags=Tags.models)
-```
-
-##### check\_field\_names
+##### CheckReversibleFieldNames
 
 * Checks that all models have fields names that are reversible with `underscorize`/`camelize`/`camel_to_underscore`/`underscore_to_camel`
-* `allianceutils.checks.make_check_field_names` allows you to ignore specified apps or models
-    * `allianceutils.checks.check_field_names` is shorthand for `make_check_field_names(ignore_labels=DEFAULT_TABLE_NAME_CHECK_IGNORE)` which has a predefined set of apps to ignore
+* Arguments:
+    * `ignore_labels` - ignore these apps/models: see `CheckExplicitTableNames`
 
-```python
-from django.apps import AppConfig
-from django.core.checks import Tags
-
-from allianceutils.util.checks import check_field_names
-
-class MyAppConfig(AppConfig):
-    name = 'myapp'
-    verbose_name = "My App"
-
-	def ready(self):
-		register(check=check_field_names, tags=Tags.models)
-```
 ### Middleware
 
 #### HttpAuthMiddleware
@@ -340,7 +303,7 @@ class MyAppConfig(AppConfig):
 #### CurrentUserMiddleware
 
 * Middleware to enable accessing the currently logged-in user without a request object.
-    * Properly handles multithreaded python by keeping track of the current user in a `dict` of `{'threadId': User}` 
+    * Assumes that `threading.local` is not shared between requests (an assumption also made by django internationalisation) 
 
 * Setup
     * Add `allianceutils.middleware.CurrentUserMiddleware` to `MIDDLEWARE`.
@@ -382,32 +345,32 @@ def my_view(request, *args, **kwargs):
 ### Migrations
 
 #### Run SQL function
-    * allianceutils.migrations.migrate_run_sql_file
-    * Run arbitrary SQL from the migration/sql directory as part of a mgiration
-    * Usage:
-        ```python
-        migrations.RunPython(insert_my_table),
+* Wrapper to `RunSQL` that reads SQL from a file instead of inline in python
+* The reason you would do this as an external file & function is so that squashed migrations don't become unwieldy (django will inline and strip whitespace in the SQL)
 
-        def insert_my_table(_, schema_editor):
-            migrate_run_sql_file(schema_editor, 'my_app', '0001_my_table_sql_file')
-        ```
-    * The reason you would do this as an external file & function is so that squashed migrations don't become unwieldy (it will inline and strip whitespace the SQL even for large data files)
-    * Also much faster to load a prepared .sql compares to json loads via ORM
-
+Usage:
+```python
+class Migration(migrations.Migration):
+    # ...
+    operations = [
+        allianceutils.migrations.RunSQLFromFile('my_app', '0001_intial.sql'),
+    ]
+```
 
 ### Models
 
 #### Utility functions / classes
 
 ##### combine_querysets_as_manager
+* `allianceutils.models.combine_querysets_as_manager(Iterable[Queryset]) -> Manager`
 * Replacement for django_permanent.managers.MultiPassThroughManager which no longer works in django 1.8
-* Returns a new Manager instance that passes through calls to multiple underlying queryset_classes via inheritance 
+* Returns a new Manager instance that passes through calls to multiple underlying queryset_classes via inheritance
 
 ##### NoDeleteModel
 
 * A model that blocks deletes in django
     * Can still be deleted with manual queries
-* Read django docs about [manager inheritance](https://docs.djangoproject.com/en/1.11/topics/db/managers/#custom-managers-and-model-inheritance)
+* Read django docs about [manager inheritance](https://docs.djangoproject.com/en/dev/topics/db/managers/#custom-managers-and-model-inheritance)
     * If you wish add your own manager, you need to combine the querysets:
 
 ```python
@@ -416,7 +379,7 @@ class MyModel(NoDeleteModel):
 ```  
 
 #### GenericUserProfile
-Allows you to iterate over a `User` table and have it return the corresponding `Profile` records without generating extra queries
+Allows you to iterate over a `User` table and have it return a corresponding `Profile` record without generating extra queries
 
 Minimal example:
 
@@ -557,14 +520,32 @@ def my_view(request):
              with ve.capture_validation_error():
                  raise ValidationError('bad things')
             # all raised ValidationErrors will be collected, merged and raised at the end of this block
-```   
+```
+
+### Rules
+
+* Utility functions that return predicates for use with [django-rules](https://github.com/dfunckt/django-rules)
+
+```
+from allianceutils.rules import has_any_perms, has_perms, has_perm
+
+# requires at least 1 listed permission
+rules.add_perm('northwind.publish_book', has_any_perms('northwind.is_book_author', 'northwind.is_book_editor'))
+
+# requires listed permission
+rules.add_perm('northwind.unpublish_book', has_perm('northwind.is_book_editor'))
+
+# requires all listed permissions
+rules.add_perm('northwind.sublicense_book', has_perms('northwind.is_book_editor', 'northwind.can_sign_contracts'))
+
+```  
 
 ### Serializers
 
 #### JSON Ordered
 
 * A version of django's core json serializer that outputs field in sorted order
-* The built-in one uses a standard `dict` with completely unpredictable order which makes fixture diffs often contain field ordering changes
+* The built-in one uses a standard `dict` with completely unpredictable order which causes json diffs to show spurious changes
 
 * Setup
     * Add to `SERIALIZATION_MODULES` in your settings
@@ -575,69 +556,6 @@ def my_view(request):
 SERIALIZATION_MODULES = {
     'json_ordered': 'allianceutils.serializers.json_ordered',
 }
-```
-
-#### JSON ORM Inheritance Fix
-
-**Status: To Remove with 1.0**
-
-* Django does not properly handle (de)serialise models with natural keys where the PK is a FK
-    * This shows up particularly with multi-table inheritance and the user profile pattern
-    * https://code.djangoproject.com/ticket/24607
-        * Patch was accepted into 1.11 but then removed
-        * We are willing to deal with potentially spurious migrations in order to have fixtures work
-* We need to replace not only the serializer but also the deserializer
-* Note that child models will not inherit the parent `Manager` if the parent is not `abstract`; you need to define a `Manager` that has a `get_by_natural_key()` in each descendant model if you use FK references to the descendant model. 
-
-```python
-SERIALIZATION_MODULES = {
-    'json': 'allianceutils.serializers.json_orminheritancefix',
-}
-```
-
-### Storage
-
-**Status: To Remove with 1.0** 
-
-* Requires `django-storages` and `boto3` to be installed
-
-* Use the below if you are using S3 for file storage and want to prefix media and / or static files - otherwise they will all be dumped unprefixed in the bucket.
-
-* Configure S3 for use with S3 Boto3
-
-```python
-AWS_ACCESS_KEY_ID = 'ACCESS_KEY'
-AWS_STORAGE_BUCKET_NAME = 'bucket-name'
-AWS_DEFAULT_REGION = 'ap-southeast-2'
-AWS_DEFAULT_ACL = None
-```
-
-#### StaticStorage
-
-* An extension to S3Boto3Storage that specifies a prefix for static files.
-* Allows you to put static files and media files in S3 without worrying about clobbering each other.
-* Note that if using on Heroku this doesn't play nice with pipelines so you probably don't want to use it
-* Configuration
-
-```python
-STATICFILES_STORAGE = 'allianceutils.storage.StaticStorage'
-STATICFILES_LOCATION="static"
-
-STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATICFILES_LOCATION}/"
-```
-
-#### MediaStorage
-
-* An extension to S3Boto3Storage that specifies a prefix for static files.
-* Allows you to put static files and media files in S3 without worrying about clobbering each other.
-
-Configuration:
-
-```python
-DEFAULT_FILE_STORAGE = 'allianceutils.storage.MediaStorage'
-MEDIAFILES_LOCATION="media"
-
-MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{MEDIAFILES_LOCATION}/"
 ```
 
 ### Template Tags
@@ -782,7 +700,14 @@ output_tree == {
 
 #### python_to_django_date_format
 
-Converts a python [strftime/strptime](https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior) datetime format string into a []django template/PHP](https://docs.djangoproject.com/en/dev/ref/templates/builtins/#std:templatefilter-date) date format string
+* Converts a python [strftime/strptime](https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior) datetime format string into a [django template/PHP](https://docs.djangoproject.com/en/dev/ref/templates/builtins/#std:templatefilter-date) date format string
+* Codes with no equivalent will be dropped
+
+Example:
+```python
+allianceutils.util.date.python_to_django_date_format("%Y%m%d %H%M%S")
+# returns "Ymd His"
+```
 
 #### retry_fn
 
@@ -824,15 +749,10 @@ for app_config in app_configs:
     })
 ```
 
+## Experimental
 
-### Views 
-
-#### JSONExceptionAPIView
-
-**Status: To Remove with 1.0**
-
-FIXME
-
+* These are experimental and may change without notice
+    * `document_reverse_accessors` management command  
 
 ## Changelog
 
@@ -840,15 +760,29 @@ See [CHANGELOG.md](CHANGELOG.md)
 
 ## Development
 
-* Release Process
+### Release Process
+
+#### Poetry Config
+* Add test repository
+    * `poetry config repositories.testpypi https://test.pypi.org/legacy/`
+    * Generate an account API token at https://test.pypi.org/manage/account/token/
+    * `poetry config pypi-token.testpypi ${TOKEN}`
+        * On macs this will be stored in the `login` keychain at `poetry-repository-testpypi`
+* Main pypi repository
+    * Generate an account API token at https://pypi.org/manage/account/token/
+    * `poetry config pypi-token.pypi ${TOKEN}`
+        * On macs this will be stored in the `login` keychain at `poetry-repository-pypi`
+
+#### Publishing a New Release
     * Update CHANGELOG.md with details of changes and new version
     * Run `bin/build.py`. This will extract version from CHANGELOG.md, bump version in `pyproject.toml` and generate a build for publishing
     * Tag with new version and update the version branch:
         * `ver=$( poetry version --short ) && echo "Version: $ver"`
-        * `ver_short=$( poetry version --short | sed -E 's/([0-9]+\.[0-9]+).*/\1/' ) && echo "Short Version: $ver_short"`
         * `git tag v/$ver`
-        * `git checkout -b v/$ver_short`
-        * `git merge --ff-only v/$ver` 
-    * TODO: Publishing to pypi
+        * `git push --tags`
+    * To publish to test.pypi.org
+        * `poetry publish --repository testpypi`
+    * To publish to pypi.org
+        * `poetry publish`
 
 

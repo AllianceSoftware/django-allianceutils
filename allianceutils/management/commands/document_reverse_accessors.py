@@ -7,7 +7,6 @@ from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Type
-from typing import Union
 
 from django.db.models import Field
 from django.db.models import Model

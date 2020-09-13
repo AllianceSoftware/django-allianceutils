@@ -73,32 +73,3 @@ class TestNaturalKeysAndInheritance(TransactionTestCase):
         self.assertEqual(3, len(Person  .objects.all()))
         self.assertEqual(2, len(Customer.objects.all()))
         self.assertEqual(1, len(Purchase.objects.all()))
-
-    def test_neither(self):
-        """
-        Test json_orminheritancefix
-        """
-        self.dump_and_load()
-
-    @unittest.skipIf(django.VERSION >= (2, 0),
-        "django 2.0 allows natural_primary_keys=True, natural_foreign_keys=False which makes no sense and doesn't work, skipping test")
-    def test_primary(self):
-        """
-        Test json_orminheritancefix natural PK
-        """
-        self.dump_and_load(natural_primary_keys=True)
-
-    def test_foreign(self):
-        """
-        Test json_orminheritancefix natural FK
-        """
-        self.dump_and_load(natural_foreign_keys=True)
-
-    def test_both(self):
-        """
-        Test json_orminheritancefix natural PK, FK
-        """
-        self.dump_and_load(
-            natural_primary_keys=True,
-            natural_foreign_keys=True
-        )

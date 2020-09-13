@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from rest_framework.permissions import BasePermission
-from rest_framework.permissions import IsAuthenticated
 
 
 class SimpleDjangoObjectPermissions(BasePermission):
@@ -30,22 +29,6 @@ class SimpleDjangoObjectPermissions(BasePermission):
             "This may indicate a potential security issue with your permissions."
         )
         return has_perm_global or has_perm_obj
-
-
-class PermissionRequiredAPIMixin(object):
-    """
-    Glues django-rest-framework permissions checking together with simple django per-object permissions checks
-
-    Usage:
-    class MyAPIView(APIView):
-        permission_required = 'my_module.my_permission'
-
-        def get_object(self):
-            obj = get_object_or_404(self.get_queryset())
-            self.check_object_permissions(self.request, obj)
-            return obj
-    """
-    permission_classes = (IsAuthenticated, SimpleDjangoObjectPermissions,)
 
 
 class GenericDjangoViewsetPermissions(BasePermission):
@@ -177,62 +160,5 @@ class GenericDjangoViewsetPermissions(BasePermission):
         if request.method == 'OPTIONS' and settings.DEBUG:
             return True
         perms = self.get_permissions_for_action(action, viewset)
-        user = request.user
-        return user.has_perms(perms, obj)
-
-
-class GenericDjangoViewsetWithoutModelPermissions(BasePermission):
-    """
-    When you need to apply the GenericDjangoViewset to viewsets without a queryset eg. viewsets.ViewSet
-    Note that we dont have a default here, so you'll need to provide an actions_to_perms_map attribute:
-        actions_to_perms_map = {
-            'retrieve': ['permission']
-        }
-    """
-    actions_to_perms_map = {}
-
-    def __init__(self):
-        self._saved_actions_to_perms_map = None
-
-    def get_actions_to_perms_map(self):
-        """
-        Merge the default actions to perms map with the class overrides & return
-        Will cache results
-        """
-        if self._saved_actions_to_perms_map is None:
-            self._saved_actions_to_perms_map = getattr(self, 'actions_to_perms_map')
-
-        return self._saved_actions_to_perms_map
-
-    def get_permissions_for_action(self, action, *args, **kwargs):
-        """Given an action, return the list of permission
-        codes that the user is required to have."""
-
-        perms_map = self.get_actions_to_perms_map()
-
-        try:
-            return [perm for perm in perms_map[action]]
-        except KeyError:
-            raise ImproperlyConfigured('Missing GenericDjangoViewsetWithoutModelPermissions action permission for %s' % action)
-
-    def has_permission(self, request, viewset):
-        action = getattr(viewset, 'action', None)
-
-        # Handles OPTION requests
-        if action is None:
-            return True
-
-        user = request.user
-        perms = self.get_permissions_for_action(action, viewset)
-
-        # Check permissions for action available irrespective of object
-        if user.has_perms(perms):
-            return True
-
-        return False
-
-    def has_object_permission(self, request, viewset, obj):
-        action = viewset.action
-        perms = self.get_permissions_for_action(action)
         user = request.user
         return user.has_perms(perms, obj)

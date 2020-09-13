@@ -3,7 +3,6 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 
 from allianceutils.api.permissions import GenericDjangoViewsetPermissions
-from allianceutils.api.permissions import GenericDjangoViewsetWithoutModelPermissions
 from allianceutils.api.permissions import SimpleDjangoObjectPermissions
 from test_allianceutils.tests.viewset_permissions.models import NinjaTurtleModel
 
@@ -27,16 +26,3 @@ class NinjaTurtleViewSet(viewsets.ModelViewSet):
     serializer_class = NinjaTurtleSerializer
 
     permission_classes = [GenericDjangoViewsetPermissions]
-
-
-class NoModelPermissions(GenericDjangoViewsetWithoutModelPermissions):
-    actions_to_perms_map = {
-        'list': ['viewset_permissions.can_list'],
-    }
-
-
-class NoModelViewSet(viewsets.ViewSet):
-    permission_classes = [NoModelPermissions]
-
-    def list(self, request, *args, **kwargs):
-        return Response('ok')

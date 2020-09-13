@@ -136,28 +136,3 @@ class ViewsetPermissionsTestCase(TestCase):
         test_methods("change_ninjaturtlemodel", {"change"})
 
         test_methods("delete_ninjaturtlemodel", {"delete"})
-
-    @skip("This test is currently incomplete and GenericDjangoViewsetWithoutModelPermissions will be removed in v1.0")
-    def test_no_model_permissions_viewset(self):
-        """
-        Check permissions on a GenericDjangoViewsetWithoutModelPermissions
-        This is used when the view has no model associated with it but you still want to implement permissions
-        """
-        from django.contrib.contenttypes.models import ContentType
-
-        client = Client()
-        client.force_login(self.user)
-
-        # request should not succeed
-        response = client.get(reverse('permissions:no-model-list'))
-        self.assertEqual(response.status_code, 403)
-
-        # once you add the permission to that user it should now pass
-        content_type = ContentType.objects.create(app_label='permissions', model='')
-        permission = Permission.objects.create(codename='viewset_permissions.can_list', name='Can See List', content_type=content_type)
-        self.grant_permission(permission)
-        self.user.refresh_from_db()
-
-        response = client.get(reverse('permissions:no-model-list'))
-        self.assertEqual(response.status_code, 200)
-

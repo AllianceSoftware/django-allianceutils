@@ -1,10 +1,16 @@
 [tool.poetry]
-name = "allianceutils"
-version = "0.7.4"
+name = "django-allianceutils"
+version = "1.0.0-rc1"
 description = "Alliance Software common utilities for Django"
+repository = "https://github.com/AllianceSoftware/django-allianceutils/"
+homepage = "https://github.com/AllianceSoftware/django-allianceutils/"
+documentation = "https://github.com/AllianceSoftware/django-allianceutils/README.md"
 authors = ["Alliance Software <support@alliancesoftware.com.au>"]
 license = "BSD-2-Clause"
 readme = "README.md"
+packages = [
+    { include = "allianceutils" },
+]
 include = [
     "CHANGELOG.md",
 ]
@@ -14,8 +20,11 @@ keywords = [
     'alliancesoftware',
 ]
 
+[tool.poetry.urls]
+issues = "https://github.com/AllianceSoftware/django-allianceutils/issues"
+
 [tool.poetry.dependencies]
-python = "^3.6"
+python = ">=3.6"
 
 # the only hard dependency is django; everything else is only required
 # if you use functions/classes that require them
@@ -28,7 +37,7 @@ tox-factor = "*"
 isort = ">=5"
 Django = "^2.2"
 
-# requirements-tox.ini contains extra
+# requirements-optional.ini contains extras
 
 
 [build-system]

@@ -1,43 +1,26 @@
 from pathlib import Path
+from typing import Union
 
 from django.apps import apps
+from django.db.migrations import RunSQL
 
 
-def migrate_run_sql_file(schema_editor, app_name, filename):
+class RunSQLFromFile(RunSQL):
     """
+    Modification of RunSQL that runs SQL from a file instead of a string
 
-    Run arbitrary SQL from the migration/sql directory as part of a mgiration
-
-    This is designed to be convenient to include as part of a migration:
-
-    ```
-    migrations.RunPython(insert_my_table),
-
-    def insert_my_table(_, schema_editor):
-        migrate_run_sql_file(schema_editor, 'my_app', '0001_my_table_sql_file')
-    ```
+    SQL file is expected to be at {app_dir}/migration/sql/{filename}
 
     The reason you would do this as an external file & function is so that squashed migrations don't become
     unwieldy (it will inline and strip whitespace the SQL even for large data files)
 
-
-    :param schema_editor: schema editor passed in by migrations
-    :param app_name: app name to find the SQL in
-    :param filename: file to run (without .sql extension)
     """
-    path = Path(apps.get_app_config(app_name).path, 'migrations/sql', filename + '.sql')
-    schema_editor.execute(path.read_text())
+    def __init__(self, app_name: str, filename: Union[str, Path], *args, **kwargs):
+        # RunSQL isn't really made to be modified; we store the app_name & filename
+        # in self.sql to avoid having to cut & paste large chunks of RunSQL
+        super().__init__(sql=(app_name, filename), *args, **kwargs)
 
-
-def migrate_create_group(schema_editor, groups):
-    """
-    Create authentication groups
-    :param schema_editor: schema editor passed in by migrations
-    :param groups: sequence of tuples of (group_id, group_name)
-    """
-    for group in groups:
-        group_id, group_name = group[0], group[1]
-        schema_editor.execute('INSERT IGNORE INTO auth_group VALUES (%s, %s)', (group_id, group_name))
-
-    # update postgres autoid
-    # schema_editor.execute("SELECT pg_catalog.setval('auth_group_id_seq', (SELECT MAX(id) FROM auth_group), TRUE)")
+    def _run_sql(self, schema_editor, sqls):
+        app_name, filename = sqls
+        path = Path(apps.get_app_config(app_name).path) / 'migrations' / filename
+        schema_editor.execute(path.read_text())

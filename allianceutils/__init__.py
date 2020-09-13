@@ -8,3 +8,5 @@ default_app_config = 'allianceutils.apps.AllianceUtilsAppConfig'
 def load_tests(*args, **kwargs):
   empty_suite = unittest.TestSuite()
   return empty_suite
+
+__version__ = "1.0.0-rc1"

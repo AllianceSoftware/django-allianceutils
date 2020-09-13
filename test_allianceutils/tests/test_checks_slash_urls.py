@@ -4,7 +4,7 @@ from django.conf import settings
 from django.test import override_settings
 from django.test import SimpleTestCase
 
-from allianceutils.checks import check_url_trailing_slash
+from allianceutils.checks import CheckUrlTrailingSlash
 
 try:
     import rest_framework
@@ -37,7 +37,7 @@ class TestUrls(SimpleTestCase):
     def get_errors(expect_trailing_slash):
         # Get a list of URLs with slash check errors
         app_configs = apps.get_app_configs()
-        check = check_url_trailing_slash(
+        check = CheckUrlTrailingSlash(
             expect_trailing_slash=expect_trailing_slash,
             ignore_attrs={
                 '_regex': [r'^ignoreme-regex'],

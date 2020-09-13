@@ -12,10 +12,10 @@ _date_format_map = {
     '%A': 'l',
     '%b': 'M',
     '%B': 'F',
-    '%c': '',
+    '%c': None,
     '%d': 'd',
     '%-d':'j',
-    '%f': '',
+    '%f': None,
     '%H': 'H',
     '%-H':'G',
     '%I': 'h',
@@ -29,8 +29,8 @@ _date_format_map = {
     '%U': '',
     '%w': 'w',
     '%W': 'W',
-    '%x': '',
-    '%X': '',
+    '%x': None,
+    '%X': None,
     '%y': 'y',
     '%Y': 'Y',
     '%z': 'O',
@@ -40,7 +40,10 @@ _date_format_re = re.compile('|'.join(re.escape(key) for key in _date_format_map
 
 
 def _date_format_replace(x: Match) -> str:
-    return _date_format_map[x.group(0)]
+    new_fmt = _date_format_map[x.group(0)]
+    if new_fmt is None:
+        raise ValueError("Python date format string {x.group(0} has no django date template equivalent")
+    return new_fmt
 
 
 def python_to_django_date_format(python_format: str) -> str:

@@ -66,7 +66,6 @@ INSTALLED_APPS = (
     'test_allianceutils.tests.checks_field_names',
     'test_allianceutils.tests.document_reverse_accessors',
     'test_allianceutils.tests.middleware',
-    'test_allianceutils.tests.object_cache',
     'test_allianceutils.tests.profile_auth',
     'test_allianceutils.tests.serializers',
     'test_allianceutils.tests.viewset_permissions',
@@ -77,11 +76,6 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
 )
-
-if _engine == 'django.db.backends.postgresql':
-    INSTALLED_APPS += (
-        'allianceutils.asynctask',
-    )
 
 AUTH_USER_MODEL = 'profile_auth.User'
 AUTHENTICATION_BACKENDS = [
@@ -106,7 +100,6 @@ STATIC_ROOT = _Path(BASE_DIR, 'static')
 
 SERIALIZATION_MODULES = {
     'json_ordered': 'allianceutils.serializers.json_ordered',
-    'json': 'allianceutils.serializers.json_orminheritancefix',
 }
 
 ROOT_URLCONF = 'test_allianceutils.urls'
