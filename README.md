@@ -1,5 +1,7 @@
 # Alliance Utils
 
+![CI Tests](https://github.com/AllianceSoftware/django-allianceutils/workflows/Django%20CI/badge.svg)
+
 A collection of utilities for django projects from [Alliance Software](https://www.alliancesoftware.com.au/).
 
 * [Installation](#installation)
