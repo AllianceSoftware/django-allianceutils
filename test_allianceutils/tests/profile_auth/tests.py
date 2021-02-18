@@ -41,7 +41,8 @@ class AuthTestCase(TestCase):
         def create_user(model, username):
             # objects.create_user() is only available if UserManager inheritance works
             # w/ more recent authtools, you dont have username - instead you have your email
-            user = model(email='%s@example.com' % username)
+            # also, lets try to create user's email in a mIxEdCaSe in order to test whether its case sensitive or not
+            user = model(email='%s@example.com' % ''.join([x.lower() if not i%2 else x.upper() for i,x in enumerate(username)]))
             user.set_password('abc123')
             user.save()
             return user
@@ -262,10 +263,10 @@ class AuthTestCase(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'This is a logout page')
 
-                # login page should succeed with a good password and case-alternated username eg. AdMiN1@eXaMpLe.cOm
+                # login page should succeed with a good password and case-alternated username eg. AdmIn1@eAmpLe.cOm
                 response = client.post(
                     path=login_page_url,
-                    data={'username': ''.join([x.lower() if i%2 else x.upper() for i,x in enumerate(user.email)]), 'password': 'abc123'},
+                    data={'username': ''.join([x.lower() if i%3 else x.upper() for i,x in enumerate(user.email)]), 'password': 'abc123'},
                     follow=True)
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'This is a protected page')
@@ -278,9 +279,9 @@ class AuthTestCase(TestCase):
 
     def test_create_user_with_case_alternated_existing_username_should_fail(self):
         username = self.user1.email.split('@')[0]
-        username = ''.join([x.lower() if i%2 else x.upper() for i,x in enumerate(username)])
+        username = ''.join([x.lower() if i%3 else x.upper() for i,x in enumerate(username)])
         user = User(email='%s@example.com' % username)
-        self.assertRaises(ValueError, user.save)
+        self.assertRaises(IntegrityError, user.save)
 
     def test_middleware(self):
         """
