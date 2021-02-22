@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractBaseUser
 from django.core.management import call_command
 from django.db import IntegrityError
-from django.forms import IntegerField
+from django.forms import IntegerField, ModelForm
 from django.test import Client
 from django.test import override_settings
 from django.test import TestCase
@@ -282,6 +282,21 @@ class AuthTestCase(TestCase):
         username = ''.join([x.lower() if i%3 else x.upper() for i,x in enumerate(username)])
         user = User(email='%s@example.com' % username)
         self.assertRaises(IntegrityError, user.save)
+
+    def test_email_uniqueness_validation(self):
+        class UserForm(ModelForm):
+            class Meta:
+                model = User
+                fields = ("email", )
+
+        username = self.user1.email.split('@')[0]
+        username = ''.join([x.lower() if i%3 else x.upper() for i,x in enumerate(username)])
+        form = UserForm(data={'email': f'{username}@example.com'})
+        self.assertFalse(form.is_valid())
+        self.assertEqual(set(form.errors.keys()), {"email"})
+        form = UserForm(data={'email': 'available@example.com'})
+        self.assertTrue(form.is_valid())
+
 
     def test_middleware(self):
         """
