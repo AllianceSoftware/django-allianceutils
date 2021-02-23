@@ -1,7 +1,7 @@
 # CHANGELOG
 
 <!--
-IMPORTANT: the build script extracts the most recent versino from this file
+IMPORTANT: the build script extracts the most recent version from this file
 so make sure you follow the template
 -->
 
@@ -26,6 +26,11 @@ so make sure you follow the template
 
 -->
 
+## 1.0.dev 2021-02-19
+
+### Fixed
+
+* Fix `method_cache` to not set `name` on parent class which would break classes that had an attribute `name`
 
 ## 1.0.0-rc2 2020-09-14
 

@@ -26,6 +26,8 @@ class DecoratorsTest(SimpleTestCase):
         obj.my_method.clear_cache()
         self.assertEqual(obj.my_method(), 3)
 
+        self.assertEqual(obj.my_method.__name__, 'my_method')
+
         with self.assertRaises(AttributeError):
             # Trying to clear the class method doesn't work (we'd have
             # to keep track of every single MyClass instance to do this)

@@ -14,15 +14,13 @@ class _CachedMethodDescriptor:
     def __get__(self, obj, objtype):
         f = functools.partial(self.__call__, obj)
         f.clear_cache = functools.partial(self.clear_cache, obj)
+        functools.update_wrapper(f, self.fn)
         return f
 
     def __call__(self, obj, *args, **kwargs):
         if not hasattr(obj, self.cache_attr):
             setattr(obj, self.cache_attr, self.fn(obj, *args, **kwargs))
         return getattr(obj, self.cache_attr)
-
-    def __set_name__(self, cls, name):
-        cls.name = name
 
     def clear_cache(self, obj):
         try:
@@ -40,7 +38,7 @@ def method_cache(fn: Callable) -> Callable:
 
     Only works on methods with no parameters (other than self)
 
-    Clear cache for MyObject.my_method with my_object.clear_cache()
+    Clear cache for MyObject.my_method with my_object.my_method.clear_cache()
     """
     if isinstance(fn, (staticmethod, classmethod)):
         # if staticmethod or classmethod then inspect.signature() fails even trying to introspect the function
