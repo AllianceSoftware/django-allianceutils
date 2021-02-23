@@ -31,6 +31,7 @@ so make sure you follow the template
 ### Fixed
 
 * Fix `method_cache` to not set `name` on parent class which would break classes that had an attribute `name`
+* `GenericUserProfile` now forces email to lower case on save to avoid issues with duplicate emails in different case
 
 ## 1.0.0-rc2 2020-09-14
 
