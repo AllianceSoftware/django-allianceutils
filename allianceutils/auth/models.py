@@ -6,6 +6,7 @@ from typing import Union
 from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth.models import UserManager
 from django.core import checks
+from django.core.exceptions import ValidationError
 from django.db.models import Manager
 from django.db.models import Model
 from django.db.models import QuerySet
@@ -247,9 +248,12 @@ class GenericUserProfile(Model):
     def normalize_email(cls, email):
         return email.lower()
 
+    def clean(self):
+        if self.__class__._base_manager.filter(email=self.__class__.normalize_email(self.email)).exclude(pk=self.pk).exists():
+            raise ValidationError({'email': 'Sorry, this email address is not available.'})
+
     def save(self, *args, **kwargs):
-        if not self.pk and self.__class__.objects.filter(email=self.__class__.normalize_email(self.email)).exists():
-            raise ValueError('Sorry, this email is not available.')
+        self.email = GenericUserProfile.normalize_email(self.email)
         return super().save(*args, **kwargs)
 
     def get_profile(self) -> Model:
