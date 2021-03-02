@@ -4,7 +4,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractBaseUser
 from django.core.management import call_command
 from django.db import IntegrityError
-from django.forms import IntegerField, ModelForm
+from django.forms import IntegerField
+from django.forms import ModelForm
 from django.test import Client
 from django.test import override_settings
 from django.test import TestCase
