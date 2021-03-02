@@ -33,11 +33,17 @@ so make sure you follow the template
 * Fix `method_cache` to not set `name` on parent class which would break classes that had an attribute `name`
 * `GenericUserProfile` now forces email to lower case on save to avoid issues with duplicate emails in different case
 
+### Added
+
+* SerializerOptInFieldsMixin to control inclusion of expensive serializer fields.
+* Camel case JSON DRF renderers and parsers.
+
 ## 1.0.0-rc2 2020-09-14
 
 ### Breaking Changes
+
 * See [Legacy Changelog](CHANGELOG-legacy.md)
 
 ### Added
-* First stable 1.0 release
 
+* First stable 1.0 release
