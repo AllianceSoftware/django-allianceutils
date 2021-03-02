@@ -1,7 +1,7 @@
 from django.test import TestCase
 from rest_framework.serializers import ModelSerializer
 
-from allianceutils.drf import SerializerOptInFieldsMixin
+from allianceutils.api import SerializerOptInFieldsMixin
 from test_allianceutils.tests.profile_auth.models import User
 
 
