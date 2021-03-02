@@ -2,7 +2,7 @@ import json
 
 from django.test import SimpleTestCase
 
-from allianceutils.drf.renderers import CamelCaseJSONRenderer
+from allianceutils.api.renderers import CamelCaseJSONRenderer
 
 
 class TestRenderers(SimpleTestCase):

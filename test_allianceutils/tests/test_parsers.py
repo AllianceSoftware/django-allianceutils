@@ -3,8 +3,8 @@ import io
 from django.core.files.uploadhandler import MemoryFileUploadHandler
 from django.test import SimpleTestCase
 
-from allianceutils.drf.parsers import CamelCaseJSONParser
-from allianceutils.drf.parsers import CamelCaseMultiPartJSONParser
+from allianceutils.api.parsers import CamelCaseJSONParser
+from allianceutils.api.parsers import CamelCaseMultiPartJSONParser
 
 
 class TestParsers(SimpleTestCase):
