@@ -127,11 +127,86 @@ class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
         'create': []
     }
 ```
-* no permissions will be required for the create action, but permissions for other actions will remain unchanged.
+* No permissions will be required for the create action, but permissions for other actions will remain unchanged.
 * By default permissions checks are passed the relevant model instance for per-object permission checks
     * This assumes that your backend doesn't ignore the model object (default django permissions simply ignore any object passed to a permissions check)
-    * Since there is no model object, functions decorated with `@list_route` will pass `None` as the permissions check object    
- 
+    * Since there is no model object, functions decorated with `@list_route` will pass `None` as the permissions check object
+
+#### Parsers
+
+##### CamelCaseJSONParser
+
+Parser that recursively turns camelcase keys into underscored keys for JSON data.
+This can be set globally on the [DEFAULT_PARSER_CLASSES](https://www.django-rest-framework.org/api-guide/settings/#default_parser_classes)
+setting or on a ViewSet on the `parser_classes` property.
+
+##### CamelCaseMultiPartJSONParser
+
+Parser that recursively turns camelcase keys into underscored keys for JSON data and handles file uploads.
+This parser supports receiving JSON data where a field value anywhere in the structure can be a file.
+This is achieved on the frontend by converting a structure like:
+
+```js
+{
+    name: 'Test',
+    photo: File,
+}
+```
+
+And converting it to
+
+```js
+{
+    name: 'Test',
+    photo: '____ATTACHED_FILE_ID_1',
+}
+```
+
+This is then set on a field `jsonData` and the file is set on `____ATTACHED_FILE_ID_1` and submitted
+as multipart.
+This parser then handles parsing the JSON data into a dict and setting each attached file on the
+correct key in the dict.
+Note that this works with nested data (ie. any File anywhere in a nested JSON structure is supported).
+To activate this behaviour the `X-MultiPart-JSON` header must be set to '1' or 'true'. If this header
+is not set it falls back to the default behaviour of MultiPartParser
+This can be set globally on the [DEFAULT_PARSER_CLASSES](https://www.django-rest-framework.org/api-guide/settings/#default_parser_classes)
+setting or on a ViewSet on the `parser_classes` property.
+Example frontend code to activate:
+```js
+let fileCount = 0;
+const files = {};
+const replacer = (key, value) => {
+    if (value instanceof File) {
+        const id = `____ATTACHED_FILE_ID_${fileCount++}`;
+        files[id] = value;
+        return id;
+    }
+    return value;
+};
+const stringifiedData = JSON.stringify(data, replacer);
+const body = new FormData();
+const body.append('jsonData', stringifiedData);
+for (const [fileKey, file] of Object.entries(files)) {
+    body.append(fileKey, file);
+}
+// eg. using a presto Endpoint
+await myEndpoint.execute({
+    body,
+    headers: {
+        // Remove default content type from endpoint (eg. json)
+        'Content-Type': undefined,
+        'X-MultiPart-JSON': true,
+    },
+});
+```
+
+#### Renderers
+
+##### CamelCaseJSONRenderer
+
+Renderer that recursively turns underscore-cased keys into camel-cased keys.
+This can be set globally on the [DEFAULT_RENDERER_CLASSES](https://www.django-rest-framework.org/api-guide/settings/#default_renderer_classes)
+setting or on a ViewSet on the `renderer_classes` property.
 
 ### Auth
 
