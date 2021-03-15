@@ -26,7 +26,7 @@ so make sure you follow the template
 
 -->
 
-## 1.0.dev 2021-02-19
+## 1.0.0 2021-03-15
 
 ### Fixed
 
