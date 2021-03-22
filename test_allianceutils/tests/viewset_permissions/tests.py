@@ -15,6 +15,7 @@ from rest_framework.test import APIClient
 
 from test_allianceutils.tests.profile_auth.models import User
 from test_allianceutils.tests.viewset_permissions.models import NinjaTurtleModel
+from test_allianceutils.tests.viewset_permissions.models import SenseiRatModel
 
 USER_EMAIL = "test@example.com"
 USER_PASS = "password"
@@ -136,3 +137,35 @@ class ViewsetPermissionsTestCase(TestCase):
         test_methods("change_ninjaturtlemodel", {"change"})
 
         test_methods("delete_ninjaturtlemodel", {"delete"})
+
+
+    @modify_settings(
+        AUTHENTICATION_BACKENDS={
+            "append": 'test_allianceutils.tests.viewset_permissions.tests.IgnoreObjectsBackend',
+        }
+    )
+    def test_get_model_permission_viewset(self):
+        """
+        Test GenericDjangoViewsetPermissions with get_model used to replace the model being used for check
+        """
+        client = APIClient()
+        client.force_login(self.user)
+
+        def test_methods(with_grant_permission: Optional[str] = None, grant_model=NinjaTurtleModel, should_succeed: Set = set()):
+            turtle_id = self.turtle.id
+
+            with transaction.atomic():
+                if with_grant_permission:
+                    self.grant_permission(with_grant_permission, grant_model)
+
+                response = client.get(reverse('permissions:getmodel-list'))
+                self.assertEqual(response.status_code, 200 if "view" in should_succeed else 403)
+
+                response = client.get(reverse('permissions:getmodel-detail', kwargs={"pk": turtle_id}))
+                self.assertEqual(response.status_code, 200 if "view" in should_succeed else 403)
+
+                transaction.set_rollback(True)
+
+        test_methods()
+        test_methods("view_ninjaturtlemodel") # should fail; perm lookup would hit SenseiRat who is going to say no
+        test_methods("view_senseiratmodel", SenseiRatModel, {"view"}) # should succeed with permission from SenseiRat
