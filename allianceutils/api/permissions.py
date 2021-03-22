@@ -65,6 +65,13 @@ class GenericDjangoViewsetPermissions(BasePermission):
     def __init__(self):
         self._saved_actions_to_perms_map = None
 
+    def get_model(self, view):
+        """
+        Get the model used for permission check. By default tries to derive model from queryset
+        Can be overriden in case a different model is needed or get_queryset is not available
+        """
+        return view.get_queryset().model
+
     def get_actions_to_perms_map(self):
         """
         Merge the default actions to perms map with the class overrides & return
@@ -80,7 +87,7 @@ class GenericDjangoViewsetPermissions(BasePermission):
         """Given a model and an action, return the list of permission
         codes that the user is required to have."""
 
-        model_cls = view.get_queryset().model
+        model_cls = self.get_model(view)
         kwargs = {
             'app_label': model_cls._meta.app_label,
             'model_name': model_cls._meta.model_name,
