@@ -11,6 +11,7 @@ from typing import Sequence
 from typing import Tuple
 
 from django.core.files import File
+from django.utils.functional import Promise
 
 _first_cap_re = re.compile('(.)([A-Z][a-z]+)')
 _all_cap_re = re.compile('([a-z0-9])([A-Z])')
@@ -142,6 +143,10 @@ def _transform_key_val(key, value, transform_key: Callable, ignore_lookup: Dict)
     :param ignore_lookup: lookup if field name ignores (see _create_ignore_lookup)
     :return: (new_key, transformed_value)
     """
+    # To make keys consistent with how we treat values force django `Promise` to a string; this means
+    # lazy strings (eg. gettext_lazy) will be properly converted to camel case
+    if isinstance(key, Promise):
+        key = str(key)
     if key in ignore_lookup:
         ignore_lookup = ignore_lookup[key]
     elif '*' in ignore_lookup:
@@ -171,7 +176,9 @@ def _transform_data(data, transform_key: Callable, ignore_lookup: Dict):
     # containing File objects for any file fields.
     # At least for now we don't support numeric indices in ignores, so '*' is the only ignore lookup index
     # that can match a list/iterable
-    if isinstance(data, Iterable) and not isinstance(data, (str, bytes, File)):
+    # `Promise` is included here as django uses that as the base for proxy class created in lazy functions, eg.
+    # gettext_lazy. Without this they are treated as an iterable.
+    if isinstance(data, Iterable) and not isinstance(data, (str, bytes, File, Promise)):
         ignore_lookup = ignore_lookup.get('*', _empty_dict)
         return [_transform_data(x, transform_key, ignore_lookup) for x in data]
 
