@@ -32,6 +32,7 @@ so make sure you follow the template
 
 * Fix `method_cache` to not set `name` on parent class which would break classes that had an attribute `name`
 * `GenericUserProfile` now forces email to lower case on save to avoid issues with duplicate emails in different case
+* `camelize` now handles django lazy strings (eg. `gettext_lazy`) as strings rather than as iterables
 
 ## 1.0.0-rc2 2020-09-14
 
