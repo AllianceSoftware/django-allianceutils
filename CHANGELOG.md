@@ -32,6 +32,10 @@ so make sure you follow the template
 
 * `camelize` now handles django lazy strings (eg. `gettext_lazy`) as strings rather than as iterables
 
+### Added
+
+* `get_model` added to GenericDjangoViewsetPermissions allowing model to be substituted
+
 ## 1.0.0 2021-03-15
 
 ### Fixed

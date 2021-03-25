@@ -111,6 +111,10 @@ If you have no object level permissions (eg. from rules) then it will just do a 
 ##### GenericDjangoViewsetPermissions
 
 * Map viewset actions to Django permissions.
+  * The model used for permission is extracted from the ViewSet
+    * If you implement `get_permission_model` on the ViewSet that will be used
+    * Otherwise it will call `get_queryset` on the ViewSet and extract the model from the returned queryset 
+ * To alter this behaviour extends `GenericDjangoViewsetPermissions` and implement `get_model` 
 * Usage example:
 ```
 class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):

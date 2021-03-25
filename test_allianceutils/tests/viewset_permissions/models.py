@@ -10,3 +10,6 @@ class NinjaTurtleModel(models.Model):
         permissions = (
             ('can_eat_pizza', 'Can Eat Pizza'),
         )
+
+class SenseiRatModel(models.Model):
+    pass

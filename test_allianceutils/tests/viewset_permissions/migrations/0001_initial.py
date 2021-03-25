@@ -23,4 +23,10 @@ class Migration(migrations.Migration):
                 'permissions': (('can_eat_pizza', 'Can Eat Pizza'),),
             },
         ),
+        migrations.CreateModel(
+            name='SenseiRatModel',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+            ],
+        ),
     ]

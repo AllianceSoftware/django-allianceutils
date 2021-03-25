@@ -1,10 +1,10 @@
 from rest_framework import serializers
 from rest_framework import viewsets
-from rest_framework.response import Response
 
 from allianceutils.api.permissions import GenericDjangoViewsetPermissions
 from allianceutils.api.permissions import SimpleDjangoObjectPermissions
 from test_allianceutils.tests.viewset_permissions.models import NinjaTurtleModel
+from test_allianceutils.tests.viewset_permissions.models import SenseiRatModel
 
 
 class NinjaTurtleSerializer(serializers.ModelSerializer):
@@ -26,3 +26,4 @@ class NinjaTurtleViewSet(viewsets.ModelViewSet):
     serializer_class = NinjaTurtleSerializer
 
     permission_classes = [GenericDjangoViewsetPermissions]
+
