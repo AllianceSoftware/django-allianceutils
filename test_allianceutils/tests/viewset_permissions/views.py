@@ -27,13 +27,3 @@ class NinjaTurtleViewSet(viewsets.ModelViewSet):
 
     permission_classes = [GenericDjangoViewsetPermissions]
 
-
-class NinjaTurtleGetModelPermission(GenericDjangoViewsetPermissions):
-    def get_model(self, view):
-        return SenseiRatModel
-
-class NinjaTurtleGetModelViewSet(viewsets.ModelViewSet):
-    queryset = NinjaTurtleModel.objects.all()
-    serializer_class = NinjaTurtleSerializer
-    
-    permission_classes = [NinjaTurtleGetModelPermission]

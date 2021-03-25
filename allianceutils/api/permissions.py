@@ -66,10 +66,18 @@ class GenericDjangoViewsetPermissions(BasePermission):
         self._saved_actions_to_perms_map = None
 
     def get_model(self, view):
+        """Get the model to use for the permission check.
+
+        By default does the following:
+
+        - If `view` has `get_permission_model` defined it will call that
+        - Otherwise will call `view.get_queryset()` and use the model from the returned queryset
+
+        Can be overridden in cases where `get_queryset` or `get_permission_model` is not defined or permission check is
+        done against a different model.
         """
-        Get the model used for permission check. By default tries to derive model from queryset
-        Can be overriden in case a different model is needed or get_queryset is not available
-        """
+        if hasattr(view, 'get_permission_model'):
+            return view.get_permission_model()
         return view.get_queryset().model
 
     def get_actions_to_perms_map(self):
