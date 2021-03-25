@@ -5,6 +5,7 @@ from django.apps import apps
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.test import SimpleTestCase
 from django.test import TransactionTestCase
+from django.utils.translation import gettext_lazy
 
 from allianceutils.util import camel_to_underscore
 from allianceutils.util import camelize
@@ -336,6 +337,23 @@ class CamelCaseTestCase(TransactionTestCase):
                 [1, 'a_bc_d', {'a_bc_d': {'d_ef_g': {'h_ij_k': {'qr_s': 't_uv'}}}}, {'d_ef_g': {'h_ij_k': 4}}],
                 ['*.d_ef_g', '*.*.d_ef_g.h_ij_k'],
                 [1, 'a_bc_d', {'aBcD':   {'dEfG':   {'h_ij_k': {'qrS':  't_uv'}}}}, {'d_ef_g': {'hIjK':   4}}],
+            ),
+        )
+
+        for test_in, ignore, test_out in tests:
+            self.assertEqual(camelize(test_in, ignore), test_out)
+
+    def test_camelize_django_lazy(self):
+        tests = (
+            (
+                [1, gettext_lazy('a_bc_d'), {gettext_lazy('a_bc_d'): {gettext_lazy('d_ef_g'): [gettext_lazy('h_ij_k')], 2: 2}, 1: 1}, b"x"],
+                [],
+                [1, 'a_bc_d', {'aBcD': {'dEfG': ['h_ij_k'], 2: 2}, 1: 1}, b"x"],
+            ),
+            (
+                [1, gettext_lazy('a_bc_d'), {gettext_lazy('a_bc_d'): {gettext_lazy('d_ef_g'): {gettext_lazy('h_ij_k'): {gettext_lazy('qr_s'): gettext_lazy('t_uv')}}}}, {gettext_lazy('d_ef_g'): {gettext_lazy('h_ij_k'): 4}}],
+                ['*.d_ef_g', '*.*.d_ef_g.h_ij_k'],
+                [1, 'a_bc_d', {'aBcD': {'dEfG': {'h_ij_k': {'qrS': 't_uv'}}}}, {'d_ef_g': {'hIjK': 4}}],
             ),
         )
 
