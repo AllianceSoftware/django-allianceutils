@@ -24,7 +24,7 @@ A collection of utilities for django projects from [Alliance Software](https://w
 
 ## Installation
 
-`pip install -e git+git@gitlab.internal.alliancesoftware.com.au:alliance/alliance-django-utils.git@master#egg=allianceutils`
+`pip install django-allianceutils`
 
 ## Usage
 
