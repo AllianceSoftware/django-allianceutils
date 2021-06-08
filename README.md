@@ -730,6 +730,12 @@ SERIALIZATION_MODULES = {
 * Optional Arguments
   * `attrs` - String representing extra attributes to pass to the HTML tag
   * `config='DEFAULT'` - String index into the settings `WEBPACK_LOADER` dict. Defaults to 'DEFAULT'.
+* Config
+  * Configuration can be specified via the `WEBPACK_LOADER` setting. This is a dict indexed by the config name (defaults to 'DEFAULT')
+  * Options
+    * `STATS_FILE` - the path to the stats file to read
+    * `INCLUDE_QUERY_HASH` - whether to include the content hash in the query string. Defaults to `true`.
+    * `BASE_URL` - a URL to prepend to all chunks when rendered. This can be used when files are stored on a different host (eg. CDN).
 
 * Example Usage
 
