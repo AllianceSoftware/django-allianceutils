@@ -26,7 +26,7 @@ so make sure you follow the template
 
 -->
 
-## Unreleased
+## 1.2.0 2021-06-11
 
 ### Added
 

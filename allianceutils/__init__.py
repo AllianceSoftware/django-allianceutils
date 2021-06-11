@@ -9,4 +9,4 @@ def load_tests(*args, **kwargs):
   empty_suite = unittest.TestSuite()
   return empty_suite
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
