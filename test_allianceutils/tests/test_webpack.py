@@ -44,14 +44,16 @@ assert (stats_multiple_prod_path.exists())
 
 # expected output for script & link tags
 script = '<script type="text/javascript" src="%s?abc123" ></script>'
+script_no_query = '<script type="text/javascript" src="%s" ></script>'
 script_attrs = '<script type="text/javascript" src="%s?abc123" %s></script>'
 link = '<link type="text/css" href="%s?abc123" rel="stylesheet" />'
+link_no_query = '<link type="text/css" href="%s" rel="stylesheet" />'
 
 
 is_tox = strtobool(os.getenv('TOX', '0'))
 
 
-def make_settings(prod_path=stats_prod_path):
+def make_settings(prod_path=stats_prod_path, **kwargs):
     webpack_loader_settings = {
         'WEBPACK_LOADER': {}
     }
@@ -59,6 +61,7 @@ def make_settings(prod_path=stats_prod_path):
     for mode, stats_path in (('dev', stats_dev_path), ('prod', prod_path)):
         webpack_loader_settings['WEBPACK_LOADER'][mode] = {
             'STATS_FILE': str(stats_path),
+            **kwargs
         }
 
     return webpack_loader_settings
@@ -155,3 +158,33 @@ class AllianceBundleTestCase(SimpleTestCase):
         self.check_tag(cfg, 'combined', 'js', script % url('combined_js') + '\n' + script % url('vendor_js'))
         self.check_tag(cfg, 'cssonly',  'js', '')
         self.check_tag(cfg, 'jsonly',   'js', script % url('jsonly_js') + '\n' + script % url('vendor_js'))
+
+
+    @override_settings(**make_settings(BASE_URL="http://example.com/"), STATIC_URL="http://example.com/")
+    def test_base_url(self):
+        def url(filename_key):
+            return "http://example.com" + stats_prod_root + stats_prod[filename_key]
+
+        cfg = 'prod'
+        self.check_tag(cfg, 'combined', 'css', link % url('combined_css'))
+        self.check_tag(cfg, 'cssonly', 'css', link % url('cssonly_css'))
+        self.check_tag(cfg, 'jsonly', 'css', '')
+
+        self.check_tag(cfg, 'combined', 'js', script % url('combined_js'))
+        self.check_tag(cfg, 'cssonly', 'js', '')
+        self.check_tag(cfg, 'jsonly', 'js', script % url('jsonly_js'))
+
+
+    @override_settings(**make_settings(INCLUDE_QUERY_HASH=False))
+    def test_disable_query_string(self):
+        def url(filename_key):
+            return stats_prod_root + stats_prod[filename_key]
+
+        cfg = 'prod'
+        self.check_tag(cfg, 'combined', 'css', link_no_query % url('combined_css'))
+        self.check_tag(cfg, 'cssonly', 'css', link_no_query % url('cssonly_css'))
+        self.check_tag(cfg, 'jsonly', 'css', '')
+
+        self.check_tag(cfg, 'combined', 'js', script_no_query % url('combined_js'))
+        self.check_tag(cfg, 'cssonly', 'js', '')
+        self.check_tag(cfg, 'jsonly', 'js', script_no_query % url('jsonly_js'))

@@ -26,6 +26,13 @@ so make sure you follow the template
 
 -->
 
+## Unreleased
+
+### Added
+
+* `INCLUDE_QUERY_HASH` and `BASE_URL` options added to `WEBPACK_LOADER` config. This allows the content hash query string to
+  be disabled and to load assets that are on a different domain (eg. a CDN).
+
 ## 1.1.0 2021-03-25
 
 ### Fixed

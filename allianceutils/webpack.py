@@ -49,6 +49,10 @@ def get_chunk_tags(chunks: Dict, attrs: str):
             tags.append(f'<link type="text/css" href="{url}" rel="stylesheet" {attrs}/>')
     return tags
 
+config_defaults = {
+    "INCLUDE_QUERY_HASH": True,
+    "BASE_URL": None,
+}
 
 class WebpackEntryPointLoader:
 
@@ -60,7 +64,7 @@ class WebpackEntryPointLoader:
     config: Dict
 
     def __init__(self, config: Dict):
-        self.config = config
+        self.config = {**config_defaults, **config}
 
     def load_stats(self) -> Dict:
         """
@@ -146,9 +150,13 @@ class WebpackEntryPointLoader:
 
     def get_chunk_url(self, public_path: str, chunk: Dict) -> str:
         name = chunk['name']
-        hash = chunk['contentHash']
-        query = '' if not hash else f'?{hash}'
-        return f'{public_path}{name}{query}'
+        query = ''
+        if self.config['INCLUDE_QUERY_HASH'] and chunk.get('contentHash'):
+            query = f'?{chunk["contentHash"]}'
+        path = f'{public_path}{name}{query}'
+        if self.config['BASE_URL']:
+            return urljoin(self.config['BASE_URL'], path)
+        return path
 
     def filter_chunks(self, public_path: str, chunks: Sequence[Dict], required_resource_type:str) -> Sequence[Dict]:
         if required_resource_type not in self.extensions_by_resource_type:
@@ -189,6 +197,6 @@ class WebpackEntryPointLoader:
         if not entry_point:
             known_entry_points = ', '.join(stats['entrypoints'].keys())
             raise ValueError(f'Invalid entry point {entry_point_name}. Known entry points: {known_entry_points}')
-        public_path = stats['publicPath']
+        public_path = stats.get('publicPath', '')
 
         return self.filter_chunks(public_path, entry_point, resource_type)
