@@ -5,7 +5,7 @@ IMPORTANT: the build script extracts the most recent version from this file
 so make sure you follow the template
 -->
 
-<!-- Use the poetry changelog a template for each release:
+<!-- Use the poetry changelog as a template for each release:
 ## 1.2.3 2020-01-01
 
 ### Breaking Changes
@@ -25,6 +25,19 @@ so make sure you follow the template
 * An Item
 
 -->
+
+## 2.0.0.dev0 2021-xx-xx
+
+### Added
+
+* Add support for django 3.2
+* `auth/backends` now works without `authtools`
+    * `ProfileModelBackend` will not be available if `authtools` is not able to be imported (`authtools` does not currently work with django 3.2)
+* ````
+  
+### Breaking Changes
+* Drop support for django 2.2
+* Drop support for isort 4
 
 ## 1.2.0 2021-06-11
 

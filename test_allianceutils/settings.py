@@ -3,6 +3,7 @@ import hashlib as _hashlib
 import os as _os
 from pathlib import Path as _Path
 import random as _random
+import re as _re
 import warnings as _warnings
 
 is_ci = _os.environ.get('CI_SERVER', 'no') == 'yes'
@@ -12,9 +13,15 @@ BASE_DIR = _Path(__file__).parent
 # Select DB engine
 
 if _strtobool(_os.environ.get('TOX', '0')):
-    _engine = _os.environ['VIRTUAL_ENV'].split('-')[-1]
+    # look for the DB name in one of the tox environment name components
+    _engine = [
+        _e
+        for _e
+        in ('postgresql', 'mysql')
+        if _e in str(_Path(_os.environ['VIRTUAL_ENV']).name).split('-')
+    ]
     assert _engine
-    _engine = 'django.db.backends.' + _engine
+    _engine = f'django.db.backends.{_engine[0]}'
 elif _os.environ.get('PGDATABASE'):
     _engine = 'django.db.backends.postgresql'
 else:
@@ -45,7 +52,6 @@ if _engine == 'django.db.backends.mysql':
     if not is_ci:
         _db_vars['OPTIONS']['read_default_file'] = '~/.my.cnf'
 
-
 # Django connects via the live DB in order to create/drop the test DB
 # If the live DB doesn't exist then it bails out before even trying to
 # create the test DB, so this doesn't really work
@@ -56,10 +62,10 @@ if _engine == 'django.db.backends.mysql':
 
 DATABASES = {'default': _db_vars}
 
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+
 INSTALLED_APPS = (
     'allianceutils',
-    'authtools',
-
     'test_allianceutils',
     'test_allianceutils.tests.checks_db_constraints',
     'test_allianceutils.tests.checks_explicit_table_names',
@@ -126,3 +132,14 @@ DATABASES["default"]["TEST"] = {
 QUERY_COUNT_WARNING_THRESHOLD = 40
 
 _warnings.simplefilter('always')
+
+try:
+    from django.utils.deprecation import RemovedInDjango41Warning as _RemovedInDjango41Warning
+except ImportError:
+    pass
+else:
+    _warnings.filterwarnings(
+        'ignore',
+        category=_RemovedInDjango41Warning,
+        message=r"'django_db_constraints' defines default_app_config = .* Django now detects this configuration automatically",
+    )

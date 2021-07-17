@@ -37,7 +37,7 @@ class NoDeleteModel(Model):
     A model that cannot be deleted.
 
     Note that this is an abstract Model, please read
-    https://docs.djangoproject.com/en/1.11/topics/db/managers/#custom-managers-and-model-inheritance
+    https://docs.djangoproject.com/en/dev/topics/db/managers/#custom-managers-and-model-inheritance
 
     If you wish to override the default manager, you need to combine the queryset like so:
 

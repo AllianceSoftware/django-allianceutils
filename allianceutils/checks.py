@@ -3,31 +3,26 @@ from collections import defaultdict
 import inspect
 from pathlib import Path
 import re
-from typing import Callable
 from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Type
 
-import django
 from django.apps import apps
 from django.apps.config import AppConfig
 from django.conf import settings
 from django.core.checks import Error
+from django.core.checks import Info
 from django.core.checks import Warning
 from django.db.models import Model
 from django.urls import get_resolver
+from django.urls import URLResolver
 
 from allianceutils.util import camel_to_underscore
 from allianceutils.util import get_firstparty_apps
 from allianceutils.util import underscore_to_camel
 
-if django.VERSION >= (2, 0):
-    from django.urls import URLResolver
-else:
-    from django.conf.urls import RegexURLResolver as URLResolver
 
 # W001 not used
 # W002 not used

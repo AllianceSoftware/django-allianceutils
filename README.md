@@ -225,7 +225,15 @@ setting or on a ViewSet on the `renderer_classes` property.
 
 * Backends for use with [GenericUserProfile](#GenericUserProfile); see code examples there
 * `allianceutils.auth.backends.ProfileModelBackendMixin` - in combo with [AuthenticationMiddleware](https://docs.djangoproject.com/en/dev/ref/middleware/#django.contrib.auth.middleware.AuthenticationMiddleware) will set user profiles on `request.user`  
-    * `allianceutils.auth.backends.ProfileModelBackend` - convenience class combined with case insensitive username & default django permissions backend 
+    * ~`allianceutils.auth.backends.ProfileModelBackend`~ - convenience class combined with case insensitive username & default django permissions backend
+        * this depended on [`authtools`](https://django-authtools.readthedocs.io/en/latest/) which appears to have been
+          abandoned and does not work with django >= 3.
+          If using django 3 then we recommended that you create your own backend in your app:
+          ```python
+            class ProfileModelBackend(ProfileModelBackendMixin, MinimalModelBackend):
+                # you'll need to implement case insensitivity either here or in the User Model  
+                pass
+          ```
 
 ### Decorators
 

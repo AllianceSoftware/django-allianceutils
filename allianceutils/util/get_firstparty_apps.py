@@ -1,15 +1,7 @@
 from django.apps import AppConfig
 from django.apps import apps
 
-try:
-    # isort v5.x
-    from isort.api import place_module
-except ImportError:
-    # isort v4.x compatibility
-    from isort import SortImports
-
-    def place_module(module_name):
-        return SortImports(file_contents='').place_module(module_name)
+from isort.api import place_module
 
 
 def is_firstparty_app(app_config: AppConfig):

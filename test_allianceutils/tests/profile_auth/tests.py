@@ -22,6 +22,10 @@ from .models import User
 from .models import UserFKImmediateModel
 from .models import UserFKIndirectModel
 
+try:
+    import authtools
+except ImportError:
+    authtools = None
 
 @override_settings(
     MIDDLEWARE=[
@@ -32,7 +36,7 @@ from .models import UserFKIndirectModel
         'django.contrib.auth.hashers.UnsaltedSHA1PasswordHasher',
     ),
     AUTHENTICATION_BACKENDS=(
-        'allianceutils.auth.backends.ProfileModelBackend',
+        'allianceutils.auth.backends.ProfileModelBackend' if authtools else 'test_allianceutils.auth.backends.ProfileModelBackend',
     ),
 )
 class AuthTestCase(TestCase):
