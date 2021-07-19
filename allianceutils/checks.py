@@ -241,19 +241,20 @@ def check_db_constraints(app_configs: Iterable[AppConfig], **kwargs):
     for truncated_name, model_constraints in known_constraints.items():
         if len(model_constraints) == 1:
             continue
-        _models = ['%s.%s' % (model._meta.app_label, model.__name__) for model, _ in model_constraints]
+        _models = [f'{model._meta.app_label}.{model.__name__}' for model, _ in model_constraints]
         models_string = ', '.join(_models)
         for _model, constraint_name in model_constraints:
             errors.append(
                 Error(
-                    '%s constraint %s is not unique' % (_model._meta.label, constraint_name),
-                    hint='Constraint truncates to %s' % truncated_name.decode('utf-8', 'replace'),
+                    f'{_model._meta.label} constraint {constraint_name} is not unique',
+                    hint='Constraint truncates to ' + truncated_name.decode('utf-8', 'replace'),
                     obj=models_string,
                     id=ID_ERROR_DB_CONSTRAINTS,
                 )
             )
 
     return errors
+
 
 def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: bool) -> Iterable[Type[Error]]:
     """
@@ -357,7 +358,7 @@ class CheckReversibleFieldNames:
                     hint = f'Underscore before a number in {model._meta.label}.{field.name}'
                 errors.append(
                     Error(
-                        f"Field name is not reversible with underscore_to_camel()/camel_to_underscore()",
+                        "Field name is not reversible with underscore_to_camel()/camel_to_underscore()",
                         hint=hint,
                         obj=model,
                         id=ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY,

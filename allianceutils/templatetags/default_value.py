@@ -34,9 +34,9 @@ def do_default_value(parser: template.base.Parser, token: template.base.Token):
     remaining_bits = bits[1:]
     assignments = template.base.token_kwargs(remaining_bits, parser)
     if not assignments:
-        raise template.TemplateSyntaxError("%r expected at least one variable assignment" % bits[0])
+        raise template.TemplateSyntaxError(f"{repr(bits[0])} expected at least one variable assignment")
     if remaining_bits:
-        raise template.TemplateSyntaxError("%r received an invalid token: %r" % (bits[0], remaining_bits[0]))
+        raise template.TemplateSyntaxError(f"{repr(bits[0])} received an invalid token: {repr(remaining_bits[0])}")
     # nodelist = parser.parse()
     # parser.delete_first_token()
     return DefaultValueNode(assignments)

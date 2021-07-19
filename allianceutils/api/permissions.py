@@ -104,7 +104,7 @@ class GenericDjangoViewsetPermissions(BasePermission):
         try:
             return [perm % kwargs for perm in perms_map[action]]
         except KeyError:
-            raise ImproperlyConfigured('Missing GenericDjangoViewsetPermissions action permission for %s' % action)
+            raise ImproperlyConfigured(f'Missing GenericDjangoViewsetPermissions action permission for {action}')
 
     def get_list_actions(self, viewset):
         """

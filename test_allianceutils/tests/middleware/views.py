@@ -59,7 +59,7 @@ def run_queries(request: HttpRequest, **kwargs) -> HttpRequest:
         # https://docs.djangoproject.com/en/dev/topics/testing/tools/#exceptions
         raise PermissionDenied('throw_exception is True')
 
-    return HttpResponse('Ran %d queries' % count)
+    return HttpResponse('Ran {count} queries')
 
 
 def query_overhead(request: HttpRequest, **kwargs) -> HttpResponse:

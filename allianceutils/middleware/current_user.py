@@ -21,10 +21,10 @@ class CurrentUserMiddleware(MiddlewareMixin):
         :return None
         """
         assert hasattr(request, 'user'), (
-            u"The CurrentUser middleware requires the authentication middleware "
-            u"to be installed. Edit your MIDDLEWARE setting to insert"
-            u"'django.contrib.auth.middleware.AuthenticationMiddleware' before "
-            u"'%s.CurrentUserMiddleware'." % __name__
+            "The CurrentUser middleware requires the authentication middleware "
+            "to be installed. Edit your MIDDLEWARE setting to insert"
+            "'django.contrib.auth.middleware.AuthenticationMiddleware' before "
+            f"'{__name__}.CurrentUserMiddleware'."
         )
 
         if request.user is not None:

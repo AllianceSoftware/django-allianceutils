@@ -24,7 +24,7 @@ class OptionalAppCommand(BaseCommand):
                     for app_label in app_labels
                 ]
             except (LookupError, ImportError) as e:
-                raise CommandError("%s. Are you sure your INSTALLED_APPS setting is correct?" % e)
+                raise CommandError(f"{e}. Are you sure your INSTALLED_APPS setting is correct?")
         else:
             app_configs = get_firstparty_apps()
 
