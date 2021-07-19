@@ -35,6 +35,7 @@ so make sure you follow the template
     * `ProfileModelBackend` will not be available if `authtools` is not able to be imported (`authtools` does not currently work with django 3.2)
 * ````
 * Add `add_autoreload_extra_files()`
+* Add ability for checks to ignore apps/models using a regex instead of just a static string 
 
   
 ### Fixed

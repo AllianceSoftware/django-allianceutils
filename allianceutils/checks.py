@@ -8,6 +8,7 @@ from typing import Iterable
 from typing import Mapping
 from typing import Optional
 from typing import Type
+from typing import Union
 
 from django.apps import apps
 from django.apps.config import AppConfig
@@ -23,7 +24,6 @@ from allianceutils.util import camel_to_underscore
 from allianceutils.util import get_firstparty_apps
 from allianceutils.util import underscore_to_camel
 
-
 # W001 not used
 # W002 not used
 # W003 not used
@@ -38,12 +38,19 @@ ID_WARNING_GIT_HOOKS = 'allianceutils.W008'
 ID_ERROR_GIT_HOOKS = 'allianceutils.E008'
 ID_ERROR_EXPLICIT_TABLE_NAME = 'allianceutils.E009'
 ID_ERROR_EXPLICIT_TABLE_NAME_LOWERCASE = 'allianceutils.E010'
+ID_INFO_EXPLICIT_TABLE_NAME_LOWERCASE = 'allianceutils.I010'
 ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY = 'allianceutils.E011'
+
+try:
+    Pattern = re.Pattern
+except AttributeError:
+    # Until python 3.7 re.Pattern was not exposed (was only present internally as _pattern_type)
+    Pattern = object
 
 
 def find_candidate_models(
-        app_configs: Optional[Iterable[AppConfig]],
-        ignore_labels: Iterable[str] = None
+    app_configs: Optional[Iterable[AppConfig]],
+    ignore_labels: Iterable[Union[str, Pattern]] = None
 ) -> Dict[str, Type[Model]]:
     """
     Given a list of labels to ignore, return models whose app_label or label is NOT in ignore_labels.
@@ -55,7 +62,14 @@ def find_candidate_models(
     if ignore_labels is None:
         ignore_labels = []
 
-    ignore_labels = set(ignore_labels)
+    def should_ignore(label: str) -> bool:
+        return (
+            # string match
+            any(s == label for s in ignore_labels) or
+            # regex pattern match
+            any(p.match(label) for p in ignore_labels if hasattr(p, "match"))
+        )
+
     candidate_models: Dict[str, Type[Model]] = {}
 
     for app_config in app_configs:
@@ -63,7 +77,7 @@ def find_candidate_models(
             model._meta.label: model
             for model
             in app_config.get_models()
-            if model._meta.app_label not in ignore_labels and model._meta.label not in ignore_labels
+            if not should_ignore(model._meta.app_label) and not should_ignore(model._meta.label)
         })
 
     return candidate_models
@@ -233,6 +247,11 @@ def check_db_constraints(app_configs: Iterable[AppConfig], **kwargs):
     known_constraints = defaultdict(list)
     for app_config in app_configs.values():
         for model in app_config.get_models():
+            # native django constraints
+            if hasattr(model._meta, 'constraints'):
+                for constraint in model._meta.constraints:
+                    known_constraints[_truncate_constraint_name(constraint.name)].append((model, constraint.name))
+            # constraints from the django-db-constraints package
             if hasattr(model._meta, 'db_constraints'):
                 for constraint_name in model._meta.db_constraints.keys():
                     known_constraints[_truncate_constraint_name(constraint_name)].append((model, constraint_name))
@@ -264,13 +283,35 @@ def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: 
     """
     errors = []
     found = None
-    tree = ast.parse(inspect.getsource(model))
+    try:
+        source = inspect.getsource(model)
+    except OSError:
+        # if a model class is dynamically created then we can't inspect the source code
+        # (eg this happens with audit models)
+        message = f"Can't get source for {model.__name__}"
+        # warnings.warn(message)
+        errors.append(Info(
+            message,
+            hint="Dynamically generated model source code can't be introspected",
+            obj=model,
+            id=ID_INFO_EXPLICIT_TABLE_NAME_LOWERCASE,
+        ))
+        #print(f"Cant get source for {model.__name__}")
+        return errors
+    tree = ast.parse(source)
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef) and node.name == 'Meta':
             for sub_node in node.body:
                 if isinstance(sub_node, ast.Assign):
                     if sub_node.targets[0].id == 'db_table':
-                        found = sub_node.value.s
+                        # in python <=3.7 it will be an ast.Str
+                        # in python >=3.8 it will be an ast.Constant
+                        if isinstance(sub_node.value, (ast.Constant, ast.Str)):
+                            found = sub_node.value.s
+                        else:
+                            # If it's an expression then we don't know what it's going to evaluate it
+                            # so we're just going to assume it's ok
+                            found = True
                         break
     if not found:
         errors.append(
@@ -281,7 +322,7 @@ def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: 
                 id=ID_ERROR_EXPLICIT_TABLE_NAME,
             )
         )
-    elif enforce_lowercase and not found.islower():
+    elif enforce_lowercase and hasattr(found, "islower") and not found.islower():
         errors.append(
             Error(
                 'Table names must be lowercase',
@@ -307,7 +348,7 @@ class CheckExplicitTableNames:
     ignore_labels: Iterable[str]
     enforce_lowercase: bool
 
-    def __init__(self, ignore_labels: Iterable[str] = DEFAULT_TABLE_NAME_CHECK_IGNORE, enforce_lowercase: bool = True):
+    def __init__(self, ignore_labels: Iterable[Union[str, Pattern]] = DEFAULT_TABLE_NAME_CHECK_IGNORE, enforce_lowercase: bool = True):
         """
         ignore_labels: ignore apps or models matching supplied labels
         enforce_lowercase: applies rule E010 which enforces table name to be all lowercase; defaults to True
@@ -320,6 +361,7 @@ class CheckExplicitTableNames:
         Warn when models don't have Meta's db_table_name set in apps that require it.
         """
         candidate_models = find_candidate_models(app_configs, self.ignore_labels)
+
         errors = []
         for model in candidate_models.values():
             errors += _check_explicit_table_names_on_model(model, self.enforce_lowercase)

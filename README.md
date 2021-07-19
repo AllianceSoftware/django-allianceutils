@@ -402,8 +402,10 @@ urlpatterns += router.urls
 * Checks that all first-party models have `db_table` explicitly defined on their Meta class, and the table name is in lowercase
 * Arguments:
     * `enforce_lowercase` - check that there are no uppercase characters in the table name
-    * `ignore_labels` - app labels (eg `silk`) or app_label + model labels (eg `silk.request`) to ignore.
+    * `ignore_labels` - if an app label (eg `silk`) or app_label + model labels (eg `silk.request`)
+        matches something in `ignore_labels` then it will be ignored.
         * `allianceutils.checks.DEFAULT_TABLE_NAME_CHECK_IGNORE` contains a default list of apps/models to ignore
+        * Can be either a `str` or a regex (anything that contains a `.match()` method) 
 
 ##### CheckReversibleFieldNames
 
