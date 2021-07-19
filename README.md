@@ -781,6 +781,25 @@ SERIALIZATION_MODULES = {
 
 ### Util
 
+#### add_autoreload_extra_files
+
+* Adds files to the autoreloader watch list
+    * Works with both the built-in [`runserver`](https://docs.djangoproject.com/en/dev/ref/django-admin/#runserver)
+      and [`runserver_plus`](https://django-extensions.readthedocs.io/en/latest/runserver_plus.html) from `django-extensions`
+    * If `DEBUG` is not enabled then this will do nothing
+    * This should be called from inside the
+      [`ready()`](https://docs.djangoproject.com/en/dev/ref/applications/#django.apps.AppConfig.ready) method of
+      an [`AppConfig`](https://docs.djangoproject.com/en/dev/ref/applications/#configuring-applications) 
+  
+```python
+class MyAppConfig(AppConfig):
+    def ready(self):
+        extra_files = [
+          "/data/file.csv",
+        ]
+        add_autoreload_extra_files(extra_files)
+```
+
 #### camelize
 
 * Better version of [djangorestframework-camel-case](https://github.com/vbabiy/djangorestframework-camel-case)

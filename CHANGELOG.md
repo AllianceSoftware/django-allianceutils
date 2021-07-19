@@ -34,6 +34,8 @@ so make sure you follow the template
 * `auth/backends` now works without `authtools`
     * `ProfileModelBackend` will not be available if `authtools` is not able to be imported (`authtools` does not currently work with django 3.2)
 * ````
+* Add `add_autoreload_extra_files()`
+
   
 ### Fixed
 * `GenericUserProfile.normalize_email` can now be overridden on child classes and will work as expected
