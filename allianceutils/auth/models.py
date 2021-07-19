@@ -245,15 +245,15 @@ class GenericUserProfile(Model):
         abstract = True
 
     @classmethod
-    def normalize_email(cls, email):
+    def normalize_email(cls, email: str) -> str:
         return email.lower()
 
     def clean(self):
-        if self.__class__._base_manager.filter(email=self.__class__.normalize_email(self.email)).exclude(pk=self.pk).exists():
+        if self.__class__._base_manager.filter(email=self.normalize_email(self.email)).exclude(pk=self.pk).exists():
             raise ValidationError({'email': 'Sorry, this email address is not available.'})
 
     def save(self, *args, **kwargs):
-        self.email = GenericUserProfile.normalize_email(self.email)
+        self.email = self.normalize_email(self.email)
         return super().save(*args, **kwargs)
 
     def get_profile(self) -> Model:

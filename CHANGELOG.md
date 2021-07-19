@@ -35,6 +35,9 @@ so make sure you follow the template
     * `ProfileModelBackend` will not be available if `authtools` is not able to be imported (`authtools` does not currently work with django 3.2)
 * ````
   
+### Fixed
+* `GenericUserProfile.normalize_email` can now be overridden on child classes and will work as expected
+
 ### Breaking Changes
 * Drop support for django 2.2
 * Drop support for isort 4
