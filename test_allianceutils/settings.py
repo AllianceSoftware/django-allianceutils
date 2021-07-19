@@ -76,12 +76,16 @@ INSTALLED_APPS = (
     'test_allianceutils.tests.serializers',
     'test_allianceutils.tests.viewset_permissions',
 
-    'django_db_constraints',
-
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
 )
+try:
+    import django_db_constraints
+except ImportError:
+    pass
+else:
+    INSTALLED_APPS += ('django_db_constraints',)
 
 AUTH_USER_MODEL = 'profile_auth.User'
 AUTHENTICATION_BACKENDS = [

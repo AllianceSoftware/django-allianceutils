@@ -1,3 +1,9 @@
+try:
+    import rest_framework
+except ImportError:
+    import unittest
+    raise unittest.SkipTest("djangorestframework is not installed")
+
 import json
 
 from django.test import SimpleTestCase

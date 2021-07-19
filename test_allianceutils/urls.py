@@ -5,12 +5,21 @@ from django.urls import path
 
 import test_allianceutils.tests.middleware.urls
 import test_allianceutils.tests.profile_auth.urls
-import test_allianceutils.tests.viewset_permissions.urls
 
 urlpatterns = [
     path('accounts/login/', LoginView.as_view(), name='login'),
     path('accounts/logout/', LogoutView.as_view(), name='logout'),
     path('middleware/', include(test_allianceutils.tests.middleware.urls)),
     path('profile_auth/', include(test_allianceutils.tests.profile_auth.urls)),
-    path('viewset_permissions/', include(test_allianceutils.tests.viewset_permissions.urls)),
 ]
+
+
+try:
+    import rest_framework
+except ImportError:
+    pass
+else:
+    import test_allianceutils.tests.viewset_permissions.urls
+    urlpatterns += [
+        path('viewset_permissions/', include(test_allianceutils.tests.viewset_permissions.urls)),
+    ]

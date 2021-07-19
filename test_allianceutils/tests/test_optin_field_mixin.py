@@ -1,3 +1,9 @@
+try:
+    import rest_framework
+except ImportError:
+    import unittest
+    raise unittest.SkipTest("djangorestframework is not installed")
+
 from django.test import TestCase
 from rest_framework.serializers import ModelSerializer
 
