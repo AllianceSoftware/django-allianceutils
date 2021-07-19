@@ -1,4 +1,5 @@
 import io
+import random
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractBaseUser
@@ -27,6 +28,16 @@ try:
 except ImportError:
     authtools = None
 
+
+def _random_email_case(email: str) -> str:
+    parts = email.split('@')
+    mailbox, domain = '@'.join(parts[:-1]), parts[-1]
+    mailbox = ''.join([
+        c.lower() if random.getrandbits(1) else c.upper()
+        for i, c in enumerate(mailbox)
+    ])
+    return f'{mailbox}@{domain}'
+
 @override_settings(
     MIDDLEWARE=[
         'django.contrib.sessions.middleware.SessionMiddleware',
@@ -47,7 +58,8 @@ class AuthTestCase(TestCase):
             # objects.create_user() is only available if UserManager inheritance works
             # w/ more recent authtools, you dont have username - instead you have your email
             # also, lets try to create user's email in a mIxEdCaSe in order to test whether its case sensitive or not
-            user = model(email='%s@example.com' % ''.join([x.lower() if not i%2 else x.upper() for i,x in enumerate(username)]))
+            email_mixed_case = _random_email_case(f'{username}@example.com')
+            user = model(email=email_mixed_case)
             user.set_password('abc123')
             user.save()
             return user
@@ -261,7 +273,7 @@ class AuthTestCase(TestCase):
                     follow=True)
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'This is a protected page')
-                self.assertContains(response, 'Username is %s' % user.email)
+                self.assertContains(response, f'Username is {user.email}')
 
                 # logout for the next user
                 response = client.get(reverse('logout'))
@@ -269,13 +281,14 @@ class AuthTestCase(TestCase):
                 self.assertContains(response, 'This is a logout page')
 
                 # login page should succeed with a good password and case-alternated username eg. AdmIn1@eAmpLe.cOm
+                email_mixed_case = _random_email_case(user.email)
                 response = client.post(
                     path=login_page_url,
-                    data={'username': ''.join([x.lower() if i%3 else x.upper() for i,x in enumerate(user.email)]), 'password': 'abc123'},
+                    data={'username': email_mixed_case, 'password': 'abc123'},
                     follow=True)
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'This is a protected page')
-                self.assertContains(response, 'Username is %s' % user.email)
+                self.assertContains(response, f'Username is {user.email}')
 
                 # logout for the next user
                 response = client.get(reverse('logout'))
@@ -283,9 +296,8 @@ class AuthTestCase(TestCase):
                 self.assertContains(response, 'This is a logout page')
 
     def test_create_user_with_case_alternated_existing_username_should_fail(self):
-        username = self.user1.email.split('@')[0]
-        username = ''.join([x.lower() if i%3 else x.upper() for i,x in enumerate(username)])
-        user = User(email='%s@example.com' % username)
+        email_mixed_case = _random_email_case(self.user1.email)
+        user = User(email=email_mixed_case)
         self.assertRaises(IntegrityError, user.save)
 
     def test_email_uniqueness_validation(self):
