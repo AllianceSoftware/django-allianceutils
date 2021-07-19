@@ -3,6 +3,7 @@ from io import StringIO
 
 from django.apps import apps
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.test import override_settings
 from django.test import SimpleTestCase
 from django.test import TransactionTestCase
 from django.utils.translation import gettext_lazy
@@ -421,14 +422,35 @@ class CamelCaseTestCase(TransactionTestCase):
             self.assertEqual(underscoreize(test_in, ignore), test_out)
 
 
+@override_settings(
+    INSTALLED_APPS=(
+        'allianceutils',  # first party
+        'test_allianceutils',  # first party
+        'test_allianceutils.tests.isort_force_thirdparty', # first party but overridden in isort config to be third party
+        'test_allianceutils.tests.isort_default_app_config', # first party but overridden in isort config to be third party
+        'django.contrib.sessions', # third party
+    ),
+)
 class IsortTestCase(SimpleTestCase):
-
     def test_get_firstparty_apps(self):
-        self.assertEqual(list(get_firstparty_apps()), [apps.get_app_config("allianceutils")])
+        actual = list(get_firstparty_apps())
+        expected = [
+            apps.get_app_config("allianceutils"),
+            apps.get_app_config("test_allianceutils"),
+            apps.get_app_config("isort_default_app_config"),
+        ]
+        # despite the name, assertCountEqual() also checks unordered contents
+        self.assertCountEqual(actual, expected)
 
     def test_is_firstparty_app(self):
         allianceutils_app = apps.get_app_config("allianceutils")
+        test_allianceutils_app = apps.get_app_config("test_allianceutils")
+        default_app_config = apps.get_app_config("isort_default_app_config")
+        forced_thirdparty = apps.get_app_config("isort_force_thirdparty")
         sessions_app = apps.get_app_config("sessions")
         self.assertTrue(is_firstparty_app(allianceutils_app))
+        self.assertTrue(is_firstparty_app(test_allianceutils_app))
+        self.assertTrue(is_firstparty_app(default_app_config))
+        self.assertFalse(is_firstparty_app(forced_thirdparty))
         self.assertFalse(is_firstparty_app(sessions_app))
 

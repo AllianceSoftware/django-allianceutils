@@ -828,6 +828,27 @@ output_tree == {
     * `zoo_foo99_bar` is okay
     * `zoo_foo_99bar` will result in an irreversible transformation (`zooFoo99bar` => `zoo_foo99_bar`) 
 
+#### get_firstparty_apps
+
+`util.get_firstparty_apps` can be used to retrieve app_configs considered to be first party, ie, all that does not come from a third party package.
+This is beneficial when you want to write your own checks by excluding things you dont really care - a sample usage can be found inside 'checks.py', or
+used as such:
+
+```python
+
+from allianceutils.util import get_firstparty_apps
+
+app_configs = get_firstparty_apps()
+models_to_be_checked = {}
+
+for app_config in app_configs:
+    models_to_be_checked.update({
+        model._meta.label: model
+        for model
+        in app_config.get_models()
+    })
+```
+
 #### python_to_django_date_format
 
 * Converts a python [strftime/strptime](https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior) datetime format string into a [django template/PHP](https://docs.djangoproject.com/en/dev/ref/templates/builtins/#std:templatefilter-date) date format string
@@ -856,27 +877,6 @@ def generate_number():
     self.card_number = card_number
     super().save(*args, **kwargs)
 retry_fn(generate_number, (IntegrityError, ), 10)
-```
-
-#### get_firstparty_apps
-
-`util.get_firstparty_apps` can be used to retrieve app_configs considered to be first party, ie, all that does not come from a third party package.
-This is beneficial when you want to write your own checks by excluding things you dont really care - a sample usage can be found inside 'checks.py', or
-used as such:
-
-```python
-
-from allianceutils.util import get_firstparty_apps
-
-app_configs = get_firstparty_apps()
-models_to_be_checked = {}
-
-for app_config in app_configs:
-    models_to_be_checked.update({
-        model._meta.label: model
-        for model
-        in app_config.get_models()
-    })
 ```
 
 ## Experimental
