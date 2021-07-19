@@ -17,6 +17,12 @@ class CheckDBConstraintA(models.Model):
                 '😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀___aaaa': 'check (bar = baz)',
             }
 
+        constraints = [
+            models.CheckConstraint(check=models.Q(bar=models.F('baz')), name='native_bar_equal_baz__aaaaaaaaaa__bbbbbbbbbb__cccccccccc__dddddddddd__eeeeeeeeee'),
+            models.CheckConstraint(check=models.Q(bar=models.F('baz')), name='native_😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀___aaaa'),
+            models.CheckConstraint(check=models.Q(bar=models.F('baz')), name='shared_😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀___aaaa'),
+        ]
+
 
 class CheckDBConstraintB(models.Model):
     bar = models.IntegerField()
@@ -29,3 +35,8 @@ class CheckDBConstraintB(models.Model):
                 '😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀___bbbb': 'check (bar = baz)',
                 'shared_😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀___bbbb': 'check (bar = baz)',
             }
+
+        constraints = [
+            models.CheckConstraint(check=models.Q(bar=models.F('baz')), name='native_bar_equal_baz__aaaaaaaaaa__bbbbbbbbbb__cccccccccc__dddddddddd__xxxxxxxxxx'),
+            models.CheckConstraint(check=models.Q(bar=models.F('baz')), name='native_😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀___bbbb'),
+        ]
