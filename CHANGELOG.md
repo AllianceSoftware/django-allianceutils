@@ -42,7 +42,7 @@ so make sure you follow the template
 * `GenericUserProfile.normalize_email` can now be overridden on child classes and will work as expected
 
 ### Breaking Changes
-* Drop support for django 2.2
+* Drop support for django 1.11
 * Drop support for isort 4
 
 ## 1.2.0 2021-06-11
