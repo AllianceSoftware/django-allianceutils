@@ -22,9 +22,7 @@ class UserManager(allianceutils.auth.models.GenericUserProfileManagerMixin, auth
 
     def create_user(self, email, password=None, is_staff=False, **kwargs):
         email = self.normalize_email(email)
-        user = self.model(email=email,
-            # is_staff=is_staff,
-            **kwargs)
+        user = self.model(email=email, is_staff=is_staff, **kwargs)
         user.set_password(password)
         user.save(using=self._db)
         return user
