@@ -56,7 +56,7 @@ def run_queries(request: HttpRequest, **kwargs) -> HttpRequest:
 
     if throw_exception:
         # note that django test client only handles some exceptions:
-        # https://docs.djangoproject.com/en/dev/topics/testing/tools/#exceptions
+        # https://docs.djangoproject.com/en/stable/topics/testing/tools/#exceptions
         raise PermissionDenied('throw_exception is True')
 
     return HttpResponse('Ran {count} queries')
