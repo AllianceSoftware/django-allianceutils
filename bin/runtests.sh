@@ -1,5 +1,6 @@
 #!/bin/bash
 set -o errexit
+set -o nounset
 set -o pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
@@ -13,7 +14,15 @@ if [[ $TOX_ENV_RE != "" ]] ; then
 		exit 1
 	fi
 	# this will find every tox environment matching TOX_ENV_RE and will run that
-	args+=( -e "$( tox --listenvs | egrep "$TOX_ENV_RE" | tr '\n' ',' | sed -E 's/,$//' )" )
+
+	envs=$( tox --listenvs | { egrep "$TOX_ENV_RE" || true ; } | tr '\n' ',' | sed -E 's/,$//' )
+
+	if [[ $envs = "" ]] ; then
+		echo "Skipping; TOX_ENV_RE does not match any tox environments"
+		exit
+	fi
+
+	args+=( -e "$envs" )
 fi
 
 set -x
