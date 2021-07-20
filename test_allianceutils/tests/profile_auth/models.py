@@ -13,7 +13,6 @@ class UserManager(allianceutils.auth.models.GenericUserProfileManagerMixin, auth
     def get_by_natural_key(self, username: str) -> models.Model:
         username = self.normalize_email(username)
         return super().get_by_natural_key(username)
-        return self.get(**{self.model.USERNAME_FIELD: username})
 
     def create_superuser(self, **kwargs):
         user = self.create_user(is_staff=True, is_superuser=True, **kwargs)
