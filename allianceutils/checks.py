@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 from typing import Dict
 from typing import Iterable
+from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Type
@@ -13,6 +14,7 @@ from typing import Union
 from django.apps import apps
 from django.apps.config import AppConfig
 from django.conf import settings
+from django.core.checks import CheckMessage
 from django.core.checks import Error
 from django.core.checks import Info
 from django.core.checks import Warning
@@ -87,11 +89,11 @@ class CheckUrlTrailingSlash:
     expect_trailing_slash: bool
     ignore_attrs: Mapping[str, Iterable[str]]
 
-    def __init__(self, expect_trailing_slash: bool, ignore_attrs: Mapping[str, Iterable[str]]={}):
+    def __init__(self, expect_trailing_slash: bool, ignore_attrs: Mapping[str, Iterable[str]] = {}):
         self.expect_trailing_slash = expect_trailing_slash
         self.ignore_attrs = ignore_attrs
 
-    def __call__(self, app_configs: Iterable[AppConfig], **kwargs):
+    def __call__(self, app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
         # We ignore app_configs; so does django core check_url_settings()
         # Consider where ROOT_URLCONF points app A urlpatterns which include() app B urlpatterns
         # which define a URL to view in app C -- which app was the one that owned the URL?
@@ -109,8 +111,8 @@ class CheckUrlTrailingSlash:
         }
         _ignore_attrs.update(self.ignore_attrs)
 
-        def check_resolver(resolver: URLResolver, depth: int=0):
-            warnings = []
+        def check_resolver(resolver: URLResolver, depth: int = 0) -> List[CheckMessage]:
+            messages = []
             for url_pattern in resolver.url_patterns:
 
                 # look
@@ -135,7 +137,7 @@ class CheckUrlTrailingSlash:
 
                 if hasattr(url_pattern, 'url_patterns'):
                     # is a resolver, not a pattern: recurse
-                    warnings.extend(check_resolver(url_pattern, depth+1))
+                    messages.extend(check_resolver(url_pattern, depth+1))
 
                 elif regex_pattern.endswith('/$') != self.expect_trailing_slash:
                     try:
@@ -145,7 +147,7 @@ class CheckUrlTrailingSlash:
                         # django <2.0 regex urls
                         description = url_pattern.describe()
 
-                    warnings.append(
+                    messages.append(
                         Warning(
                             f'The URL pattern {description} is inconsistent with expect_trailing_slash',
                             obj=url_pattern,
@@ -153,12 +155,12 @@ class CheckUrlTrailingSlash:
                         )
                     )
 
-            return warnings
+            return messages
 
         return check_resolver(get_resolver())
 
 
-def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs):
+def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
     git_path = Path(settings.PROJECT_DIR, '.git')
 
     # handle the case where .git is a file rather than a directory
@@ -168,12 +170,12 @@ def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs):
     except OSError:
         pass
 
-    warnings = []
+    messages = []
 
     if not git_path.exists():
         if settings.DEBUG:
             # If in dev mode then there should be a .git dir
-            warnings.append(
+            messages.append(
                 Warning(
                     "DEBUG is true but can't find a .git dir; are you trying to use DEBUG in production?",
                     obj=git_path,
@@ -201,7 +203,7 @@ def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs):
 
         if not found_installed_hooks:
             (warning_type, warning_id) = (Error, ID_ERROR_GIT_HOOKS) if settings.DEBUG else (Warning, ID_WARNING_GIT_HOOKS)
-            warnings.append(
+            messages.append(
                 warning_type(
                     "git hooks are not configured (husky should be installed or .git/hooks should be a symlink to the git-hooks directory)",
                     obj=git_hooks_path,
@@ -209,24 +211,24 @@ def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs):
                 )
             )
 
-    return warnings
+    return messages
 
 
-def check_admins(app_configs: Iterable[AppConfig], **kwargs):
-    errors = []
+def check_admins(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
+    messages = []
     if not settings.AUTOMATED_TESTS and not settings.DEBUG:
         if len(settings.ADMINS) == 0:
-            errors.append(
+            messages.append(
                 Error(
                     "settings.ADMINS should not be empty",
                     obj='settings',
                     id=ID_ERROR_ADMINS,
                 )
             )
-    return errors
+    return messages
 
 
-def check_db_constraints(app_configs: Iterable[AppConfig], **kwargs):
+def check_db_constraints(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
     """
     If using django-db-constraints, constraint identifiers can be supplied
     that are longer than the max identifier length for Postgres
@@ -256,14 +258,14 @@ def check_db_constraints(app_configs: Iterable[AppConfig], **kwargs):
                 for constraint_name in model._meta.db_constraints.keys():
                     known_constraints[_truncate_constraint_name(constraint_name)].append((model, constraint_name))
 
-    errors = []
+    messages = []
     for truncated_name, model_constraints in known_constraints.items():
         if len(model_constraints) == 1:
             continue
         _models = [f'{model._meta.app_label}.{model.__name__}' for model, _ in model_constraints]
         models_string = ', '.join(_models)
         for _model, constraint_name in model_constraints:
-            errors.append(
+            messages.append(
                 Error(
                     f'{_model._meta.label} constraint {constraint_name} is not unique',
                     hint='Constraint truncates to ' + truncated_name.decode('utf-8', 'replace'),
@@ -272,16 +274,16 @@ def check_db_constraints(app_configs: Iterable[AppConfig], **kwargs):
                 )
             )
 
-    return errors
+    return messages
 
 
-def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: bool) -> Iterable[Type[Error]]:
+def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: bool) -> List[CheckMessage]:
     """
     Use an ast to check if a model has the db_table meta option set.
     This is done this way because a model instance's db_table is always
     populated even if with that of the default.
     """
-    errors = []
+    messages = []
     found = None
     try:
         source = inspect.getsource(model)
@@ -290,14 +292,13 @@ def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: 
         # (eg this happens with audit models)
         message = f"Can't get source for {model.__name__}"
         # warnings.warn(message)
-        errors.append(Info(
+        messages.append(Info(
             message,
             hint="Dynamically generated model source code can't be introspected",
             obj=model,
             id=ID_INFO_EXPLICIT_TABLE_NAME_LOWERCASE,
         ))
-        #print(f"Cant get source for {model.__name__}")
-        return errors
+        return messages
     tree = ast.parse(source)
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef) and node.name == 'Meta':
@@ -314,7 +315,7 @@ def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: 
                             found = True
                         break
     if not found:
-        errors.append(
+        messages.append(
             Error(
                 'Explicit table name required',
                 hint=f'Add db_table setting to {model._meta.label} model Meta',
@@ -323,7 +324,7 @@ def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: 
             )
         )
     elif enforce_lowercase and hasattr(found, "islower") and not found.islower():
-        errors.append(
+        messages.append(
             Error(
                 'Table names must be lowercase',
                 hint=f'Check db_table setting for {model._meta.label}',
@@ -332,7 +333,7 @@ def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: 
             )
         )
 
-    return errors
+    return messages
 
 
 DEFAULT_TABLE_NAME_CHECK_IGNORE = [
@@ -356,16 +357,16 @@ class CheckExplicitTableNames:
         self.ignore_labels = ignore_labels
         self.enforce_lowercase = enforce_lowercase
 
-    def __call__(self, app_configs: Iterable[AppConfig], **kwargs):
+    def __call__(self, app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
         """
         Warn when models don't have Meta's db_table_name set in apps that require it.
         """
         candidate_models = find_candidate_models(app_configs, self.ignore_labels)
 
-        errors = []
+        messages = []
         for model in candidate_models.values():
-            errors += _check_explicit_table_names_on_model(model, self.enforce_lowercase)
-        return errors
+            messages += _check_explicit_table_names_on_model(model, self.enforce_lowercase)
+        return messages
 
 
 class CheckReversibleFieldNames:
@@ -381,7 +382,7 @@ class CheckReversibleFieldNames:
             errors += self._check_field_names_on_model(model)
         return errors
 
-    def _check_field_names_on_model(self, model: Type[Model]) -> Iterable[Type[Error]]:
+    def _check_field_names_on_model(self, model: Type[Model]) -> List[CheckMessage]:
         """
         check whether field names on model are legit
 
@@ -391,14 +392,14 @@ class CheckReversibleFieldNames:
 
         """
 
-        errors = []
+        messages = []
 
         for field in model._meta.fields:
             if camel_to_underscore(underscore_to_camel(field.name)) != field.name:
                 hint = None
                 if re.search(r'_[0-9]', field.name):
                     hint = f'Underscore before a number in {model._meta.label}.{field.name}'
-                errors.append(
+                messages.append(
                     Error(
                         "Field name is not reversible with underscore_to_camel()/camel_to_underscore()",
                         hint=hint,
@@ -407,4 +408,4 @@ class CheckReversibleFieldNames:
                     )
                 )
 
-        return errors
+        return messages
