@@ -5,11 +5,14 @@ set -o pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-args=("$@")
-
 # TOX_ENV_RE is set on CI to filter the default environment list
-if [[ $TOX_ENV_RE != "" ]] ; then
-	if [[ "${#args[@]}" -gt 0 ]] ; then
+if [[ ${TOX_ENV_RE:-} = "" ]] ; then
+	# The empty string is to work around this:
+	# https://stackoverflow.com/questions/7577052/bash-empty-array-expansion-with-set-u/61551944
+	args=( "$@" "" )
+
+else
+	if [[ $# -gt 0 ]] ; then
 		echo "TOX_ENV_RE and command line arguments are not compatible" >&2
 		exit 1
 	fi
@@ -22,7 +25,7 @@ if [[ $TOX_ENV_RE != "" ]] ; then
 		exit
 	fi
 
-	args+=( -e "$envs" )
+	args=( "$@" -e "$envs" )
 fi
 
 set -x
