@@ -1,7 +1,12 @@
+try:
+    import rest_framework
+except ImportError:
+    import unittest
+    raise unittest.SkipTest("djangorestframework is not installed")
+
 from decimal import Decimal
 from typing import Optional
 from typing import Set
-from unittest import skip
 
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import Permission

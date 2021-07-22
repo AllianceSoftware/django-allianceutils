@@ -1,6 +1,5 @@
 from typing import Optional
 
-from authtools.backends import CaseInsensitiveUsernameFieldBackendMixin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.db.models import Model
@@ -58,7 +57,18 @@ class MinimalModelBackend:
         return False
 
 
-class ProfileModelBackend(
-    ProfileModelBackendMixin, CaseInsensitiveUsernameFieldBackendMixin, MinimalModelBackend
-):
+try:
+    from authtools.backends import CaseInsensitiveUsernameFieldBackendMixin
+except ImportError:
+    # no authtools present
+    #
+    # we could just remove CaseInsensitiveUsernameFieldBackendMixin from ProfileModelBackend but that
+    # would mean devs who do an upgrade without reading the release notes would not notice that behaviour
+    # had changed and would get unexpected silent failures. Is safer to remove this to force them to
+    # deal with the issue
     pass
+else:
+    class ProfileModelBackend(
+        ProfileModelBackendMixin, CaseInsensitiveUsernameFieldBackendMixin, MinimalModelBackend
+    ):
+        pass

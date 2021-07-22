@@ -26,6 +26,12 @@ A collection of utilities for django projects from [Alliance Software](https://w
 
 `pip install django-allianceutils`
 
+## System Requirements
+
+* Tested with django 2.2 and 3.2
+  * Pull requests accepted for other versions, but at minimum we test against current LTS versions
+* Python >=3.6 (no python 3.5 support)
+
 ## Usage
 
 ### API
@@ -72,7 +78,7 @@ class UserSerializer(SerializerOptInFieldsMixin, ModelSerializer):
 
 * Creates permissions that have no model by linking them to an empty content type
 * Django creates permissions as part of
-  the [`post_migrate` signal](https://docs.djangoproject.com/en/dev/ref/signals/#post-migrate)
+  the [`post_migrate` signal](https://docs.djangoproject.com/en/stable/ref/signals/#post-migrate)
 
 Usage
 
@@ -90,7 +96,7 @@ Differs from just DRF's [DjangoObjectPermissions](https://www.django-rest-framew
 * uses the same permission for every request http method and ViewSet method 
 
 Notes
-* The default django permissions system will [always return False](https://docs.djangoproject.com/en/dev/topics/auth/customizing/#handling-object-permissions) if given an object; you must be using another permissions backend
+* The default django permissions system will [always return False](https://docs.djangoproject.com/en/stable/topics/auth/customizing/#handling-object-permissions) if given an object; you must be using another permissions backend
 * As per [DRF documentation](http://www.django-rest-framework.org/api-guide/permissions/#object-level-permissions): get_object() is only required if you want to implement object-level permissions
 * **WARNING** If you override `get_object()` then you need to *manually* invoke `self.check_object_permissions(self.request, obj)`
 * Will attempt to check permission both globally and on a per-object basis but considers it an error if the check returns True for both
@@ -217,21 +223,29 @@ setting or on a ViewSet on the `renderer_classes` property.
 #### MinimalModelBackend
 
 * `allianceutils.auth.backends.MinimalModelBackend`
-    * Replaces the built-in django [ModelBackend](https://docs.djangoproject.com/en/dev/ref/contrib/auth/#django.contrib.auth.backends.ModelBackend)
+    * Replaces the built-in django [ModelBackend](https://docs.djangoproject.com/en/stable/ref/contrib/auth/#django.contrib.auth.backends.ModelBackend)
     * Provides django model-based authentication
     * Removes the default authorization (permissions checks) except for checking `is_superuser` 
 
 #### ProfileModelBackend
 
 * Backends for use with [GenericUserProfile](#GenericUserProfile); see code examples there
-* `allianceutils.auth.backends.ProfileModelBackendMixin` - in combo with [AuthenticationMiddleware](https://docs.djangoproject.com/en/dev/ref/middleware/#django.contrib.auth.middleware.AuthenticationMiddleware) will set user profiles on `request.user`  
-    * `allianceutils.auth.backends.ProfileModelBackend` - convenience class combined with case insensitive username & default django permissions backend 
+* `allianceutils.auth.backends.ProfileModelBackendMixin` - in combo with [AuthenticationMiddleware](https://docs.djangoproject.com/en/stable/ref/middleware/#django.contrib.auth.middleware.AuthenticationMiddleware) will set user profiles on `request.user`  
+    * ~`allianceutils.auth.backends.ProfileModelBackend`~ - convenience class combined with case insensitive username & default django permissions backend
+        * this depended on [`authtools`](https://django-authtools.readthedocs.io/en/latest/) which appears to have been
+          abandoned and does not work with django >= 3.
+          If using django 3 then we recommended that you create your own backend in your app:
+          ```python
+            class ProfileModelBackend(ProfileModelBackendMixin, MinimalModelBackend):
+                # you'll need to implement case insensitivity either here or in the User Model  
+                pass
+          ```
 
 ### Decorators
 
 #### gzip_page_ajax
 
-* Smarter version of django's [gzip_page](https://docs.djangoproject.com/en/dev/topics/http/decorators/#django.views.decorators.gzip.gzip_page):
+* Smarter version of django's [gzip_page](https://docs.djangoproject.com/en/stable/topics/http/decorators/#django.views.decorators.gzip.gzip_page):
     * If settings.DEBUG not set, will always gzip
     * If settings.DEBUG set, will gzip only if request is an ajax request
 * This allows you to use django-debug-toolbar in DEBUG mode (if you gzip a response then the debug toolbar middleware won't run)
@@ -394,8 +408,10 @@ urlpatterns += router.urls
 * Checks that all first-party models have `db_table` explicitly defined on their Meta class, and the table name is in lowercase
 * Arguments:
     * `enforce_lowercase` - check that there are no uppercase characters in the table name
-    * `ignore_labels` - app labels (eg `silk`) or app_label + model labels (eg `silk.request`) to ignore.
+    * `ignore_labels` - if an app label (eg `silk`) or app_label + model labels (eg `silk.request`)
+        matches something in `ignore_labels` then it will be ignored.
         * `allianceutils.checks.DEFAULT_TABLE_NAME_CHECK_IGNORE` contains a default list of apps/models to ignore
+        * Can be either a `str` or a regex (anything that contains a `.match()` method) 
 
 ##### CheckReversibleFieldNames
 
@@ -486,7 +502,7 @@ class Migration(migrations.Migration):
 
 * A model that blocks deletes in django
     * Can still be deleted with manual queries
-* Read django docs about [manager inheritance](https://docs.djangoproject.com/en/dev/topics/db/managers/#custom-managers-and-model-inheritance)
+* Read django docs about [manager inheritance](https://docs.djangoproject.com/en/stable/topics/db/managers/#custom-managers-and-model-inheritance)
     * If you wish add your own manager, you need to combine the querysets:
 
 ```python
@@ -592,7 +608,7 @@ def my_view(request):
 #### raise_validation_errors
 
 * The `raise_validation_errors` context manager enables cleaner code for constructing validation
-    * [Django documentation](https://docs.djangoproject.com/en/dev/ref/models/instances/#django.db.models.Model.clean) recommends raising a `ValidationError` when you encounter a problem
+    * [Django documentation](https://docs.djangoproject.com/en/stable/ref/models/instances/#django.db.models.Model.clean) recommends raising a `ValidationError` when you encounter a problem
     * This creates a poor user experience if there are multiple errors: the user only sees the first error and has to resubmit a form multiple times to fix problems
 * `raise_validation_errors` accepts an (optional) function to wrap
     * The context manager returns a `ValidationError` subclass with an `add_error` function that follows the same rules as `django.forms.forms.BaseForm.add_error`
@@ -773,6 +789,25 @@ SERIALIZATION_MODULES = {
 
 ### Util
 
+#### add_autoreload_extra_files
+
+* Adds files to the autoreloader watch list
+    * Works with both the built-in [`runserver`](https://docs.djangoproject.com/en/stable/ref/django-admin/#runserver)
+      and [`runserver_plus`](https://django-extensions.readthedocs.io/en/latest/runserver_plus.html) from `django-extensions`
+    * If `DEBUG` is not enabled then this will do nothing
+    * This should be called from inside the
+      [`ready()`](https://docs.djangoproject.com/en/stable/ref/applications/#django.apps.AppConfig.ready) method of
+      an [`AppConfig`](https://docs.djangoproject.com/en/stable/ref/applications/#configuring-applications) 
+  
+```python
+class MyAppConfig(AppConfig):
+    def ready(self):
+        extra_files = [
+          "/data/file.csv",
+        ]
+        add_autoreload_extra_files(extra_files)
+```
+
 #### camelize
 
 * Better version of [djangorestframework-camel-case](https://github.com/vbabiy/djangorestframework-camel-case)
@@ -820,9 +855,30 @@ output_tree == {
     * `zoo_foo99_bar` is okay
     * `zoo_foo_99bar` will result in an irreversible transformation (`zooFoo99bar` => `zoo_foo99_bar`) 
 
+#### get_firstparty_apps
+
+`util.get_firstparty_apps` can be used to retrieve app_configs considered to be first party, ie, all that does not come from a third party package.
+This is beneficial when you want to write your own checks by excluding things you dont really care - a sample usage can be found inside 'checks.py', or
+used as such:
+
+```python
+
+from allianceutils.util import get_firstparty_apps
+
+app_configs = get_firstparty_apps()
+models_to_be_checked = {}
+
+for app_config in app_configs:
+    models_to_be_checked.update({
+        model._meta.label: model
+        for model
+        in app_config.get_models()
+    })
+```
+
 #### python_to_django_date_format
 
-* Converts a python [strftime/strptime](https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior) datetime format string into a [django template/PHP](https://docs.djangoproject.com/en/dev/ref/templates/builtins/#std:templatefilter-date) date format string
+* Converts a python [strftime/strptime](https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior) datetime format string into a [django template/PHP](https://docs.djangoproject.com/en/stable/ref/templates/builtins/#std:templatefilter-date) date format string
 * Codes with no equivalent will be dropped
 
 Example:
@@ -848,27 +904,6 @@ def generate_number():
     self.card_number = card_number
     super().save(*args, **kwargs)
 retry_fn(generate_number, (IntegrityError, ), 10)
-```
-
-#### get_firstparty_apps
-
-`util.get_firstparty_apps` can be used to retrieve app_configs considered to be first party, ie, all that does not come from a third party package.
-This is beneficial when you want to write your own checks by excluding things you dont really care - a sample usage can be found inside 'checks.py', or
-used as such:
-
-```python
-
-from allianceutils.util import get_firstparty_apps
-
-app_configs = get_firstparty_apps()
-models_to_be_checked = {}
-
-for app_config in app_configs:
-    models_to_be_checked.update({
-        model._meta.label: model
-        for model
-        in app_config.get_models()
-    })
 ```
 
 ## Experimental

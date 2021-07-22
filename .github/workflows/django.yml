@@ -1,3 +1,4 @@
+# syntax can be found at https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
 name: Django CI
 
 on: [push, pull_request]
@@ -9,11 +10,12 @@ jobs:
     strategy:
       fail-fast: false
       # the combinations can run in parallel by adjusting this value
-      max-parallel: 2
+      max-parallel: 20
       # all combinations of the matrix choices below are combined to create jobs. The max combinations is 256
+      # Note that the TOX_ENV_RE regex is then used to filter these combinations
+      # to those that are listed in tox.ini
       matrix:
-        python-version: ['36', '37', '38']
-        django-version: ['22']
+        python-version: ['36', '37', '38', '39']
         database-type: ['postgresql', 'mysql']
 
     services:
@@ -36,7 +38,9 @@ jobs:
           POSTGRES_HOST: localhost
 
       mysql:
-        image: mysql
+        # mysql 8.0 validates constraint lengths; if you update this then you
+        # will need to adjust the checks_db_constraints test cases
+        image: mysql:5.7
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
           MYSQL_ROOT_PASSWORD: password
@@ -69,18 +73,24 @@ jobs:
         with:
           python-version: 3.8
 
+      - name: Set up Python 3.9
+        if: ${{ matrix.python-version == '39' }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
       - name: Install Python Packages
         run: |
           python -m pip install --upgrade pip
           pip install tox tox-factor
 
       # postgres tests
-      - name: Run PostgreSQL Tests (py${{ matrix.python-version }}/django${{ matrix.django-version }})
+      - name: Run PostgreSQL Tests with   py${{ matrix.python-version }}
         if: ${{ matrix.database-type == 'postgresql' }}
         run: bin/runtests.sh
         env:
           CI_SERVER: yes
-          TOX_ENV_RE: py${{ matrix.python-version }}-django${{ matrix.django-version }}-.*postgres
+          TOX_ENV_RE: py${{ matrix.python-version }}-.*${{ matrix.database-type }}
           DB_HOST: localhost
           DB_PORT: ${{ job.services.postgresql.ports[5432] }}
           DB_USER: postgres
@@ -92,12 +102,12 @@ jobs:
         if: ${{ matrix.database-type == 'mysql' }}
         run: sudo /etc/init.d/mysql start
 
-      - name: Run MySQL Tests (py${{ matrix.python-version }}/django${{ matrix.django-version }})
+      - name: Run MySQL Tests with py${{ matrix.python-version }}
         if: ${{ matrix.database-type == 'mysql' }}
         run: bin/runtests.sh
         env:
           CI_SERVER: yes
-          TOX_ENV_RE: py${{ matrix.python-version }}-django${{ matrix.django-version }}-.*mysql
+          TOX_ENV_RE: py${{ matrix.python-version }}-.*${{ matrix.database-type }}
           DB_HOST: 127.0.0.1
           DB_PORT: ${{ job.services.mysql.ports[3306] }}
           DB_USER: root

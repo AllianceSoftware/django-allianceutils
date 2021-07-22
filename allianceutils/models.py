@@ -29,7 +29,7 @@ def combine_querysets_as_manager(*queryset_classes: List[QuerySet]) -> Manager:
 
 class NoDeleteQuerySet(QuerySet):
     def delete(self, force: bool=False):
-        raise IntegrityError("Instances of model '%s' are marked as undeletable" % self.__class__.__name__)
+        raise IntegrityError(f"Instances of model '{self.__class__.__name__}' are marked as undeletable")
 
 
 class NoDeleteModel(Model):
@@ -37,7 +37,7 @@ class NoDeleteModel(Model):
     A model that cannot be deleted.
 
     Note that this is an abstract Model, please read
-    https://docs.djangoproject.com/en/1.11/topics/db/managers/#custom-managers-and-model-inheritance
+    https://docs.djangoproject.com/en/stable/topics/db/managers/#custom-managers-and-model-inheritance
 
     If you wish to override the default manager, you need to combine the queryset like so:
 
@@ -49,7 +49,7 @@ class NoDeleteModel(Model):
     objects = Manager.from_queryset(NoDeleteQuerySet)
 
     def delete(self, *args, **kwargs):
-        raise IntegrityError("Instances of model '%s' are marked as undeletable" % self.__class__.__name__)
+        raise IntegrityError(f"Instances of model '{self.__class__.__name__}' are marked as undeletable")
 
     class Meta:
         abstract = True

@@ -8,7 +8,7 @@ def has_perm(perm, obj=None):
     :param perm: permission to check
     :return: django_rules predicate
     """
-    name = 'has_perm:%s' % perm
+    name = f'has_perm:{perm}'
 
     @rules.predicates.predicate(name)
     def check(user):
@@ -24,7 +24,7 @@ def has_perms(perms, obj=None):
     :param perms: permissions to check
     :return: django_rules predicate
     """
-    name = 'has_perms:%s' % ','.join(perms)
+    name = 'has_perms:' + ','.join(perms)
 
     @rules.predicates.predicate(name)
     def check(user):
@@ -40,7 +40,7 @@ def has_any_perms(perms, obj=None):
     :param *perms: permissions to check
     :return: django_rules predicate
     """
-    name = 'has_any_perms:%s' % ','.join(perms)
+    name = 'has_any_perms:' + ','.join(perms)
 
     @rules.predicates.predicate(name)
     def check(user):

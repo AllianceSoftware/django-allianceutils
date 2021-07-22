@@ -50,19 +50,19 @@ class ValidationErrorCase(SimpleTestCase):
 
         for i, (is_empty, message) in enumerate(test_cases):
             ve = _ExtendedValidationError(message)
-            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: %s' % repr(message))
+            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: ' + repr(message))
 
             ve = _ExtendedValidationError(ValidationError(message))
-            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: %s' % repr(message))
+            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: ' + repr(message))
 
             ve = _ExtendedValidationError(_ExtendedValidationError(message))
-            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: %s' % repr(message))
+            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: ' + repr(message))
 
             ve = _ExtendedValidationError(ValidationError(ValidationError(message)))
-            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: %s' % repr(message))
+            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: ' + repr(message))
 
             ve = _ExtendedValidationError(_ExtendedValidationError(_ExtendedValidationError(message)))
-            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: %s' % repr(message))
+            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: ' + repr(message))
 
     def test_merge(self):
         """

@@ -129,8 +129,8 @@ def _validate_related_profile_tables(model: Type[Model], manager_name: str):
     # app_name, model_name = model._meta.app_label, model._meta.model_name
     # print('validating %s.%s' % (app_name, model_name))
     if not getattr(model, 'related_profile_tables', None):
-        msg = 'A model with a GenericUserProfileManagerMixin (%s.%s) is missing a related_profile_tables definition' % \
-              (model.__name__, manager_name)
+        msg = f'A model with a GenericUserProfileManagerMixin ({model.__name__}.{manager_name}) ' \
+              'is missing a related_profile_tables definition'
         raise NotImplementedError(msg)
 
 
@@ -188,8 +188,8 @@ class GenericUserProfileManagerMixin(BaseUserManager):
         model = self.model
         if getattr(model, 'related_profile_tables') is None:
             errors.append(checks.Error(
-                "Model '%s' does not define related_profile_tables" % model._meta.label,
-                hint="Manager '%s' needs related_profile_tables" % self.name,
+                f"Model '{model._meta.label}' does not define related_profile_tables",
+                hint=f"Manager '{self.name}' needs related_profile_tables",
                 obj=self.model,
                 id=ID_ERROR_PROFILE_RELATED_TABLES,
             ))
@@ -245,15 +245,15 @@ class GenericUserProfile(Model):
         abstract = True
 
     @classmethod
-    def normalize_email(cls, email):
+    def normalize_email(cls, email: str) -> str:
         return email.lower()
 
     def clean(self):
-        if self.__class__._base_manager.filter(email=self.__class__.normalize_email(self.email)).exclude(pk=self.pk).exists():
+        if self.__class__._base_manager.filter(email=self.normalize_email(self.email)).exclude(pk=self.pk).exists():
             raise ValidationError({'email': 'Sorry, this email address is not available.'})
 
     def save(self, *args, **kwargs):
-        self.email = GenericUserProfile.normalize_email(self.email)
+        self.email = self.normalize_email(self.email)
         return super().save(*args, **kwargs)
 
     def get_profile(self) -> Model:

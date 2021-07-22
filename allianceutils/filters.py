@@ -32,7 +32,7 @@ class MultipleFieldCharFilter(filters.MethodFilter):
 
         method = self.get_method(qs)
         lookup = self.lookup_expr
-        clauses = [Q(**{'%s__%s' % (field_name, lookup): value}) for field_name in self.names]
+        clauses = [Q(**{f'{field_name}__{lookup}': value}) for field_name in self.names]
         qs = method(functools.reduce(OR, clauses))
 
         if self.distinct:
