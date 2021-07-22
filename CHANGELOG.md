@@ -26,7 +26,7 @@ so make sure you follow the template
 
 -->
 
-## 2.0.0.dev0 2021-xx-xx
+## 2.0.0 2021-07-22
 
 ### Added
 
