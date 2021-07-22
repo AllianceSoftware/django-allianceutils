@@ -10,13 +10,12 @@ jobs:
     strategy:
       fail-fast: false
       # the combinations can run in parallel by adjusting this value
-      max-parallel: 2
+      max-parallel: 20
       # all combinations of the matrix choices below are combined to create jobs. The max combinations is 256
       # Note that the TOX_ENV_RE regex is then used to filter these combinations
       # to those that are listed in tox.ini
       matrix:
         python-version: ['36', '37', '38', '39']
-        django-version: ['22', '32']
         database-type: ['postgresql', 'mysql']
 
     services:
@@ -86,12 +85,12 @@ jobs:
           pip install tox tox-factor
 
       # postgres tests
-      - name: Run PostgreSQL Tests (py${{ matrix.python-version }}/django${{ matrix.django-version }})
+      - name: Run PostgreSQL Tests with   py${{ matrix.python-version }}
         if: ${{ matrix.database-type == 'postgresql' }}
         run: bin/runtests.sh
         env:
           CI_SERVER: yes
-          TOX_ENV_RE: py${{ matrix.python-version }}-django${{ matrix.django-version }}-postgres
+          TOX_ENV_RE: py${{ matrix.python-version }}-.*${{ matrix.database-type }}
           DB_HOST: localhost
           DB_PORT: ${{ job.services.postgresql.ports[5432] }}
           DB_USER: postgres
@@ -103,12 +102,12 @@ jobs:
         if: ${{ matrix.database-type == 'mysql' }}
         run: sudo /etc/init.d/mysql start
 
-      - name: Run MySQL Tests (py${{ matrix.python-version }}/django${{ matrix.django-version }})
+      - name: Run MySQL Tests with py${{ matrix.python-version }}
         if: ${{ matrix.database-type == 'mysql' }}
         run: bin/runtests.sh
         env:
           CI_SERVER: yes
-          TOX_ENV_RE: py${{ matrix.python-version }}-django${{ matrix.django-version }}-mysql
+          TOX_ENV_RE: py${{ matrix.python-version }}-.*${{ matrix.database-type }}
           DB_HOST: 127.0.0.1
           DB_PORT: ${{ job.services.mysql.ports[3306] }}
           DB_USER: root
