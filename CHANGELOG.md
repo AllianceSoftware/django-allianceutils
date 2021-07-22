@@ -74,7 +74,7 @@ so make sure you follow the template
 * SerializerOptInFieldsMixin to control inclusion of expensive serializer fields.
 * Camel case JSON DRF renderers and parsers.
 
-## 1.0.0-rc2 2020-09-14
+## 1.0.0rc2 2020-09-14
 
 ### Breaking Changes
 

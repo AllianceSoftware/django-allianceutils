@@ -4,9 +4,10 @@ from pkg_resources import parse_version
 import re
 import subprocess
 
-# taken from https://semver.org/
-RE_VER = r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?'
+# taken from https://www.python.org/dev/peps/pep-0440/#appendix-b-parsing-version-strings-with-regular-expressions
+RE_VER = r'([1-9][0-9]*!)?(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*))*((a|b|rc)(0|[1-9][0-9]*))?(\.post(0|[1-9][0-9]*))?(\.dev(0|[1-9][0-9]*))?'
 
+version_header_re = re.compile(r"^##\s*(?P<ver>" + RE_VER + r")\s")
 # automatically detect the current version from the highest version in the changelog section of the README
 with (Path(__file__).parent.parent / "CHANGELOG.md").open("r") as f:
     file_contents = f.read()
@@ -17,7 +18,7 @@ with (Path(__file__).parent.parent / "CHANGELOG.md").open("r") as f:
     ver_string = "0"
     for line in file_contents.split("\n"):
         if line.startswith("## "):
-            match = re.match(r"^##\s*(?P<ver>" + RE_VER + r")\s", line)
+            match = version_header_re.match(line)
             if not match:
                 raise ValueError(f"!!Cannot interpret header in {repr(line)}")
             try:
