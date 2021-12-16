@@ -26,6 +26,12 @@ so make sure you follow the template
 
 -->
 
+## 2.1.0 2021-12-17
+
+### Fixed
+* Support new URL pattern adopted by django to resolve [CVE-2021-44420] (https://www.djangoproject.com/weblog/2021/dec/07/security-releases/) 
+* Add check class for configurable git path, update to handle hooksPath config for newer husky  
+
 ## 2.0.0 2021-07-22
 
 ### Added
