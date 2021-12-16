@@ -71,9 +71,9 @@ class TestUrls(SimpleTestCase):
         """
         errors = self.get_errors(expect_trailing_slash=True)
         expected = [
-            r'^noslash1$',
-            r'^noslash2$',
-            r'^noslash3$',
+            r'^noslash1\Z',
+            r'^noslash2\Z',
+            r'^noslash3\Z',
         ]
         if rest_framework:
             expected += [
@@ -89,8 +89,8 @@ class TestUrls(SimpleTestCase):
         """
         errors = self.get_errors(expect_trailing_slash=False)
         expected = [
-            r'^slash1/$',
-            r'^slash2/$',
+            r'^slash1/\Z',
+            r'^slash2/\Z',
         ]
         if rest_framework:
             expected += [
