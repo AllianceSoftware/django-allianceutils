@@ -129,7 +129,7 @@ class CheckUrlTrailingSlash:
                     # django <2.0 regex patterns
                     regex_pattern = url_pattern.regex.pattern
 
-                if regex_pattern == '^$':
+                if regex_pattern == r'^\Z' or regex_pattern == '^$':
                     # empty patterns are a special case; they may be nested inside an
                     # include(), if that's the case then we don't really care whether
                     # they do or don't have a slash
@@ -138,8 +138,7 @@ class CheckUrlTrailingSlash:
                 if hasattr(url_pattern, 'url_patterns'):
                     # is a resolver, not a pattern: recurse
                     messages.extend(check_resolver(url_pattern, depth+1))
-
-                elif regex_pattern.endswith('/$') != self.expect_trailing_slash:
+                elif (regex_pattern.endswith('/$') or regex_pattern.endswith(r'/\Z')) != self.expect_trailing_slash:
                     try:
                         # django 2.0+ simplified urls
                         description = url_pattern.pattern.describe()
