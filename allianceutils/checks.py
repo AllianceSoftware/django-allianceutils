@@ -3,6 +3,7 @@ from collections import defaultdict
 import inspect
 from pathlib import Path
 import re
+import subprocess
 from typing import Dict
 from typing import Iterable
 from typing import List
@@ -159,8 +160,25 @@ class CheckUrlTrailingSlash:
         return check_resolver(get_resolver())
 
 
+class CheckGitHooks:
+    git_path: Optional[Union[str, Path]] = None
+
+    def __init__(self, git_path: Optional[Union[str, Path]] = None):
+        self.git_path = Path(git_path) or get_default_git_path()
+
+    def __call__(self, app_configs: Iterable[AppConfig], **kwargs):
+        return _check_git_hooks(app_configs, self.git_path, **kwargs)
+
+
+def get_default_git_path() -> str:
+    return Path(settings.PROJECT_DIR, '.git')
+
+
 def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
-    git_path = Path(settings.PROJECT_DIR, '.git')
+    return _check_git_hooks(app_configs, git_path=get_default_git_path(), **kwargs)
+
+
+def _check_git_hooks(app_configs: Iterable[AppConfig], git_path: Path, **kwargs) -> List[CheckMessage]:
 
     # handle the case where .git is a file rather than a directory
     try:
@@ -185,7 +203,20 @@ def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMes
         # there is a .git dir:
         #   If dev then there must be a .git/hooks symlink
         #   If in prod then there should be a .git/hooks symlink if there is a .git dir
+
         git_hooks_path = Path(git_path, 'hooks')
+
+        # Check the git config for a hooksPath setting (now used by husky)
+        git_config_result = subprocess.run(
+            ["git", "config", "core.hooksPath"],
+            capture_output=True,
+            cwd=git_path,
+        )
+        if not git_config_result.returncode:
+            git_hooks_path = Path(git_config_result.stdout.decode('utf-8').strip('\n'))
+            if not git_hooks_path.is_absolute():
+                git_hooks_path = Path(settings.PROJECT_DIR) / git_hooks_path
+
         precommit = git_hooks_path / 'pre-commit'
 
         found_installed_hooks = False
@@ -195,7 +226,11 @@ def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMes
             try:
                 with precommit.open('r') as f:
                     first_two_lines = next(f), next(f)
-                    if first_two_lines == ('#!/bin/sh\n', '# husky\n'):
+                    husky_pre_commits = [
+                        ('#!/bin/sh\n', '# husky\n'),
+                        ('#!/bin/sh\n', '. "$(dirname "$0")/_/husky.sh"\n'),
+                    ]
+                    if first_two_lines in husky_pre_commits:
                         found_installed_hooks = True
             except (FileNotFoundError, StopIteration):
                 pass
