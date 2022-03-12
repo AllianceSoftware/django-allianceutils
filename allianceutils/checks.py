@@ -348,6 +348,15 @@ def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: 
                             # so we're just going to assume it's ok
                             found = True
                         break
+
+                    # Skip for unmanaged models
+                    elif (
+                        sub_node.targets[0].id == 'managed'
+                        and isinstance(sub_node.value, (ast.Constant))
+                        and sub_node.value.s == False
+                    ):
+                        found = True
+                        break
     if not found:
         messages.append(
             Error(
