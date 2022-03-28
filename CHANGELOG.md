@@ -26,6 +26,12 @@ so make sure you follow the template
 
 -->
 
+## 2.2.0 2022-03-28
+
+### Fixed
+
+* `CheckExplicitTableNames` will now skip unmanaged models to allow for cases where there is no table
+
 ## 2.1.0 2021-12-17
 
 ### Fixed
