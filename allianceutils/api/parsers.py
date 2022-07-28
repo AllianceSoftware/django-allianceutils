@@ -122,4 +122,4 @@ class CamelCaseMultiPartJSONParser(MultiPartParser):
                 data_and_files.data.get("jsonData"), object_pairs_hook=hook
             )
             return self.underscoreize(json_data)
-        return super().parse(stream, media_type, parser_context)
+        return data_and_files
