@@ -26,6 +26,12 @@ so make sure you follow the template
 
 -->
 
+## 2.2.x unreleased
+
+### Fixed
+
+* Resolve bug in `CamelCaseMultiPartJSONParser.parse` where if the `HTTP_X_MULTIPART_JSON` header is not set it tries to parse the stream a second time, which returns no data 
+
 ## 2.2.0 2022-03-28
 
 ### Fixed
