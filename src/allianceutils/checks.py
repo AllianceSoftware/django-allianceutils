@@ -47,6 +47,7 @@ ID_ERROR_EXPLICIT_TABLE_NAME = 'allianceutils.E009'
 ID_ERROR_EXPLICIT_TABLE_NAME_LOWERCASE = 'allianceutils.E010'
 ID_INFO_EXPLICIT_TABLE_NAME_LOWERCASE = 'allianceutils.I010'
 ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY = 'allianceutils.E011'
+ID_ERROR_MIDDLEWARE_DUPLICATED = 'allianceutils.E012'
 
 
 def find_candidate_models(
@@ -395,3 +396,18 @@ class CheckReversibleFieldNames:
                 )
 
         return messages
+
+
+def check_duplicated_middleware(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
+    messages = []
+    middlewares = settings.MIDDLEWARE
+    duplicates = set([x for x in middlewares if middlewares.count(x) > 1])
+    if len(duplicates):
+        messages.append(
+            Error(
+                f"{duplicates} had been included multiple times in your settings",
+                obj='settings',
+                id=ID_ERROR_MIDDLEWARE_DUPLICATED,
+            )
+        )
+    return messages

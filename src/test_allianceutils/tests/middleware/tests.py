@@ -105,6 +105,21 @@ class CurrentUserMiddlewareTestCase(TestCase):
         'django.contrib.auth.middleware.AuthenticationMiddleware',
         'allianceutils.middleware.CurrentUserMiddleware',
     ))
+    def test_exception_does_not_cause_a_current_user_throw(self):
+        self.client.login(username=self.username, password=self.password)
+        try:
+            # this should only cause a KeyError, not an AttributeError from middleware
+            # (which happens if the GLOBAL_USER check did not happen)
+            self.client.post(path=self.path).json()['abcd']
+        except KeyError:
+            pass
+
+
+    @override_settings(MIDDLEWARE=settings.MIDDLEWARE + (
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.contrib.auth.middleware.AuthenticationMiddleware',
+        'allianceutils.middleware.CurrentUserMiddleware',
+    ))
     def test_able_to_get_current_user_from_middleware_from_respective_threads(self):
         def create_user_and_login(client, count):
             client = Client()

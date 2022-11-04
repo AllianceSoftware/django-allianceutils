@@ -9,6 +9,7 @@ from django.http import HttpRequest
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.test.utils import CaptureQueriesContext
+from django.urls import reverse
 
 from allianceutils.middleware import QueryCountMiddleware
 

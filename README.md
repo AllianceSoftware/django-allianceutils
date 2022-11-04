@@ -369,6 +369,7 @@ from django.core.checks import Tags
 
 from allianceutils.checks import check_admins
 from allianceutils.checks import check_db_constraints
+from allianceutils.checks import check_duplicated_middleware
 from allianceutils.checks import CheckExplicitTableNames
 from allianceutils.checks import check_git_hooks
 from allianceutils.checks import CheckReversibleFieldNames
@@ -380,6 +381,7 @@ class MyAppConfig(AppConfig):
     def ready(self):
         register(check=check_admins, tags=Tags.admin, deploy=True)
         register(check=check_db_constraints, tags=Tags.database)
+        register(check=check_duplicated_middleware, tags=Tags.admin)
         register(check=CheckExplicitTableNames(), tags=Tags.models)
         register(check=check_git_hooks, tags=Tags.admin)
         register(check=CheckReversibleFieldNames(), tags=Tags.models)
