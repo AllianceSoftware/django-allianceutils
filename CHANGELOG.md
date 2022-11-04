@@ -30,7 +30,12 @@ so make sure you follow the template
 
 ### Fixed
 
-* Resolve bug in `CamelCaseMultiPartJSONParser.parse` where if the `HTTP_X_MULTIPART_JSON` header is not set it tries to parse the stream a second time, which returns no data 
+* Resolve bug in `CamelCaseMultiPartJSONParser.parse` where if the `HTTP_X_MULTIPART_JSON` header is not set it tries to parse the stream a second time, which returns no data
+* Resolve bug in `CurrentUserMiddleware` where if an exception was raised, middleware triggers an additional exception
+
+### Added
+
+* Added `check_duplicated_middleware` system check to ensure no middleware gets included twice in config
 
 ## 2.2.0 2022-03-28
 
