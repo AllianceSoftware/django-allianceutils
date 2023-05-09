@@ -943,3 +943,21 @@ See [CHANGELOG.md](CHANGELOG.md)
         * `poetry publish`
 
 
+### Testing
+* `poetry install`
+  * will install dependencies (including dev dependencies)
+  * You need to manually install a django version, eg `pip install 'Django==4.2.*'`
+* To run test cases
+  * The django settings module is `test_allianceutils/settings.py`
+    * The following env vars are optional but you may want to set them if the default don't match your local setup: 
+      * `DB_NAME`
+      * `DB_HOST`
+      * `DB_PORT`
+      * `DB_USER`
+      * `DB_PASSWORD`
+* [tox](https://tox.wiki/en/latest/)
+  * used to run tests against different django/python/database versions
+  * `tox` to run all tests. Will require that you have a postgres & mysql server running.
+  * [tox-factor](https://github.com/rpkilby/tox-factor) extends tox's `-e` argument with a `-f` that allows you to run a subset of tests, eg:
+    * `tox -f django42`
+* When you push to github a [github Actions](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python) workflow will be triggered (see `.github/workflows/django.yml`)  
