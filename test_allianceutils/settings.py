@@ -6,6 +6,8 @@ import random as _random
 import re as _re
 import warnings as _warnings
 
+import django
+
 is_ci = _os.environ.get('CI_SERVER', 'no') == 'yes'
 
 BASE_DIR = _Path(__file__).parent
@@ -109,20 +111,14 @@ ROOT_URLCONF = 'test_allianceutils.urls'
 
 SECRET_KEY = _hashlib.sha256(str(_random.SystemRandom().getrandbits(256)).encode('ascii')).hexdigest()
 
+USE_TZ = True
+
 # -------------------------------------
 # Test case performance
 PASSWORD_HASHERS = (
         #'django_plainpasswordhasher.PlainPasswordHasher', # very fast but extremely insecure
         "django.contrib.auth.hashers.SHA1PasswordHasher",  # fast but insecure
     )
-
-DATABASES["default"]["TEST"] = {
-    # Test case serializion is only used for emulating rollbacks in test cases if the DB doesn't support it.
-    # Both postgres & mysql+innodb support real transactions so this does nothing except slow things down.
-    # Additionally, if you override _default_manager to have extra restrictions then this can cause issues
-    #   since BaseDatabaseCreation.serialize_db_to_string() uses _default_manager and not _base_manager
-    "SERIALIZE": False
-}
 
 # -------------------------------------
 # Custom settings
@@ -131,12 +127,14 @@ QUERY_COUNT_WARNING_THRESHOLD = 40
 _warnings.simplefilter('always')
 
 try:
-    from django.utils.deprecation import RemovedInDjango41Warning as _RemovedInDjango41Warning
+    from django.utils.deprecation import RemovedInDjango51Warning
 except ImportError:
     pass
 else:
+    # SHA1Passwordhasher might be on its way out but it is still good for test cases because it's
+    # much faster than the (secure) alternatives
     _warnings.filterwarnings(
-        'ignore',
-        category=_RemovedInDjango41Warning,
-        message=r"'django_db_constraints' defines default_app_config = .* Django now detects this configuration automatically",
+        "ignore",
+        category=PendingDeprecationWarning,
+        message="django.contrib.auth.hashers.SHA1PasswordHasher is deprecated.",
     )

@@ -44,7 +44,7 @@ def _random_email_case(email: str) -> str:
         'django.contrib.auth.middleware.AuthenticationMiddleware',
     ],
     PASSWORD_HASHERS=(
-        'django.contrib.auth.hashers.UnsaltedSHA1PasswordHasher',
+        'django.contrib.auth.hashers.SHA1PasswordHasher',
     ),
     AUTHENTICATION_BACKENDS=(
         'allianceutils.auth.backends.ProfileModelBackend' if authtools else 'test_allianceutils.auth.backends.ProfileModelBackend',
@@ -276,7 +276,7 @@ class AuthTestCase(TestCase):
                 self.assertContains(response, f'Username is {user.email}')
 
                 # logout for the next user
-                response = client.get(reverse('logout'))
+                response = client.post(reverse('logout'))
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'This is a logout page')
 
@@ -291,7 +291,7 @@ class AuthTestCase(TestCase):
                 self.assertContains(response, f'Username is {user.email}')
 
                 # logout for the next user
-                response = client.get(reverse('logout'))
+                response = client.post(reverse('logout'))
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'This is a logout page')
 
@@ -335,7 +335,7 @@ class AuthTestCase(TestCase):
                 self.assertEqual(response.context['user']['class'], type(user).__name__)
 
                 # logout for the next user
-                response = client.get(reverse('logout'))
+                response = client.post(reverse('logout'))
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, 'This is a logout page')
 
