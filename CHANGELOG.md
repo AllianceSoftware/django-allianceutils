@@ -26,7 +26,17 @@ so make sure you follow the template
 
 -->
 
-## 2.2.x unreleased
+## 3.x.x unreleased
+
+### Breaking changes
+* Dropped support for django 2.2
+* Dropped support for python 3.7, 3.6
+* Dropped support for django-db-constraints validation (constraint length & collisions); should use django native constraints instead 
+
+### Added
+
+* Add support for django 4.2
+* Add support for python 3.10, 3.11
 
 ### Fixed
 

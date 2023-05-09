@@ -67,7 +67,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 INSTALLED_APPS = (
     'allianceutils',
     'test_allianceutils',
-    'test_allianceutils.tests.checks_db_constraints',
     'test_allianceutils.tests.checks_explicit_table_names',
     'test_allianceutils.tests.checks_field_names',
     'test_allianceutils.tests.document_reverse_accessors',
@@ -80,12 +79,6 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
 )
-try:
-    import django_db_constraints
-except ImportError:
-    pass
-else:
-    INSTALLED_APPS += ('django_db_constraints',)
 
 AUTH_USER_MODEL = 'profile_auth.User'
 AUTHENTICATION_BACKENDS = [

@@ -28,9 +28,9 @@ A collection of utilities for django projects from [Alliance Software](https://w
 
 ## System Requirements
 
-* Tested with django 2.2 and 3.2
+* Tested with django 3.2 and 4.2
   * Pull requests accepted for other versions, but at minimum we test against current LTS versions
-* Python >=3.6 (no python 3.5 support)
+* Python >=3.8
 
 ## Usage
 

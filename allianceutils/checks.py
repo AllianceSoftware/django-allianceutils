@@ -31,7 +31,7 @@ from allianceutils.util import underscore_to_camel
 # W002 not used
 # W003 not used
 ID_ERROR_PROFILE_RELATED_TABLES = 'allianceutils.E001'
-ID_ERROR_DB_CONSTRAINTS = 'allianceutils.E002'
+#ID_ERROR_DB_CONSTRAINTS = 'allianceutils.E002'
 ID_ERROR_ADMINS = 'allianceutils.E003'
 ID_WARNING_TRAILING_SLASH = 'allianceutils.W004'
 #ID_WARNING_AUTODUMP_MISSING = 'allianceutils.W005'
@@ -259,55 +259,6 @@ def check_admins(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessag
                     id=ID_ERROR_ADMINS,
                 )
             )
-    return messages
-
-
-def check_db_constraints(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
-    """
-    If using django-db-constraints, constraint identifiers can be supplied
-    that are longer than the max identifier length for Postgres
-    (63 bytes, see https://stackoverflow.com/a/8218026/6653190) or MySQL
-    (64 BMP unicode characters, see https://dev.mysql.com/doc/refman/8.0/en/identifiers.html).
-    Check that any such constraints are globally unique when truncated to the smaller (Postgres) limit.
-    """
-    if app_configs is None:
-        app_configs = apps.app_configs
-    else:
-        app_configs = {app_config.label: app_config for app_config in app_configs}
-
-    NAMEDATALEN = 63
-
-    def _truncate_constraint_name(_name):
-        return _name.encode('utf-8')[:NAMEDATALEN]
-
-    known_constraints = defaultdict(list)
-    for app_config in app_configs.values():
-        for model in app_config.get_models():
-            # native django constraints
-            if hasattr(model._meta, 'constraints'):
-                for constraint in model._meta.constraints:
-                    known_constraints[_truncate_constraint_name(constraint.name)].append((model, constraint.name))
-            # constraints from the django-db-constraints package
-            if hasattr(model._meta, 'db_constraints'):
-                for constraint_name in model._meta.db_constraints.keys():
-                    known_constraints[_truncate_constraint_name(constraint_name)].append((model, constraint_name))
-
-    messages = []
-    for truncated_name, model_constraints in known_constraints.items():
-        if len(model_constraints) == 1:
-            continue
-        _models = [f'{model._meta.app_label}.{model.__name__}' for model, _ in model_constraints]
-        models_string = ', '.join(_models)
-        for _model, constraint_name in model_constraints:
-            messages.append(
-                Error(
-                    f'{_model._meta.label} constraint {constraint_name} is not unique',
-                    hint='Constraint truncates to ' + truncated_name.decode('utf-8', 'replace'),
-                    obj=models_string,
-                    id=ID_ERROR_DB_CONSTRAINTS,
-                )
-            )
-
     return messages
 
 

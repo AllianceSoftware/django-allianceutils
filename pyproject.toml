@@ -24,24 +24,24 @@ keywords = [
 issues = "https://github.com/AllianceSoftware/django-allianceutils/issues"
 
 [tool.poetry.dependencies]
-python = ">=3.6"
+python = ">=3.8"
 
 # the only hard dependency is django; everything else is only required
 # if you use functions/classes that require them
-Django = ">=2.2"
+Django = ">=3.2"
 isort = ">=4"
 
 [tool.poetry.dev-dependencies]
 tox = "*"
 tox-factor = "*"
 isort = ">=5"
-Django = "^2.2"
+Django = "^4.2"
 
 # requirements-optional.ini contains extras
 
 
 [build-system]
-requires = ["poetry-core>=1.0.0a5"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 
