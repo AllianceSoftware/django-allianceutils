@@ -30,7 +30,7 @@ with (Path(__file__).parent.parent / "CHANGELOG.md").open("r") as f:
                 ver_string = match.group("ver")
 
 # Update version file
-version_file = Path(__file__).parent.parent / "allianceutils" / "__init__.py"
+version_file = Path(__file__).parent.parent / "src/allianceutils" / "__init__.py"
 subprocess.run(["sed", "-i", ".tmp", f's/__version__ *=.*/__version__ = "{ver_string}"/', str(version_file), ])
 version_file.with_suffix(version_file.suffix + ".tmp").unlink()
 # Update version in pyproject.toml

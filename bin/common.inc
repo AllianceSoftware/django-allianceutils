@@ -14,7 +14,6 @@
 #  is_ci - true or false depending on whether running on a CI server
 #  project_dir - root django project path
 #  base_dir - django site app path
-#  static_dir - collected static files path
 
 realpath=$( command -v realpath >/dev/null 2>&1 ) || function realpath() {
 	# OSX readlink does not contain the canonicalize functionality that gnu readlink does
@@ -63,12 +62,11 @@ if [[ "$OSTYPE" =~ ^darwin ]] ; then
 	$FIND -quit 2>/dev/null || fail "Missing GNU find; run 'brew install findutils'"
 fi
 
-# BASE_DIR and PROJECT_DIR should resolve to the same thing as in the django settings file
+# base_dir and project_dir should resolve to the same thing as in the django settings file
 repo_dir="$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")"
 
 is_ci="${CI-false}"
 project_dir="$repo_dir/"
-base_dir="$project_dir/test_allianceutils"
-static_dir="$repo_dir/test_allianceutils/static"
+base_dir="$project_dir/src/test_allianceutils"
 
 cd "$repo_dir"

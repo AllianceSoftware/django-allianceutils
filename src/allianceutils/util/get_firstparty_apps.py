@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from typing import Iterable
 
 from django.apps import AppConfig
 from django.apps import apps
@@ -12,7 +13,7 @@ from django.apps import apps
 _root_path = os.getcwd()
 
 
-def is_firstparty_app(app_config: AppConfig):
+def is_firstparty_app(app_config: AppConfig) -> bool:
     """
     Use isort's way of determining whether an app is "first party" or otherwise
     """
@@ -29,7 +30,7 @@ def is_firstparty_app(app_config: AppConfig):
        # or app_config.__module__ == 'allianceutils.apps'
 
 
-def get_firstparty_apps():
+def get_firstparty_apps() -> Iterable[AppConfig]:
     """
     Return all installed first party apps in an iterator
     """

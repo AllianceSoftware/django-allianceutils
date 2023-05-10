@@ -9,7 +9,7 @@ authors = ["Alliance Software <support@alliancesoftware.com.au>"]
 license = "BSD-2-Clause"
 readme = "README.md"
 packages = [
-    { include = "allianceutils" },
+    { include = "src/allianceutils" },
 ]
 include = [
     "CHANGELOG.md",
