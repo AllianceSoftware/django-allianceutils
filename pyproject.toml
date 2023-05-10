@@ -13,6 +13,7 @@ packages = [
 ]
 include = [
     "CHANGELOG.md",
+	"LICENSE",
 ]
 keywords = [
     "django",
@@ -23,21 +24,53 @@ keywords = [
 [tool.poetry.urls]
 issues = "https://github.com/AllianceSoftware/django-allianceutils/issues"
 
+
 [tool.poetry.dependencies]
-python = ">=3.8"
+# you need the <4.0 for cachetools which is a tox dependency
+python = ">=3.8,<4.0"
 
 # the only hard dependency is django; everything else is only required
 # if you use functions/classes that require them
+#
+# IMPORTANT
+# We need to specify a minimum django version that this package requires, but
+#   this means that when poetry creates a lock file that it will pick the latest
+#   version available
+# For development purposes we will override this in tox to install a specific
+#   version
+# It's not possible to natively get poetry to use a different version for dev
+#   via groups or extras because it only resolves dependencies once (globally)
+#   see https://github.com/python-poetry/poetry/issues/6611
 Django = ">=3.2"
 isort = ">=4"
 
-[tool.poetry.dev-dependencies]
-tox = "*"
-tox-factor = "*"
-isort = ">=5"
-Django = "^4.2"
+# optional extras
+django-filter = { version = "*", optional = true }
+django-storages = { version = "*", optional = true }
+djangorestframework = { version = "*", optional = true }
+logging_tree = { version = "*", optional = true }
 
-# requirements-optional.ini contains extras
+# optional databases
+mysqlclient = { version = "*", optional = true }
+psycopg2 = { version = "*", optional = true }
+
+
+[tool.poetry.extras]
+extras = [
+	"django-filter",
+	"django-storages",
+	"djangorestframework",
+	"logging_tree",
+]
+mysql = ["mysqlclient"]
+postgres = ["psycopg2"]
+
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+tox = ">=4"
 
 
 [build-system]

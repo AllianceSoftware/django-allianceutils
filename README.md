@@ -917,6 +917,14 @@ See [CHANGELOG.md](CHANGELOG.md)
 
 ## Development
 
+* To create a clean local environment
+  * `python3 -m venv venv && source venv/bin/activate && pip install --upgrade pip` 
+  * `poetry install --no-root --sync --only=main --extras=""`
+  * Note that due to [a poetry bug](https://github.com/python-poetry/poetry/issues/7364) extras are currently not removed
+  * This will install the latest django version; if you want to test a specific django version you need to `pip install` it manually 
+* Dev dependencies
+  * `poetry install --no-root --sync --with=dev --extras "extras mysql postgres"`
+
 ### Release Process
 
 #### Poetry Config
@@ -944,9 +952,6 @@ See [CHANGELOG.md](CHANGELOG.md)
 
 
 ### Testing
-* `poetry install`
-  * will install dependencies (including dev dependencies)
-  * You need to manually install a django version, eg `pip install 'Django==4.2.*'`
 * To run test cases
   * The django settings module is `test_allianceutils/settings.py`
     * The following env vars are optional but you may want to set them if the default don't match your local setup: 
@@ -958,6 +963,5 @@ See [CHANGELOG.md](CHANGELOG.md)
 * [tox](https://tox.wiki/en/latest/)
   * used to run tests against different django/python/database versions
   * `tox` to run all tests. Will require that you have a postgres & mysql server running.
-  * [tox-factor](https://github.com/rpkilby/tox-factor) extends tox's `-e` argument with a `-f` that allows you to run a subset of tests, eg:
-    * `tox -f django42`
+    * `tox -f django42` will run the subset of tests that cover django 4.2. Check `tox.ini` for the list of tested environments. 
 * When you push to github a [github Actions](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python) workflow will be triggered (see `.github/workflows/django.yml`)  
