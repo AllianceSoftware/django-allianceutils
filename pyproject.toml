@@ -49,6 +49,7 @@ django-filter = { version = "*", optional = true }
 django-storages = { version = "*", optional = true }
 djangorestframework = { version = "*", optional = true }
 logging_tree = { version = "*", optional = true }
+rules = { version = "*", optional = true }
 
 # optional databases
 mysqlclient = { version = "*", optional = true }
@@ -61,6 +62,7 @@ extras = [
 	"django-storages",
 	"djangorestframework",
 	"logging_tree",
+	"rules",
 ]
 mysql = ["mysqlclient"]
 postgres = ["psycopg2"]
