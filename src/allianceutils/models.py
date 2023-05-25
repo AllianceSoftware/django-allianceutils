@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 from typing import Callable
+from typing import cast
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Union
 
 from django.contrib.auth.models import Group
@@ -12,9 +16,11 @@ from django.db import IntegrityError
 from django.db.models import Manager
 from django.db.models import Model
 from django.db.models import QuerySet
+from django.utils.functional import Promise
+from typing_extensions import TypeAlias
 
 
-def combine_querysets_as_manager(*queryset_classes: List[QuerySet]) -> Manager:
+def combine_querysets_as_manager(*queryset_classes: type[QuerySet]) -> Manager:
     """
     Replacement for django_permanent.managers.MultiPassThroughManager which no longer works in django 1.8
 
@@ -23,8 +29,10 @@ def combine_querysets_as_manager(*queryset_classes: List[QuerySet]) -> Manager:
     :param queryset_classes: Queryset cla
     :return: class
     """
-    name = "".join([cls.__name__ for cls in queryset_classes])
-    return type(name, queryset_classes, {}).as_manager()
+    names = [cls.__name__ for cls in queryset_classes]
+    name = "".join(names)
+    combined_querysets: type[QuerySet] = type(name, queryset_classes, {})
+    return combined_querysets.as_manager()
 
 
 class NoDeleteQuerySet(QuerySet):
@@ -57,24 +65,59 @@ class NoDeleteModel(Model):
 
 # -------------------------------------------------------------------------------------------------------------------
 
-# We need a placeholder to indicate that a ValidationError actually has no error; we use this
-class _NO_VALIDATION_ERROR:
-    pass
+# we don't want to rely on django_stubs_ext being present at runtime
+if TYPE_CHECKING:
+    from django_stubs_ext import StrOrPromise
+else:
+    StrOrPromise: TypeAlias = str
+
+ErrorListT: TypeAlias = List[Union[ValidationError, StrOrPromise, None]]
+ErrorDictT: TypeAlias = Dict[str, Union[ErrorListT, StrOrPromise]]
+
+# this is the type that a normal ValidationError accepts
+ErrorT: TypeAlias = Union[StrOrPromise, ValidationError, ErrorDictT, ErrorListT]
+
+# ExtendedValidationError also accept None
+ExtendedErrorT: TypeAlias = Union[ErrorT, None]
 
 
 class _ExtendedValidationError(ValidationError):
     """
     Extended version of ValidationError for use with raise_validation_errors()
 
-    Internal behaviour is slightly different in that it may contain no errors at all
+    A normal ValidationError contains one (and only one) of:
+        - a single message (str or Promise)
+            - self.message - the message
+            - self.error_list - [self]
+        - a list of ValidationError
+            - self.error_list
+        - a dict mapping field names to lists of ValidationError
+            - self.error_dict
+
+    It can't contain a combination of error_list and error_dict
+
+    An ExtendedValidationError is extended so that
+        - you can pass None to the constructor (to indicate no errors)
+            - internally None is simply translated to []
+        - ValidationErrors can be merged with other ValidationErrors
     """
 
-    ErrorType = Union[str, ValidationError]
+    def __init__(self, message: ExtendedErrorT, *args, **kwargs):
+        if message is None:
+            message = []
+        super().__init__(message, *args, *kwargs)
 
-    def add_error(self, field: Optional[str], error: Union[ErrorType, List[ErrorType], Dict[str, List[ErrorType]]]):
+    def add_error(
+        self,
+        field: str | None,
+        error: ExtendedErrorT,
+    ):
         """
         This has the same behaviour as BaseForm.add_error()
         """
+        if error is None:
+            return
+
         if not isinstance(error, ValidationError):
             # Normalize to ValidationError and let its constructor
             # do the hard work of making sense of the input.
@@ -88,7 +131,10 @@ class _ExtendedValidationError(ValidationError):
                 )
 
         if field is not None:
-            error = _ExtendedValidationError({field: error})
+            if not isinstance(error, list):
+                error = _ExtendedValidationError({field: [error]})
+            else:
+                error = _ExtendedValidationError({field: error})
 
         self.merge(error)
 
@@ -101,7 +147,7 @@ class _ExtendedValidationError(ValidationError):
         self_copy = _ExtendedValidationError(self)
         new_ve = self_copy.merged(error)
 
-        # now copy the details from the new ValidationError into this one
+        # now replace our internal state with that from the new ValidationError
         self.__dict__.clear()
         self.__dict__.update(new_ve.__dict__)
 
@@ -119,34 +165,45 @@ class _ExtendedValidationError(ValidationError):
         # A ValidationError could be in any of the following forms:
         # [1] dict: self.error_dict exists
         # [2] list: self.error_list exists but self.message doesn't
-        # [3] scalar: self.message is a single message
+        # [3] scalar: self.message is a single message & self.error_list == [self]
 
         # list of validation errors to merge
         to_merge = [self, errors]
 
         # we need to promote one or more both to a dict-type ValidationError
         if any(hasattr(ve, 'error_dict') for ve in to_merge):
-            to_merge_dicts = []
+            to_merge_dicts: list[ErrorDictT] = []
             for ve in to_merge:
                 if not hasattr(ve, 'error_dict'):
-                    ve_list = [x for x in ve.error_list if not is_empty(x)]
+                    ve_list: ErrorListT = [x for x in ve.error_list if not is_empty(x)]
                     if ve_list:
                         to_merge_dicts.append({NON_FIELD_ERRORS: ve_list})
                 else:
-                    to_merge_dicts.append(ve.error_dict)
+                    # cast() needed because list is invariant
+                    # https://mypy.readthedocs.io/en/stable/common_issues.html#variance
+                    error_dict: ErrorDictT = cast(ErrorDictT, ve.error_dict)
+                    to_merge_dicts.append(error_dict)
 
-            merged_dict = {}
+            merged_dict: ErrorDictT = {}
             for to_merge_dict in to_merge_dicts:
                 for key, value in to_merge_dict.items():
                     merged_dict.setdefault(key, [])
-                    merged_dict[key].extend(value.copy())
+                    error_list = cast(list, merged_dict[key])
+                    copied_value: ErrorT
+                    # there's an assumption here that a promise is only wrapping a str and
+                    # not a mutable structure like a dict or list
+                    if isinstance(value, (str, Promise)):
+                        copied_value = value
+                    else:
+                        copied_value = value.copy() # cast(ErrorListT | ErrorDictT, value).copy()
+                    error_list.extend(copied_value)
 
             new_ve = _ExtendedValidationError(merged_dict)
         else:
             codes = []
             params = []
             to_merge_messages = []
-            to_merge_lists = []
+            to_merge_lists: ErrorListT = []
             for ve in to_merge:
                 if hasattr(ve, 'message'):
                     # ve might be a ValidationError instead of an _ExtendedValidationError
@@ -159,8 +216,8 @@ class _ExtendedValidationError(ValidationError):
                     to_merge_lists.extend(ve.error_list)
 
             if len(to_merge_lists) == 0:
-                # all _NO_VALIDATION_ERROR
-                new_ve = _ExtendedValidationError(_NO_VALIDATION_ERROR)
+                # no validation errors
+                new_ve = _ExtendedValidationError(None)
             elif len(to_merge_lists) == 1 and len(to_merge_messages) == 1:
                 # was just a single ValidationError with a simple message
                 new_ve = _ExtendedValidationError(to_merge_messages[0], code=codes[0], params=params[0])
@@ -180,19 +237,23 @@ class _ExtendedValidationError(ValidationError):
 
         For example, the following are considered empty validation errors:
 
-        ValidationError(None)
-        ValidationError('')
-        ValidationError([''])
-        ValidationError({})
-        ValidationError({'my_field': []})
+        ExtendedValidationError(None)
+        ExtendedValidationError('')
+        ExtendedValidationError([''])
+        ExtendedValidationError({})
+        ExtendedValidationError({'my_field': []})
 
         The following *will* be considered validation errors:
-        ValidationError({'my_field': ['']})
-        ValidationError({'my_field': [None]})
-        ValidationError('foo')
-        ValidationError(['foo'])
+        ExtendedValidationError({'my_field': ['']})
+        ExtendedValidationError({'my_field': [None]})
+        ExtendedValidationError('foo')
+        ExtendedValidationError(['foo'])
         """
-        return getattr(self, 'message', None) == _NO_VALIDATION_ERROR
+        return (
+            getattr(self, 'message', None) is None and
+            len(getattr(self, "error_list", [])) == 0 and
+            len(getattr(self, "message_dict", {})) == 0
+        )
 
     def capture_validation_error(self) -> '_ExtendedValidationErrorCaptureContext':
         return _ExtendedValidationErrorCaptureContext(self)
@@ -221,7 +282,7 @@ class raise_validation_errors:
         try:
             if self.func is not None:
                 self.func()
-            self.ve = _ExtendedValidationError(_NO_VALIDATION_ERROR)
+            self.ve = _ExtendedValidationError(None)
         except ValidationError as ve:
             self.ve = _ExtendedValidationError(ve)
 

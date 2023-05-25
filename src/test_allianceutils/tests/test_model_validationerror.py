@@ -1,173 +1,267 @@
-from contextlib import ExitStack as nullcontext
+from __future__ import annotations
+
+from contextlib import nullcontext
 import itertools
+from typing import cast
+from typing import List
+from unittest.case import _AssertRaisesContext
 
 from django.core.exceptions import NON_FIELD_ERRORS
 from django.core.exceptions import ValidationError
 from django.test import SimpleTestCase
 
 from allianceutils.models import _ExtendedValidationError
-from allianceutils.models import _NO_VALIDATION_ERROR
+from allianceutils.models import ErrorDictT
+from allianceutils.models import ErrorT
+from allianceutils.models import ExtendedErrorT
 from allianceutils.models import raise_validation_errors
 
 
 class ValidationErrorCase(SimpleTestCase):
 
-    def assertValidationErrorMatch(self, ve: ValidationError, out):
+    def assertValidationErrorMatch(self, ve: ValidationError, expected):
         """
         Validates that the contents of ve matches those in out, where out is a scalar/list/dict
         """
-        if isinstance(out, dict):
+
+        # test case simplification:
+        # rather than having extra logic to deal with the fact that merging A + B will
+        # yield errors in a different order to B + A, we use assertCountEqual() which
+        # compares in an order-independent manner
+        if isinstance(expected, dict):
             self.assertTrue(hasattr(ve, 'error_dict'))
             ve_dict = {field: [e.message for e in field_errors] for field, field_errors in ve.error_dict.items()}
-            self.assertEqual(out, ve_dict)
+            self.assertCountEqual(expected, ve_dict)
             self.assertFalse(hasattr(ve, 'error_list'))
             self.assertFalse(hasattr(ve, 'message'))
-        elif isinstance(out, list):
+        elif isinstance(expected, list):
             self.assertFalse(hasattr(ve, 'error_dict'))
-            self.assertEqual([x.message for x in ve.error_list], out)
+            self.assertCountEqual(sorted([x.message for x in ve.error_list]), expected)
             self.assertFalse(hasattr(ve, 'message'))
         else:
             self.assertFalse(hasattr(ve, 'error_dict'))
-            self.assertEqual([x.message for x in ve.error_list], [out])
-            self.assertEqual(ve.message, out)
+            if expected is None:
+                self.assertEqual(ve.error_list, [])
+                self.assertFalse(hasattr(ve, "message"))
+            else:
+                self.assertEqual([x.message for x in ve.error_list], [expected])
+                self.assertEqual(ve.message, expected)
 
     def test_is_empty(self):
-        test_cases = (
+        # these test cases can be passed to both a ValidationError and _ExtendedValidationError
+        test_cases_vanilla: list[tuple[bool, ErrorT]] = [
             # (is_empty, message)
-            (False, None),
             (False, ''),
             (False, ['']),
-            (False, [ValidationError(None)]),
-            (False, [ValidationError('')]),
-            (False, {}),
-            (False, {'my_field': []}),
-            (False, {'my_field': ['']}),
-            (False, {'my_field': [None]}),
             (False, 'foo'),
             (False, ['foo']),
-            (True, _NO_VALIDATION_ERROR),
-        )
 
-        for i, (is_empty, message) in enumerate(test_cases):
-            ve = _ExtendedValidationError(message)
-            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: ' + repr(message))
+            (True, {}),
+            (False, {'my_field': []}),
 
+            (False, cast(ErrorDictT, {'my_field': ['']})),
+
+            (False, {'my_field': [""]}),
+            (False, {'my_field': ["foo"]}),
+        ]
+
+        # these include test cases that are only valid for an _ExtendedValidationError
+        test_cases_extended: list[tuple[bool, ExtendedErrorT]] = [
+            # (is_empty, message)
+            (True, [_ExtendedValidationError(None)]),
+            (True, [_ExtendedValidationError({})]),
+            (True, [_ExtendedValidationError([])]),
+            (False, [_ExtendedValidationError("")]),
+            (True, None),
+
+            (False, {'my_field': ['']}),
+            (False, {'my_field': [None]}),
+        ]
+
+        def assert_vanilla(is_empty: bool, message: ErrorT):
             ve = _ExtendedValidationError(ValidationError(message))
-            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: ' + repr(message))
-
-            ve = _ExtendedValidationError(_ExtendedValidationError(message))
-            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: ' + repr(message))
+            self.assertEqual(is_empty, ve._is_empty())
 
             ve = _ExtendedValidationError(ValidationError(ValidationError(message)))
-            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: ' + repr(message))
+            self.assertEqual(is_empty, ve._is_empty())
+
+        def assert_extended(is_empty: bool, message: ExtendedErrorT):
+            ve = _ExtendedValidationError(message)
+            self.assertEqual(is_empty, ve._is_empty())
+
+            ve = _ExtendedValidationError(_ExtendedValidationError(message))
+            self.assertEqual(is_empty, ve._is_empty())
 
             ve = _ExtendedValidationError(_ExtendedValidationError(_ExtendedValidationError(message)))
-            self.assertEqual(is_empty, ve._is_empty(), 'test case failed: ' + repr(message))
+            self.assertEqual(is_empty, ve._is_empty())
+
+        for i, (is_empty, message_vanilla) in enumerate(test_cases_vanilla):
+            with self.subTest(message=message_vanilla):
+                assert_vanilla(is_empty, message_vanilla)
+                assert_extended(is_empty, message_vanilla)
+
+        for i, (is_empty, message_extended) in enumerate(test_cases_extended):
+            with self.subTest(message=message_extended):
+                assert_extended(is_empty, message_extended)
 
     def test_merge(self):
         """
         Can merge ValidationErrors
         """
 
-        def cast_to_list(x) -> list:
-            if isinstance(x, list):
-                return x
-            return [x]
+        # ---------------------------------------
+        # these test cases are complicated enough that we have manually constructed test cases
+        def build_manual_cases():
+            test_cases: list[
+                # (input1, input2, output)
+                tuple[ExtendedErrorT, ExtendedErrorT, ExtendedErrorT]
+            ] = [
+                # None + scalar
+                (
+                    None,
+                    'abc',
+                    'abc',
+                ),
+                # None + dict
+                (
+                    None,
+                    {'abc': ['def']},
+                    {'abc': ['def']},
+                ),
+                (
+                    None,
+                    {NON_FIELD_ERRORS: 'foo'},
+                    {NON_FIELD_ERRORS: ['foo']},
+                ),
+                # None + list
+                (
+                    None,
+                    ["foo", "bar"],
+                    ["foo", "bar"],
+                ),
+                # scalar + dict
+                (
+                    'abc',
+                    {NON_FIELD_ERRORS: 'foo'},
+                    {NON_FIELD_ERRORS: ['foo', 'abc']},
+                ),
+                # dict + dict
+                (
+                    {'field': 'f1', 'field2': ['f2', 'f2']},
+                    {'field2': 'ab'},
+                    {'field': ['f1'], 'field2': ['f2', 'f2', 'ab']},
+                ),
+                # list + list
+                (
+                    ["foo", "bar"],
+                    ["baz"],
+                    ["foo", "bar", "baz"],
+                ),
+                # list + dict
+                (
+                    ["foo", "bar"],
+                    {"bazzy": "baz"},
+                    {NON_FIELD_ERRORS: ["foo", "bar"], "bazzy": "baz"},
+                ),
+            ]
 
-        # we test each combination of these test inputs
-        list_scalar_test_cases = [
-            _NO_VALIDATION_ERROR,
-            None,
-            '',
-            'abc',
-            [None],
-            [''],
-            ['abc', None, ''],
-        ]
+            # also test the inputs in reverse
+            test_cases += [
+                (in2, in1, out)
+                for in1, in2, out
+                in test_cases
+            ]
 
-        def calculate_output(in1, in2):
-            if in1 is _NO_VALIDATION_ERROR:
-                return in2
-            elif in2 is _NO_VALIDATION_ERROR:
-                return in1
-            else:
-                return cast_to_list(in1) + cast_to_list(in2)
+            return test_cases
 
-        # these ones are complicated enough that if we try to automate it we're just
-        # reimplementing the code we're testing, so we create manual test cases
-        processed_test_cases = [
-            # (input1, input2, output)
-            (
-                None, # None is not the same as _NO_VALIDATION_ERROR
-                {'field': 'foo'},
-                {'field': ['foo'], NON_FIELD_ERRORS: [None]},
-            ),
-            (
+        # ---------------------------------------
+        # for these test cases we generate an exhaustive combination of all of the test inputs
+        def build_list_and_scalar_test_cases():
+            list_and_scalar_test_cases = [
+                # Note that `None` is not valid for a ValidationError
+                # but *is* valid for an ExtendedValidationError
                 None,
-                {NON_FIELD_ERRORS: 'foo'},
-                {NON_FIELD_ERRORS: [None, 'foo']},
-            ),
-            (
-                {NON_FIELD_ERRORS: 'foo'},
+                '',
                 'abc',
-                {NON_FIELD_ERRORS: ['foo', 'abc']},
-            ),
-            (
-                {'field': 'f1', 'field2': ['f2', 'f2']},
-                {'field2': 'ab'},
-                {'field': ['f1'], 'field2': ['f2', 'f2', 'ab']},
-            ),
-            (
-                _NO_VALIDATION_ERROR,
-                'abc',
-                'abc',
-            ),
-            (
-                ['abc'],
-                _NO_VALIDATION_ERROR,
-                ['abc'],
-            ),
-            (
-                {'abc': 'def'},
-                _NO_VALIDATION_ERROR,
-                {'abc': ['def']},
-            ),
-            (
-                _NO_VALIDATION_ERROR,
-                {'abc': ['def']},
-                {'abc': ['def']},
-            ),
-        ]
+                [''],
+                ['abc', ''],
+            ]
 
-        for in1 in list_scalar_test_cases:
-            for in2 in list_scalar_test_cases:
+            def cast_to_list(x: str | list[str]) -> list[str]:
+                if isinstance(x, list):
+                    return x
+                return [x]
 
-                # if is a list, then also create a variant where items are ValidationError instances
-                in1_candidates = [in1]
-                if isinstance(in1, list):
-                    in1_candidates.append([ValidationError(x) for x in in1])
+            def calculate_output(
+                in1: str | list[str] | None,
+                in2: str | list[str] | None,
+            ) -> str | list[str] | None:
+                """
+                Given two 'simple' inputs (str or list[str]), return the value that if passed to
+                a new ValidationError would result in the expected merger of in1 & in2
 
-                in2_candidates = [in2]
-                if isinstance(in2, list):
-                    in2_candidates.append([ValidationError(x) for x in in2])
+                eg
+                    in1="foo", in2=["bar"] ==> ["foo", "bar"]
+                    in1="foo", in2="bar" ==> ["foo", "bar"]
+                    in1=None, in2="foo" ==> "foo"
+                    in1=None, in2=None ==> None
+                """
+                if in1 is None and in2 is None:
+                    return None
+                if in1 is None:
+                    return in2
+                elif in2 is None:
+                    return in1
+                else:
+                    return cast_to_list(in1) + cast_to_list(in2)
 
-                processed_test_cases.extend(itertools.product(in1_candidates, in2_candidates, [calculate_output(in1, in2)]))
-                processed_test_cases.extend(itertools.product(in2_candidates, in1_candidates, [calculate_output(in2, in1)]))
+            test_cases: list[
+                # (input1, input2, output)
+                tuple[ExtendedErrorT, ExtendedErrorT, ExtendedErrorT]
+            ] = []
 
+            for in1 in list_and_scalar_test_cases:
+                for in2 in list_and_scalar_test_cases:
+
+                    # if is a list, then also create a variant where items are ValidationError instances
+                    in1_candidates: list[ExtendedErrorT] = [in1]  # type:ignore[list-item]  # list invariance
+                    if isinstance(in1, list):
+                        in1_candidates.append([ValidationError(x) for x in in1 if x is not None])
+                        in1_candidates.append([_ExtendedValidationError(x) for x in in1])
+
+                    in2_candidates: list[ExtendedErrorT] = [in2]   # type:ignore[list-item]  # list invariance
+                    if isinstance(in2, list):
+                        in2_candidates.append([ValidationError(x) for x in in2 if x is not None])
+                        in2_candidates.append([_ExtendedValidationError(x) for x in in2])
+
+                    test_cases += itertools.product(
+                        in1_candidates,
+                        in2_candidates,
+                        cast(List[ExtendedErrorT], [calculate_output(in1, in2)])
+                    )
+
+            return test_cases
+
+        processed_test_cases = build_manual_cases()
+        processed_test_cases += build_list_and_scalar_test_cases()
+
+        # ---------------------------------------
+        # now we actually run the tests
         for i, (in1, in2, out) in enumerate(processed_test_cases):
-            ve1 = _ExtendedValidationError(in1)
-            ve2 = _ExtendedValidationError(in2)
+            with self.subTest(in1=in1, in2=in2):
+                ve1 = _ExtendedValidationError(in1)
+                ve2 = _ExtendedValidationError(in2)
 
-            ve = ve1.merged(ve2)
-            self.assertValidationErrorMatch(ve, out)
-            self.assertIsNot(ve, ve1)
-            self.assertIsNot(ve, ve2)
+                ve = ve1.merged(ve2)
+                self.assertValidationErrorMatch(ve, out)
+                self.assertIsNot(ve, ve1)
+                self.assertIsNot(ve, ve2)
 
-            ve = _ExtendedValidationError(ve1)
-            ve.merge(ve2)
-            self.assertValidationErrorMatch(ve, out)
-            self.assertIsNot(ve, ve1)
-            self.assertIsNot(ve, ve2)
+                ve = _ExtendedValidationError(ve1)
+                ve.merge(ve2)
+                self.assertValidationErrorMatch(ve, out)
+                self.assertIsNot(ve, ve1)
+                self.assertIsNot(ve, ve2)
 
     def test_merge_deep_copy(self):
         """
@@ -180,15 +274,15 @@ class ValidationErrorCase(SimpleTestCase):
 
     def test_add_error(self):
         ve = _ExtendedValidationError(None)
-        self.assertValidationErrorMatch(ve, None)
+        self.assertValidationErrorMatch(ve, [])
         ve.add_error(None, 'foo')
-        self.assertValidationErrorMatch(ve, [None, 'foo'])
+        self.assertValidationErrorMatch(ve, 'foo')
         ve.add_error(None, ['bar', 'baz'])
-        self.assertValidationErrorMatch(ve, [None, 'foo', 'bar', 'baz'])
+        self.assertValidationErrorMatch(ve, ['foo', 'bar', 'baz'])
         ve.add_error('qq', 'rr')
-        self.assertValidationErrorMatch(ve, {NON_FIELD_ERRORS: [None, 'foo', 'bar', 'baz'], 'qq': ['rr']})
+        self.assertValidationErrorMatch(ve, {NON_FIELD_ERRORS: ['foo', 'bar', 'baz'], 'qq': ['rr']})
         ve.add_error('qq', ['ss'])
-        self.assertValidationErrorMatch(ve, {NON_FIELD_ERRORS: [None, 'foo', 'bar', 'baz'], 'qq': ['rr', 'ss']})
+        self.assertValidationErrorMatch(ve, {NON_FIELD_ERRORS: ['foo', 'bar', 'baz'], 'qq': ['rr', 'ss']})
 
         ve = _ExtendedValidationError({'qq': 'rr'})
         self.assertValidationErrorMatch(ve, {'qq': ['rr']})
@@ -200,22 +294,24 @@ class ValidationErrorCase(SimpleTestCase):
         self.assertValidationErrorMatch(ve, {'qq': ['rr', 'foo', 'ss', 'tt']})
         ve.add_error(None, 'uu')
         self.assertValidationErrorMatch(ve, {'qq': ['rr', 'foo', 'ss', 'tt'], NON_FIELD_ERRORS: ['uu']})
+        ve.add_error(None, 'vv')
+        self.assertValidationErrorMatch(ve, {'qq': ['rr', 'foo', 'ss', 'tt'], NON_FIELD_ERRORS: ['uu', 'vv']})
 
-        ve = _ExtendedValidationError(_NO_VALIDATION_ERROR)
-        self.assertValidationErrorMatch(ve, _NO_VALIDATION_ERROR)
+        ve = _ExtendedValidationError("mno")
+        self.assertValidationErrorMatch(ve, "mno")
         ve.add_error(None, ValidationError('abc'))
-        self.assertValidationErrorMatch(ve, 'abc')
+        self.assertValidationErrorMatch(ve, ["mno", 'abc'])
         ve.add_error(None, ValidationError(['def']))
-        self.assertValidationErrorMatch(ve, ['abc', 'def'])
+        self.assertValidationErrorMatch(ve, ["mno", 'abc', 'def'])
         ve.add_error(None, ValidationError({'ghi': 'jkl'}))
-        self.assertValidationErrorMatch(ve, {NON_FIELD_ERRORS: ['abc', 'def'], 'ghi': ['jkl']})
+        self.assertValidationErrorMatch(ve, {NON_FIELD_ERRORS: ["mno", 'abc', 'def'], 'ghi': ['jkl']})
 
-        ve = _ExtendedValidationError(_NO_VALIDATION_ERROR)
-        ve.add_error('abc', 'def')
-        self.assertValidationErrorMatch(ve, {'abc': ['def']})
+        ve = _ExtendedValidationError({"abc": "def"})
+        ve.add_error(None, 'ghi')
+        self.assertValidationErrorMatch(ve, {NON_FIELD_ERRORS: ["ghi"], 'abc': ['def']})
 
     def test_add_error_fieldname(self):
-        ve = _ExtendedValidationError(_NO_VALIDATION_ERROR)
+        ve = _ExtendedValidationError(None)
 
         with self.assertRaises(TypeError):
             ve.add_error('aaa', {'field': 'value'})
@@ -276,13 +372,18 @@ class ValidationErrorCase(SimpleTestCase):
         )
 
         for func, add_error_args, expected in test_cases:
-            raise_context = self.assertRaises(ValidationError) if expected is not None else nullcontext()
+            raise_context: _AssertRaisesContext | nullcontext = (
+                self.assertRaises(ValidationError)
+                if expected is not None
+                else nullcontext()
+            )
             with raise_context:
                 with raise_validation_errors(func) as ve:
                     if add_error_args is not None:
                         ve.add_error(*add_error_args)
 
             if expected is not None:
+                assert isinstance(raise_context, _AssertRaisesContext)
                 self.assertValidationErrorMatch(raise_context.exception, expected)
 
     def test_raise_validation_errors_manual(self):
@@ -343,7 +444,9 @@ class ValidationErrorCase(SimpleTestCase):
             with raise_validation_errors() as ve:
                 with ve.capture_validation_error():
                     raise ValidationError({'foo': 'hello world'})
-                ve.add_error('foo', 'bar')
+                # mypy doesn't realise that capture_validation_errors() should
+                # swallow the exception so this code is in fact reachable
+                ve.add_error('foo', 'bar')  # type:ignore[unreachable]
         self.assertEqual(raise_context.exception.message_dict, {'foo': ['hello world', 'bar']})
 
         # non-ValidationError raised
