@@ -266,9 +266,12 @@ def my_view(request: HttpRequest) -> httpResponse:
 #### method_cache
 
 * Caches the results of a method on the object instance
+* There is no thread synchronization so in some circumstances the method may be called multiple times if multiple threads share the object 
 * Only works for regular object methods with no arguments other than `self`.
     * Does not support `@classmethod` or `@staticmethod`
-    * If you want more powerful caching behaviour then you can wrap `cachetools` (examples [here](https://github.com/tkem/cachetools/issues/107))
+    * If you want more powerful caching behaviour then you can
+      * use [`methodtools`](https://pypi.org/project/methodtools/)
+      * wrap `cachetools` (examples [here](https://github.com/tkem/cachetools/issues/107#issuecomment-436274285))
 * Similar to [`@cached_property`](https://docs.python.org/3/library/functools.html#functools.cached_property) except that it works on methods instead of properties
 * Differs from [`@lru_cache()`](https://docs.python.org/3/library/functools.html#functools.lru_cache) in that
     * `lru_cache` uses a single cache for each decorated function
