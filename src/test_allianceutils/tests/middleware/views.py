@@ -10,6 +10,8 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 from django.test.utils import CaptureQueriesContext
 
+from allianceutils.middleware import QueryCountMiddleware
+
 _request_thread_wait_barrier: Optional[threading.Barrier] = None
 
 
@@ -44,7 +46,7 @@ def run_queries(request: HttpRequest, **kwargs) -> HttpResponse:
     throw_exception = strtobool(request.POST['throw_exception'])
 
     if 'set_threshold' in request.POST:
-        request.QUERY_COUNT_WARNING_THRESHOLD = int(request.POST['set_threshold'] or 0)
+        QueryCountMiddleware.set_threshold(request, int(request.POST['set_threshold'] or 0))
 
     with connection.cursor() as cursor:
         for i in range(count):
@@ -74,8 +76,8 @@ def query_overhead(request: HttpRequest, **kwargs) -> HttpResponse:
         with connection.cursor() as cursor:
             cursor.execute('SELECT 1')
 
-    # django 1.11 and 2.1 behaviour is different; this method of calculating overhead appears to work:
-    overhead = cqc.final_queries - 1
+    # django behaviour differs between versions; this method of calculating overhead appears to work:
+    overhead = (cqc.final_queries or 0) - 1
     return JsonResponse({'data': overhead})
 
 

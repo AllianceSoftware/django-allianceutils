@@ -41,6 +41,8 @@ so make sure you follow the template
 
 * Add support for django 4.2
 * Add support for python 3.10, 3.11
+* New `QueryCountMiddleware` methods `set_threshold` and `increase_threshold`
+  * `request.QUERY_COUNT_WARNING_THRESHOLD` is still supported but will be removed in future versions
 
 ### Fixed
 
