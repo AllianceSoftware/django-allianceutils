@@ -22,21 +22,27 @@ def _build_db_settings():
     # Select DB engine
     engine = None
 
+    db_type_to_backend = {
+        "postgres": "django.db.backends.postgresql",
+        "mysql": "django.db.backends.mysql",
+    }
+
     if strtobool(os.environ.get('TOX', '0')):
         # look for the DB name in one of the tox environment name components
         engine_candidates = [
             backend
             for tox_env, backend
-            in [
-                # ( tox_env, django backend )
-                ('postgres', 'postgresql'),
-                ('mysql', 'mysql'),
-            ]
+            in db_type_to_backend.items()
             if tox_env in str(Path(os.environ['VIRTUAL_ENV']).name).split('-')
         ]
         assert len(engine_candidates)
-        engine = f'django.db.backends.{engine_candidates[0]}'
+        engine = engine_candidates[0]
 
+    # DB type is manually specified
+    if engine is None and os.environ.get("DATABASE_TYPE"):
+        engine = db_type_to_backend[os.environ["DATABASE_TYPE"]]
+
+    # guess based on env variables & installed packages
     if engine is None and os.environ.get('PGDATABASE'):
         try:
             import psycopg2
