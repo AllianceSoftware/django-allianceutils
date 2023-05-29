@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 from distutils.util import strtobool
 import os
 from pathlib import Path
+from typing import Any
 import unittest
 
 from django.conf import settings
@@ -54,7 +57,7 @@ is_tox = strtobool(os.getenv('TOX', '0'))
 
 
 def make_settings(prod_path=stats_prod_path, **kwargs):
-    webpack_loader_settings = {
+    webpack_loader_settings: dict[str, Any] = {
         'WEBPACK_LOADER': {}
     }
 

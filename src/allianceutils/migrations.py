@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 from pathlib import Path
+from typing import Any
+from typing import Sequence
 from typing import Union
 
 from django.apps import apps
@@ -12,15 +16,38 @@ class RunSQLFromFile(RunSQL):
     SQL file is expected to be at {app_dir}/migration/sql/{filename}
 
     The reason you would do this as an external file & function is so that squashed migrations don't become
-    unwieldy (it will inline and strip whitespace the SQL even for large data files)
-
+    unreadable (the squash process will inline and strip whitespace in the SQL even for large data files)
     """
-    def __init__(self, app_name: str, filename: Union[str, Path], *args, **kwargs):
-        # RunSQL isn't really made to be modified; we store the app_name & filename
-        # in self.sql to avoid having to cut & paste large chunks of RunSQL
-        super().__init__(sql=(app_name, filename), *args, **kwargs)
+
+    app_name: str
+    filename: Path
+
+    def __init__(self, *, app_name: str, filename: str | Path, **kwargs):
+        self.app_name = app_name
+        self.filename = Path(filename)
+        if self.filename.is_absolute():
+            raise ValueError("filename should be relative to app's migrations directory")
+
+        super().__init__(
+            sql="",
+            reverse_sql=None,
+            **kwargs)
+
+    def deconstruct(self) -> tuple[str, Sequence[Any], dict[str, Any]]:
+        path, args, kwargs = super().deconstruct()
+        del kwargs["sql"]
+        del kwargs["reverse_sql"]
+        kwargs["app_name"] = self.app_name
+        kwargs["filename"] = str(self.filename)
+        return path, args, kwargs
+
+    def describe(self):
+        return "Raw SQL operation from file"
 
     def _run_sql(self, schema_editor, sqls):
-        app_name, filename = sqls
-        path = Path(apps.get_app_config(app_name).path) / 'migrations' / filename
-        schema_editor.execute(path.read_text())
+        path = Path(apps.get_app_config(self.app_name).path, 'migrations', self.filename)
+        sql = path.read_text()
+        super()._run_sql(schema_editor, sqls)  # type:ignore[misc] # underscore methods are hidden
+
+
+# TODO: add test cases for this

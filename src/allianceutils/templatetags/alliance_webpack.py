@@ -34,6 +34,7 @@ def render_entry_point(entry_point_name:str, resource_type:str, attrs:str='', co
           <link type="text/css" href="http://whatever/app.bundle.css?e2b781da02d36dad3aff" rel="stylesheet"></link>
 
     """
-    loader = WebpackEntryPointLoader(settings.WEBPACK_LOADER[config])
+    webpack_settings: dict = settings.WEBPACK_LOADER[config]  # type:ignore[misc]  # we've added a new settings
+    loader = WebpackEntryPointLoader(webpack_settings)
     tags = get_chunk_tags(loader.get_chunks_for_entry_point(entry_point_name, resource_type), attrs)
     return mark_safe('\n'.join(tags))

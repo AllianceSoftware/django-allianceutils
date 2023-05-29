@@ -118,8 +118,7 @@ class CamelCaseMultiPartJSONParser(MultiPartParser):
                     transformed_values.append((k, final_v))
                 return dict(transformed_values)
 
-            json_data = json.loads(
-                data_and_files.data.get("jsonData"), object_pairs_hook=hook
-            )
+            json_data_str = data_and_files.data["jsonData"]
+            json_data = json.loads(json_data_str, object_pairs_hook=hook)
             return self.underscoreize(json_data)
         return data_and_files

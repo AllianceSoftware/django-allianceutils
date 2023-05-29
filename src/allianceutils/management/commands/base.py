@@ -1,3 +1,5 @@
+from typing import Iterable
+
 from django.apps import AppConfig
 from django.apps import apps
 from django.core.management.base import BaseCommand
@@ -17,6 +19,7 @@ class OptionalAppCommand(BaseCommand):
         parser.add_argument('args', metavar='app_label', nargs='*')
 
     def handle(self, *app_labels, **options):
+        app_configs: Iterable[AppConfig]
         if len(app_labels) > 0:
             try:
                 app_configs = [

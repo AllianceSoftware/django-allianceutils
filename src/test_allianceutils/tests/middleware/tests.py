@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import base64
 import threading
 from typing import Callable
@@ -19,11 +21,12 @@ from test_allianceutils.tests.middleware.views import reset_thread_wait_barrier
 
 QUERY_COUNT_OVERHEAD = 0
 
-def execute_request(client: object,
+
+def execute_request(client: Client | None,
     url_path: str,
     data: Dict[str, str] = {},
     thread_count: int = 1,
-    prehook: Callable = None,
+    prehook: Callable[[Client | None, int | None], Client] | None = None,
 ):
     """
     Execute a request, optionally on multiple threads
@@ -31,16 +34,18 @@ def execute_request(client: object,
     :param url_path: URL path to request
     :param data: POST variables
     :param thread_count: number of threads to create & run this request in
+    :param prehook: if passed will call this with the Client to allow for login / other setup
 
     :return: a list of responses if `thread_pool` more than 1, otherwise a single response
     """
     thread_exceptions = []
     thread_responses = []
 
-    def do_request(client=None, count=None):
+    def do_request(client: Client | None=None, count: int | None=None):
         try:
             if prehook:
                 client = prehook(client, count)
+            assert client is not None
             response = client.post(path=url_path, data=data)
             thread_responses.append(response)
         except Exception as ex:
@@ -178,7 +183,7 @@ class QueryCountMiddlewareTestCase(TestCase):
         """
         Ensure no false positives
         """
-        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD / 2)
+        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD // 2)
 
     @override_settings(MIDDLEWARE=settings.MIDDLEWARE + ('allianceutils.middleware.QueryCountMiddleware',))
     def test_not_exceeded(self):
@@ -228,9 +233,9 @@ class QueryCountMiddlewareTestCase(TestCase):
         """
         Query count threshold can be temporarily disabled
         """
-        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD * 2, set_threshold='')
+        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD * 2, set_threshold=0)
         self.assert_warning_count(0, 1, settings.QUERY_COUNT_WARNING_THRESHOLD * 2)
-        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD * 2, set_threshold='')
+        self.assert_warning_count(0, 0, settings.QUERY_COUNT_WARNING_THRESHOLD * 2, set_threshold=0)
 
     @override_settings(MIDDLEWARE=settings.MIDDLEWARE + ('allianceutils.middleware.QueryCountMiddleware',))
     def test_exception(self):
@@ -295,12 +300,16 @@ class HttpAuthMiddlewareTestCase(TestCase):
 
     @override_settings(MIDDLEWARE=settings.MIDDLEWARE + ('allianceutils.middleware.HttpAuthMiddleware',), HTTP_AUTH_USERNAME=username, HTTP_AUTH_PASSWORD=password)
     def test_site_inaccessible_with_incorrect_auth(self):
-        auth_headers = {'HTTP_AUTHORIZATION': 'Basic ' + str(base64.b64encode(b'a:b'), 'utf-8')}
-        resp = self.client.get(path="/", **auth_headers)
+        resp = self.client.get(
+            path="/",
+            HTTP_AUTHORIZATION="Basic " + str(base64.b64encode(b'a:b'), 'utf-8'),
+        )
         self.assertEqual(resp.status_code, 401)
 
     @override_settings(MIDDLEWARE=settings.MIDDLEWARE + ('allianceutils.middleware.HttpAuthMiddleware',), HTTP_AUTH_USERNAME=username, HTTP_AUTH_PASSWORD=password)
     def test_site_accessible_with_correct_auth(self):
-        auth_headers = {'HTTP_AUTHORIZATION': 'Basic ' + str(base64.b64encode(f'{self.username}:{self.password}'.encode()), 'utf-8')}
-        resp = self.client.get(path="/", **auth_headers)
+        resp = self.client.get(
+            path="/",
+            HTTP_AUTHORIZATION="Basic " + str(base64.b64encode(f'{self.username}:{self.password}'.encode()), 'utf-8')
+        )
         self.assertEqual(resp.status_code, 404)

@@ -4,6 +4,6 @@ from .query_count import QueryCountMiddleware
 
 __all__ = [
     'HttpAuthMiddleware',
-    'CurrentUserMiddleWare',
+    'CurrentUserMiddleware',
     'QueryCountMiddleware',
 ]

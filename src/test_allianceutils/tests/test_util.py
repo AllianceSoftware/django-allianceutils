@@ -1,6 +1,13 @@
-from contextlib import ExitStack as nullcontext  # want this to work with python <3.7 so not using nullcontext directly
+from __future__ import annotations
+
+from contextlib import nullcontext
 from io import StringIO
 from types import ModuleType
+from typing import cast
+from typing import ContextManager
+from typing import Iterable
+from typing import List
+from typing import Tuple
 from unittest import skipIf
 
 from django.apps import apps
@@ -9,6 +16,7 @@ from django.test import override_settings
 from django.test import SimpleTestCase
 from django.test import TransactionTestCase
 from django.utils.translation import gettext_lazy
+from typing_extensions import TypeAlias
 
 from allianceutils.util import camel_to_underscore
 from allianceutils.util import camelize
@@ -19,6 +27,8 @@ from allianceutils.util import underscore_to_camel
 from allianceutils.util import underscoreize
 from allianceutils.util.camel_case import _create_ignore_lookup
 from allianceutils.util.camel_case import _debug_lookup
+from allianceutils.util.camel_case import IgnoreDict
+from allianceutils.util.camel_case import IgnoreSpecifier
 from allianceutils.util.get_firstparty_apps import is_firstparty_app
 from test_allianceutils.tests.serializers.models import Person
 
@@ -35,21 +45,24 @@ class UtilTestCase(SimpleTestCase):
         """
             Test retry_fn
         """
+        counter: int
         def fn():
-            fn.a += 1
-            if fn.a <= 3:
+            nonlocal counter
+            counter += 1
+            if counter <= 3:
                 raise ValueError()
-            if fn.a == 4:
+            if counter == 4:
                 raise IndexError()
             return 666
-        fn.a = 0
+
+        counter = 0
         self.assertEqual(retry_fn(fn, (ValueError, IndexError,)), 666)
 
-        fn.a = 0
+        counter = 0
         with self.assertRaises(IndexError):
             retry_fn(fn, (ValueError, ))
 
-        fn.a = 0
+        counter = 0
         with self.assertRaises(ValueError):
             retry_fn(fn, (ValueError, IndexError), 3)
 
@@ -81,7 +94,10 @@ class DateFormatTestCase(SimpleTestCase):
         }
 
         for format_in, format_out in formats.items():
-            with self.assertRaises(ValueError) if format_out is None else nullcontext():
+            # cast needed because of mypy issue #12056
+            with cast(ContextManager,
+                self.assertRaises(ValueError) if (format_out is None) else nullcontext()
+            ):
                 self.assertEqual(python_to_django_date_format(format_in), format_out)
 
         format_in = ''.join(key for key, value in formats.items() if value is not None)
@@ -146,7 +162,12 @@ class CamelCaseTestCase(TransactionTestCase):
     # def _strip_indent(self, s, indent=8):
     #     return ('\n'.join([line[indent:] for line in s.split('\n') ])).strip()
 
-    def assertTree(self, ignore_list, expected):
+    InternalTestCasesT: TypeAlias = List[Tuple[
+        Iterable[str], # ignore specifiers
+        IgnoreDict # out
+    ]]
+
+    def assertTree(self, ignore_list: IgnoreSpecifier, expected: IgnoreDict | str):
         """
         Accept an ignore list (input to _create_ignore_lookup) and assert that expected output matches
         expected can be one of:
@@ -156,16 +177,19 @@ class CamelCaseTestCase(TransactionTestCase):
         actual = _create_ignore_lookup(ignore_list)
 
         if isinstance(expected, str):
-            actual = _debug_lookup(actual)
+            actual_str = "\n".join(_debug_lookup(actual))
 
             expected = expected.rstrip()
             min_indent = min((len(line) - len(line.lstrip()) for line in expected.split('\n') if line))
             expected = ('\n'.join([line[min_indent:] for line in expected.split('\n') if line]))
 
-        self.assertEqual(actual, expected)
+            self.assertEqual(actual_str, expected)
+
+        else:
+            self.assertEqual(actual, expected)
 
     def test_create_ignore_lookup_simple(self):
-        tests = [
+        tests: CamelCaseTestCase.InternalTestCasesT = [
             (
                 ['a'],
                 {'a': {None: True} },
@@ -186,7 +210,7 @@ class CamelCaseTestCase(TransactionTestCase):
             self.assertTree(test_in, test_out)
 
     def test_create_ignore_lookup_star(self):
-        tests = [
+        tests: CamelCaseTestCase.InternalTestCasesT = [
             (
                 [
                     'a.b',
@@ -251,7 +275,7 @@ class CamelCaseTestCase(TransactionTestCase):
         Check that the debug function returns the right test_out
         """
         input = ['*.c', 'a', 'b.*']
-        ignore_tree = {
+        ignore_tree: IgnoreDict = {
             '*': {
                 'c': {None: True},
             },
@@ -336,10 +360,11 @@ class CamelCaseTestCase(TransactionTestCase):
             self.assertTree(test_in, test_out)
 
     def test_camelize(self):
-        tests = (
+        tests = [
+            # each tuple is (in, ignore, out)
             (
                 [1, 'a_bc_d', {'a_bc_d': {'d_ef_g': ['h_ij_k'], 2: 2}, 1: 1}, b"x"],
-                [],
+                cast(IgnoreSpecifier, []),
                 [1, 'a_bc_d', {'aBcD':   {'dEfG':   ['h_ij_k'], 2: 2}, 1: 1}, b"x"],
             ),
             (
@@ -347,16 +372,17 @@ class CamelCaseTestCase(TransactionTestCase):
                 ['*.d_ef_g', '*.*.d_ef_g.h_ij_k'],
                 [1, 'a_bc_d', {'aBcD':   {'dEfG':   {'h_ij_k': {'qrS':  't_uv'}}}}, {'d_ef_g': {'hIjK':   4}}],
             ),
-        )
+        ]
 
         for test_in, ignore, test_out in tests:
             self.assertEqual(camelize(test_in, ignore), test_out)
 
     def test_camelize_django_lazy(self):
-        tests = (
+        tests = [
+            # each tuple is (in, ignore, out)
             (
                 [1, gettext_lazy('a_bc_d'), {gettext_lazy('a_bc_d'): {gettext_lazy('d_ef_g'): [gettext_lazy('h_ij_k')], 2: 2}, 1: 1}, b"x"],
-                [],
+                cast(IgnoreSpecifier, []),
                 [1, 'a_bc_d', {'aBcD': {'dEfG': ['h_ij_k'], 2: 2}, 1: 1}, b"x"],
             ),
             (
@@ -364,7 +390,7 @@ class CamelCaseTestCase(TransactionTestCase):
                 ['*.d_ef_g', '*.*.d_ef_g.h_ij_k'],
                 [1, 'a_bc_d', {'aBcD': {'dEfG': {'h_ij_k': {'qrS': 't_uv'}}}}, {'d_ef_g': {'hIjK': 4}}],
             ),
-        )
+        ]
 
         for test_in, ignore, test_out in tests:
             self.assertEqual(camelize(test_in, ignore), test_out)
@@ -373,9 +399,10 @@ class CamelCaseTestCase(TransactionTestCase):
         file1 = InMemoryUploadedFile(StringIO(), "name", "name", "content", 1, "utf8")
         file2 = InMemoryUploadedFile(StringIO(), "name", "name", "content", 1, "utf8")
         tests = (
+            # each tuple is (in, ignore, out)
             (
                 [{'test_file': file1}, file2],
-                [],
+                cast(IgnoreSpecifier, []),
                 [{'testFile': file1}, file2],
             ),
         )
@@ -387,9 +414,10 @@ class CamelCaseTestCase(TransactionTestCase):
         p1 = Person.objects.create(username="tata", label="pang")
         p2 = Person.objects.create(username="toto", label="ping")
         tests = (
+            # each tuple is (in, ignore, out)
             (
                 Person.objects.all().order_by('username').values('user_ptr', 'username', 'label'),
-                [],
+                cast(IgnoreSpecifier, []),
                 [{'userPtr': p1.pk, 'username': 'tata', 'label': 'pang'}, {'userPtr': p2.pk, 'username': 'toto', 'label': 'ping'}],
             ),
         )
@@ -399,9 +427,10 @@ class CamelCaseTestCase(TransactionTestCase):
 
     def test_underscorize(self):
         tests = (
+            # each tuple is (in, ignore, out)
             (
                 [1, 'aBcD', {'aBcD': {'dEfG': ['hIjK'], 2: 2}, 1: 1}, b"x"],
-                [],
+                cast(IgnoreSpecifier, []),
                 [1, 'aBcD', {'a_bc_d': {'d_ef_g': ['hIjK'], 2: 2}, 1: 1}, b"x"],
             ),
 
@@ -419,9 +448,10 @@ class CamelCaseTestCase(TransactionTestCase):
         file1 = InMemoryUploadedFile(StringIO(), "name", "name", "content", 1, "utf8")
         file2 = InMemoryUploadedFile(StringIO(), "name", "name", "content", 1, "utf8")
         tests = (
+            # each tuple is (in, ignore, out)
             (
                 [{'testFile': file1}, file2],
-                [],
+                cast(IgnoreSpecifier, []),
                 [{'test_file': file1}, file2],
             ),
         )

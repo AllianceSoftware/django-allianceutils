@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import ast
 from collections import defaultdict
 import inspect
 from pathlib import Path
 import re
 import subprocess
-from typing import Dict
+from typing import cast
+from typing import Collection
 from typing import Iterable
 from typing import List
 from typing import Mapping
@@ -44,17 +47,11 @@ ID_ERROR_EXPLICIT_TABLE_NAME_LOWERCASE = 'allianceutils.E010'
 ID_INFO_EXPLICIT_TABLE_NAME_LOWERCASE = 'allianceutils.I010'
 ID_ERROR_FIELD_NAME_NOT_CAMEL_FRIENDLY = 'allianceutils.E011'
 
-try:
-    Pattern = re.Pattern
-except AttributeError:
-    # Until python 3.7 re.Pattern was not exposed (was only present internally as _pattern_type)
-    Pattern = object
-
 
 def find_candidate_models(
     app_configs: Optional[Iterable[AppConfig]],
-    ignore_labels: Iterable[Union[str, Pattern]] = None
-) -> Dict[str, Type[Model]]:
+    ignore_labels: Optional[Iterable[Union[str, re.Pattern]]] = None
+) -> dict[str, Type[Model]]:
     """
     Given a list of labels to ignore, return models whose app_label or label is NOT in ignore_labels.
     :return: dict which is a mapping of candidate models in the format of { model_label: Model }
@@ -66,6 +63,7 @@ def find_candidate_models(
         ignore_labels = []
 
     def should_ignore(label: str) -> bool:
+        assert ignore_labels is not None
         return (
             # string match
             any(s == label for s in ignore_labels) or
@@ -73,7 +71,7 @@ def find_candidate_models(
             any(p.match(label) for p in ignore_labels if hasattr(p, "match"))
         )
 
-    candidate_models: Dict[str, Type[Model]] = {}
+    candidate_models: dict[str, Type[Model]] = {}
 
     for app_config in app_configs:
         candidate_models.update({
@@ -88,17 +86,17 @@ def find_candidate_models(
 
 class CheckUrlTrailingSlash:
     expect_trailing_slash: bool
-    ignore_attrs: Mapping[str, Iterable[str]]
+    ignore_attrs: dict[str, Collection[str]]
 
-    def __init__(self, expect_trailing_slash: bool, ignore_attrs: Mapping[str, Iterable[str]] = {}):
+    def __init__(self, expect_trailing_slash: bool, ignore_attrs: Mapping[str, Collection[str]] = {}):
         self.expect_trailing_slash = expect_trailing_slash
-        self.ignore_attrs = ignore_attrs
+        self.ignore_attrs = dict(ignore_attrs.items())
 
-    def __call__(self, app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
+    def __call__(self, app_configs: Iterable[AppConfig], **kwargs) -> list[CheckMessage]:
         # We ignore app_configs; so does django core check_url_settings()
         # Consider where ROOT_URLCONF points app A urlpatterns which include() app B urlpatterns
         # which define a URL to view in app C -- which app was the one that owned the URL?
-        _ignore_attrs = {
+        _ignore_attrs: dict[str, Collection[str]] = {
             '_regex': [
                 '^$',
             ],
@@ -112,23 +110,19 @@ class CheckUrlTrailingSlash:
         }
         _ignore_attrs.update(self.ignore_attrs)
 
-        def check_resolver(resolver: URLResolver, depth: int = 0) -> List[CheckMessage]:
+        def check_resolver(resolver: URLResolver, depth: int = 0) -> list[CheckMessage]:
             messages = []
             for url_pattern in resolver.url_patterns:
 
-                # look
                 if any(
-                        getattr(url_pattern, attr, None) in vals or getattr(getattr(url_pattern, 'pattern', {}), attr, None) in vals
-                        for attr, vals
-                        in _ignore_attrs.items()):
+                    getattr(url_pattern, attr, None) in vals
+                        or getattr(getattr(url_pattern, 'pattern', {}), attr, None) in vals
+                    for attr, vals
+                    in _ignore_attrs.items()
+                ):
                     continue
 
-                try:
-                    # django 2.0+ simplified urls (stilluses a regex underneath)
-                    regex_pattern = url_pattern.pattern.regex.pattern
-                except AttributeError:
-                    # django <2.0 regex patterns
-                    regex_pattern = url_pattern.regex.pattern
+                regex_pattern = url_pattern.pattern.regex.pattern
 
                 if regex_pattern == r'^\Z' or regex_pattern == '^$':
                     # empty patterns are a special case; they may be nested inside an
@@ -136,17 +130,11 @@ class CheckUrlTrailingSlash:
                     # they do or don't have a slash
                     continue
 
-                if hasattr(url_pattern, 'url_patterns'):
+                if isinstance(url_pattern, URLResolver):
                     # is a resolver, not a pattern: recurse
                     messages.extend(check_resolver(url_pattern, depth+1))
                 elif (regex_pattern.endswith('/$') or regex_pattern.endswith(r'/\Z')) != self.expect_trailing_slash:
-                    try:
-                        # django 2.0+ simplified urls
-                        description = url_pattern.pattern.describe()
-                    except AttributeError:
-                        # django <2.0 regex urls
-                        description = url_pattern.describe()
-
+                    description = url_pattern.pattern.describe()
                     messages.append(
                         Warning(
                             f'The URL pattern {description} is inconsistent with expect_trailing_slash',
@@ -161,24 +149,26 @@ class CheckUrlTrailingSlash:
 
 
 class CheckGitHooks:
-    git_path: Optional[Union[str, Path]] = None
+    git_path: Path
 
     def __init__(self, git_path: Optional[Union[str, Path]] = None):
-        self.git_path = Path(git_path) or get_default_git_path()
+        self.git_path = Path(git_path) if git_path is not None else get_default_git_path()
 
     def __call__(self, app_configs: Iterable[AppConfig], **kwargs):
         return _check_git_hooks(app_configs, self.git_path, **kwargs)
 
 
-def get_default_git_path() -> str:
-    return Path(settings.PROJECT_DIR, '.git')
+def get_default_git_path() -> Path:
+    assert hasattr(settings, "PROJECT_DIR")
+    project_dir = settings.PROJECT_DIR  # type:ignore[misc]  # we already checked that this is present
+    return Path(project_dir, '.git')
 
 
-def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
+def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs) -> list[CheckMessage]:
     return _check_git_hooks(app_configs, git_path=get_default_git_path(), **kwargs)
 
 
-def _check_git_hooks(app_configs: Iterable[AppConfig], git_path: Path, **kwargs) -> List[CheckMessage]:
+def _check_git_hooks(app_configs: Iterable[AppConfig], git_path: Path, **kwargs) -> list[CheckMessage]:
 
     # handle the case where .git is a file rather than a directory
     try:
@@ -187,7 +177,7 @@ def _check_git_hooks(app_configs: Iterable[AppConfig], git_path: Path, **kwargs)
     except OSError:
         pass
 
-    messages = []
+    messages: list[CheckMessage] = []
 
     if not git_path.exists():
         if settings.DEBUG:
@@ -215,7 +205,9 @@ def _check_git_hooks(app_configs: Iterable[AppConfig], git_path: Path, **kwargs)
         if not git_config_result.returncode:
             git_hooks_path = Path(git_config_result.stdout.decode('utf-8').strip('\n'))
             if not git_hooks_path.is_absolute():
-                git_hooks_path = Path(settings.PROJECT_DIR) / git_hooks_path
+                assert hasattr(settings, "PROJECT_DIR")
+                project_dir = settings.PROJECT_DIR  # type:ignore[misc]  # we already checked that this is present
+                git_hooks_path = Path(project_dir, git_hooks_path)
 
         precommit = git_hooks_path / 'pre-commit'
 
@@ -248,9 +240,9 @@ def _check_git_hooks(app_configs: Iterable[AppConfig], git_path: Path, **kwargs)
     return messages
 
 
-def check_admins(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
-    messages = []
-    if not settings.AUTOMATED_TESTS and not settings.DEBUG:
+def check_admins(app_configs: Iterable[AppConfig] | None, **kwargs) -> list[CheckMessage]:
+    messages: list[CheckMessage] = []
+    if not getattr(settings, "AUTOMATED_TESTS", False) and not settings.DEBUG:
         if len(settings.ADMINS) == 0:
             messages.append(
                 Error(
@@ -262,13 +254,13 @@ def check_admins(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessag
     return messages
 
 
-def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: bool) -> List[CheckMessage]:
+def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: bool) -> list[CheckMessage]:
     """
     Use an ast to check if a model has the db_table meta option set.
     This is done this way because a model instance's db_table is always
     populated even if with that of the default.
     """
-    messages = []
+    messages: list[CheckMessage] = []
     found = None
     try:
         source = inspect.getsource(model)
@@ -289,10 +281,9 @@ def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: 
         if isinstance(node, ast.ClassDef) and node.name == 'Meta':
             for sub_node in node.body:
                 if isinstance(sub_node, ast.Assign):
-                    if sub_node.targets[0].id == 'db_table':
-                        # in python <=3.7 it will be an ast.Str
-                        # in python >=3.8 it will be an ast.Constant
-                        if isinstance(sub_node.value, (ast.Constant, ast.Str)):
+                    first_target = sub_node.targets[0]
+                    if first_target.id == 'db_table':  # type:ignore[attr-defined] # isn't present in type defs
+                        if isinstance(sub_node.value, ast.Constant):
                             found = sub_node.value.s
                         else:
                             # If it's an expression then we don't know what it's going to evaluate it
@@ -302,7 +293,7 @@ def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: 
 
                     # Skip for unmanaged models
                     elif (
-                        sub_node.targets[0].id == 'managed'
+                        first_target.id == 'managed'  # type:ignore[attr-defined] # isn't present in type defs
                         and isinstance(sub_node.value, (ast.Constant))
                         and sub_node.value.s == False
                     ):
@@ -340,10 +331,10 @@ class CheckExplicitTableNames:
     A check for models with missing or invalid db_table settings
     """
 
-    ignore_labels: Iterable[str]
+    ignore_labels: Iterable[Union[str, re.Pattern]]
     enforce_lowercase: bool
 
-    def __init__(self, ignore_labels: Iterable[Union[str, Pattern]] = DEFAULT_TABLE_NAME_CHECK_IGNORE, enforce_lowercase: bool = True):
+    def __init__(self, ignore_labels: Iterable[Union[str, re.Pattern]] = DEFAULT_TABLE_NAME_CHECK_IGNORE, enforce_lowercase: bool = True):
         """
         ignore_labels: ignore apps or models matching supplied labels
         enforce_lowercase: applies rule E010 which enforces table name to be all lowercase; defaults to True
@@ -351,7 +342,7 @@ class CheckExplicitTableNames:
         self.ignore_labels = ignore_labels
         self.enforce_lowercase = enforce_lowercase
 
-    def __call__(self, app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
+    def __call__(self, app_configs: Iterable[AppConfig], **kwargs) -> list[CheckMessage]:
         """
         Warn when models don't have Meta's db_table_name set in apps that require it.
         """
@@ -376,7 +367,7 @@ class CheckReversibleFieldNames:
             errors += self._check_field_names_on_model(model)
         return errors
 
-    def _check_field_names_on_model(self, model: Type[Model]) -> List[CheckMessage]:
+    def _check_field_names_on_model(self, model: Type[Model]) -> list[CheckMessage]:
         """
         check whether field names on model are legit
 
@@ -386,7 +377,7 @@ class CheckReversibleFieldNames:
 
         """
 
-        messages = []
+        messages: list[CheckMessage] = []
 
         for field in model._meta.fields:
             if camel_to_underscore(underscore_to_camel(field.name)) != field.name:

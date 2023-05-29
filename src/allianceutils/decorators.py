@@ -1,6 +1,9 @@
 import functools
 import inspect
 from typing import Callable
+from typing import TypeVar
+
+from typing_extensions import ParamSpec
 
 
 class _CachedMethodDescriptor:
@@ -13,7 +16,8 @@ class _CachedMethodDescriptor:
 
     def __get__(self, obj, objtype):
         f = functools.partial(self.__call__, obj)
-        f.clear_cache = functools.partial(self.clear_cache, obj)
+        # we dynamically attached the clear_cache method
+        f.clear_cache = functools.partial(self.clear_cache, obj)  # type:ignore[attr-defined]
         functools.update_wrapper(f, self.fn)
         return f
 
@@ -32,7 +36,11 @@ class _CachedMethodDescriptor:
                 raise AttributeError("clear_cache() should be called via a class instance, not a class") from ae
 
 
-def method_cache(fn: Callable) -> Callable:
+# see https://stackoverflow.com/a/68290080
+# for typing of decorators; it doesn't work for us however because we have a decorator that returns a descriptor
+# (is that even typable in python?)
+# The only reason the typing is correct is because we only accept methods with no arguments (other than self)
+def method_cache(fn: Callable) -> _CachedMethodDescriptor:
     """
     Method decorator to cache function results.
 

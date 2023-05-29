@@ -72,12 +72,20 @@ class ViewsetPermissionsTestCase(TestCase):
             model=model._meta.model_name
         )
         self.user.user_permissions.add(perm)
-        # refresh_from_db() doesn't refresh the user permissions cache, need to reload from scratch
+        # refresh_from_db() doesn't refresh the user permissions cache, https://stackoverflow.com/a/68888245
+        #  see _get_permissions() and get_all_permissions()
+        #  in https://github.com/django/django/blob/main/django/contrib/auth/backends.py
         # self.user = User.objects.get(pk=self.user.pk)
-        try:
-            del self.user._user_perm_cache
-        except AttributeError:
-            pass
+        cache_attrs = [
+            "_user_perm_cache",
+            "_group_perm_cache",
+            "_perm_cache",
+        ]
+        for attr in cache_attrs:
+            try:
+                delattr(self.user, attr)
+            except AttributeError:
+                pass
 
     def test_simple_permission_viewset(self):
         """

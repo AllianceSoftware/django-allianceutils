@@ -1,25 +1,35 @@
+from __future__ import annotations
+
+from typing import cast
 from typing import Iterable
-from typing import Optional
 from typing import Type
-from typing import Union
+from typing import TYPE_CHECKING
+from typing import TypeVar
 
 from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth.models import UserManager
 from django.core import checks
 from django.core.exceptions import ValidationError
-from django.db.models import Manager
+from django.db.models import Field
 from django.db.models import Model
 from django.db.models import QuerySet
 from django.db.models.query import ModelIterable
+from typing_extensions import Self
 
+from allianceutils import ModelProtocol
 from allianceutils.checks import ID_ERROR_PROFILE_RELATED_TABLES
+
+_ModelT = TypeVar("_ModelT", bound=Model, covariant=True)
 
 
 class GenericUserProfileIterable(ModelIterable):
     """
     The iterator that transforms user records into profiles
     """
-    def __iter__(self) -> Iterable[Model]:
+
+    queryset: GenericUserProfileQuerySet  # this is coupled to this QuerySet
+
+    def __iter__(self) -> Iterable[GenericUserProfile | _ModelT]:  # type:ignore[override]  # specialised return
         if self.queryset._do_iterate_profiles:
             for user in super().__iter__():
                 yield user.profile
@@ -39,7 +49,7 @@ class GenericUserProfileQuerySet(QuerySet):
         self._do_iterate_profiles = False
         self._iterable_class = GenericUserProfileIterable
 
-    def profiles(self) -> QuerySet:
+    def profiles(self) -> Self:
         """
         Return a queryset that when iterated will yield User profiles instead of User records
         """
@@ -48,15 +58,15 @@ class GenericUserProfileQuerySet(QuerySet):
         qs._validate_iterator()
         return qs
 
-    def values(self, *args, **kwargs) -> QuerySet:
+    def values(self, *args, **kwargs) -> Self:
         # We want to fail early if needed rather than when the iterator is created (easier to debug)
-        qs = super().values(*args, **kwargs)
+        qs = cast(Self, super().values(*args, **kwargs))
         qs._validate_iterator()
         return qs
 
-    def values_list(self, *args, **kwargs) -> QuerySet:
+    def values_list(self, *args, **kwargs) -> Self:
         # We want to fail early if needed rather than when the iterator is created (easier to debug)
-        qs = super().values_list(*args, **kwargs)
+        qs = cast(Self, super().values_list(*args, **kwargs))
         qs._validate_iterator()
         return qs
 
@@ -76,17 +86,20 @@ class GenericUserProfileQuerySet(QuerySet):
             raise ValueError('Bad _iterable_class. (Trying to use values()/values_list() with profiles()? This has not been implemented yet)')
 
     def _clone(self, **kwargs):
-        qs = super()._clone(**kwargs)
+        qs = super()._clone(**kwargs)  # type:ignore[misc]  # not in django stubs
         qs._do_iterate_profiles = self._do_iterate_profiles
         return qs
 
-    def _get_related_profile_tables(self):
+    def _get_related_profile_tables(self) -> list[str]:
+        """
+        See GenericUserProfile.related_profile_tables
+        """
         if _is_profile(self.model):
             return []
         else:
             return self.model.related_profile_tables
 
-    def select_related_profiles(self) -> QuerySet:
+    def select_related_profiles(self) -> Self:
         """
         Adds relevant select_related() joins so that user_to_profile() doesn't trigger extra queries
         """
@@ -95,7 +108,7 @@ class GenericUserProfileQuerySet(QuerySet):
             return self._clone()
         return self.select_related(*self.model.related_profile_tables)
 
-    def prefetch_related_profiles(self) -> QuerySet:
+    def prefetch_related_profiles(self) -> Self:
         """
         Adds relevant select_related() joins so that user_to_profile() doesn't trigger extra queries
         """
@@ -134,12 +147,22 @@ def _validate_related_profile_tables(model: Type[Model], manager_name: str):
         raise NotImplementedError(msg)
 
 
+_ManagerQuerySet = TypeVar("_ManagerQuerySet", covariant=True)
+
+
 class GenericUserProfileManagerMixin(BaseUserManager):
     """
     Manager mixin that provides for iteration over user profiles.
     Is assumed to be a manager for a GenericUserProfile
     """
-    _queryset_class = GenericUserProfileQuerySet
+
+    # if you change this you may also want to narrow the types of some methods;
+    # I can't find a way to explain to mypy that this can be overridden
+    _queryset_class: type[GenericUserProfileQuerySet] = GenericUserProfileQuerySet
+    _auto_select_related_profiles: bool
+    _auto_prefetch_related_profiles: bool
+
+    model: GenericUserProfile  # type:ignore[assignment] # narrow from parent definition
 
     def __init__(self, select_related_profiles=False, prefetch_related_profiles=False, *args, **kwargs):
         """
@@ -157,7 +180,7 @@ class GenericUserProfileManagerMixin(BaseUserManager):
 
         super().__init__(*args, **kwargs)
 
-    def get_queryset(self) -> QuerySet:
+    def get_queryset(self) -> GenericUserProfileQuerySet:
         qs = super().get_queryset()
         if not isinstance(qs, GenericUserProfileQuerySet):
             raise TypeError('GenericUserProfileManagerMixin QuerySet does not inherit GenericUserProfileQuerySet')
@@ -169,7 +192,7 @@ class GenericUserProfileManagerMixin(BaseUserManager):
             qs = qs.profiles()
         return qs
 
-    def contribute_to_class(self, model: Model, name):
+    def contribute_to_class(self, model: type[Model], name):
         # Do some extra sanity checks on the model
         #
         # We could extend the underlying queryset class and mix in GenericUserProfileQuerySet automatically here
@@ -186,7 +209,7 @@ class GenericUserProfileManagerMixin(BaseUserManager):
         errors = super().check(**kwargs)
 
         model = self.model
-        if getattr(model, 'related_profile_tables') is None:
+        if not hasattr(model, 'related_profile_tables'):
             errors.append(checks.Error(
                 f"Model '{model._meta.label}' does not define related_profile_tables",
                 hint=f"Manager '{self.name}' needs related_profile_tables",
@@ -196,7 +219,7 @@ class GenericUserProfileManagerMixin(BaseUserManager):
 
         return errors
 
-    def profiles(self) -> QuerySet:
+    def profiles(self) -> GenericUserProfileQuerySet:
         return self.get_queryset().profiles()
 
     # TODO: It would be nice to be able to do something like:
@@ -207,23 +230,33 @@ class GenericUserProfileManagerMixin(BaseUserManager):
     #
     # Instead we have to call select_related_profiles on an unrelated queryset with a prefix
 
-    def select_related_profiles(self, queryset: Optional[Union[QuerySet, Manager]]=None, prefix: str='') -> QuerySet:
+    def select_related_profiles(
+        self,
+        queryset: GenericUserProfileQuerySet | GenericUserProfileManagerMixin | None = None,
+        prefix: str = ""
+    ) -> GenericUserProfileQuerySet:
         if bool(queryset) != bool(prefix):
             raise ValueError('Either none or both of queryset and prefix must be specified')
 
-        if not queryset and not prefix:
+        if queryset is None:
             return self.get_queryset().select_related_profiles()
         else:
-            return queryset.select_related(*[prefix + '__' + profile for profile in self.model.related_profile_tables])
+            filters = [prefix + '__' + profile for profile in self.model.related_profile_tables]
+            return cast(GenericUserProfileQuerySet, queryset.select_related(*filters))
 
-    def prefetch_related_profiles(self, queryset: Optional[Union[QuerySet, Manager]]=None, prefix: str='') -> QuerySet:
+    def prefetch_related_profiles(
+        self,
+        queryset: GenericUserProfileQuerySet | GenericUserProfileManagerMixin | None = None,
+        prefix: str = ""
+    ) -> GenericUserProfileQuerySet:
         if bool(queryset) != bool(prefix):
             raise ValueError('Either none or both of queryset and prefix must be specified')
 
-        if not queryset and not prefix:
+        if queryset is None:
             return self.get_queryset().prefetch_related_profiles()
         else:
-            return queryset.prefetch_related(*[prefix + '__' + profile for profile in self.model.related_profile_tables])
+            filters = [prefix + '__' + profile for profile in self.model.related_profile_tables]
+            return cast(GenericUserProfileQuerySet, queryset.prefetch_related(*filters))
 
 
 class GenericUserProfileManager(GenericUserProfileManagerMixin, UserManager):
@@ -241,6 +274,10 @@ class GenericUserProfile(Model):
     objects = GenericUserProfileManager()
     profiles = GenericUserProfileManager(select_related_profiles=True)
 
+    # This should be overridden to include a list of the FKs to the tables
+    # to join to in order to fetch profiles [will be passed to select_related()]
+    related_profile_tables: list[str]
+
     class Meta:
         abstract = True
 
@@ -256,9 +293,9 @@ class GenericUserProfile(Model):
         self.email = self.normalize_email(self.email)
         return super().save(*args, **kwargs)
 
-    def get_profile(self) -> Model:
+    def get_profile(self) -> Self:
         # We're already a profile
-        if _is_profile(self):
+        if _is_profile(type(self)):
             return self
 
         # try each FK reference one at a time; this will be inefficient if
@@ -277,23 +314,31 @@ class GenericUserProfile(Model):
         Evaluates and caches the result of get_profile()
         Caches the result on all records in the multi-table inheritance chain
         """
-        def __get__(self, obj, cls=None) -> Optional[Model]:
+        def __get__(
+            self,
+            obj: GenericUserProfile | None,
+            cls: type[GenericUserProfile] | None = None
+        ) -> Self | GenericUserProfile:
             if obj is None:
+                # class invocation
                 return self
 
             user_profile = obj.get_profile()
 
             # cache the result on all records in the multi-table inheritance chain
-            record = user_profile
+            record: GenericUserProfile | None = user_profile
             while isinstance(record, Model):
                 record.__dict__['profile'] = user_profile
 
                 # note that record.pk will always return the underlying pk id, not the user_ptr record
-                record = getattr(record, record._meta.pk.name)
+                # so we have to access it via the pk field's name and not the 'pk' alias
+                pk = cast(Field, record._meta.pk)
+                record = getattr(record, pk.name)
 
             return user_profile
 
-    profile = _CachedProfileDescriptor()
-
-    # This should be overridden to include a list of the tables to join to [will be passed to select_related()]
-    related_profile_tables = None
+    # This isn't strictly the correct type; because this is a descriptor if you access this as a class property
+    # (ie ClassName.profile) then you'll get the descriptor itself rather than the profile.
+    # The overwhelming majority of the time you'll be accessing this via an instance (my_obj.profile) and want the
+    # GenericUserProfile instance, so we type it for convenience rather than 100% accuracy
+    profile: Self = cast(Self, _CachedProfileDescriptor())

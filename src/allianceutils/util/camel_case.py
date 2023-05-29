@@ -1,45 +1,64 @@
 # Inspired by https://github.com/vbabiy/djangorestframework-camel-case
 # (but apart from 2 regexes, completely rewritten in order to add `ignore` parameters)
+from __future__ import annotations
+
 from collections import OrderedDict
-from collections.abc import Mapping
 import re
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import Dict
 from typing import Iterable
+from typing import Literal
+from typing import Mapping
 from typing import Sequence
 from typing import Tuple
+from typing import TypeVar
+from typing import Union
 
 from django.core.files import File
 from django.utils.functional import Promise
+from typing_extensions import TypeAlias
 
 _first_cap_re = re.compile('(.)([A-Z][a-z]+)')
 _all_cap_re = re.compile('([a-z0-9])([A-Z])')
 _re_underscore = re.compile(r'(?!^)(?<!_)_([^_])')
 
-_empty_dict = {} # we use this a lot in here
+"""
+a sequence of fields to ignore when camelizing
+# see camelize()/underscorize() 
+"""
+IgnoreSpecifier = Iterable[str]
+
+# Internal structure: see _create_ignore_lookup() for usage
+# Exposed only for typing purposes; treat this as an opaque type
+IgnoreDict: TypeAlias = Dict[Union[str, None], Union["IgnoreDict", Literal[True]]]
+
+_empty_dict: IgnoreDict = {} # we use this a lot in here
 
 
-def _debug_lookup(ignore_tree: Dict, indent: int=0) -> str:
+# a generic type that can be camelized/underscorized
+CamelizeT = TypeVar('CamelizeT')
+
+
+def _debug_lookup(ignore_tree: IgnoreDict, indent: int = 0) -> list[str]:
     """
-    Format a tree processed by _transform_ignore() into something human-readable (for debugging)
-    :param ignore_tree:
-    :return:
+    Format a tree processed by _transform_ignore() into something human-readable (for debugging/testing purposes)
     """
     x = []
-    for sort_key, key in sorted([(key or '', key) for key in ignore_tree.keys()]):
-        if key is None: continue
-        line = ' ' * 4 * indent + str(key) + ('!' if ignore_tree[key].get(None) is True else '')
+    for sort_key, key, children in sorted([(key or '', key, val) for key, val in ignore_tree.items()]):
+        if key is None:
+            continue
+        assert children is not True  # only None key should have a children value of True
+
+        line = ' ' * 4 * indent + str(key) + ('!' if None in children else '')
         x.append(line)
-        if isinstance(ignore_tree[key], Mapping):
-            x += _debug_lookup(ignore_tree[key], indent + 1)
-    if indent == 0:
-        return '\n'.join(x)
-    else:
-        return x
+        if isinstance(children, Mapping):
+            x += _debug_lookup(children, indent + 1)
+    return x
 
 
-def _create_ignore_lookup(ignore: Sequence[str]) -> Dict:
+def _create_ignore_lookup(ignore: IgnoreSpecifier) -> IgnoreDict:
     """
     Transforms a list of field-paths-to-ignore of the following form:
     [
@@ -88,9 +107,9 @@ def _create_ignore_lookup(ignore: Sequence[str]) -> Dict:
     :return: See above
     """
 
-    def process_path(parts: Sequence[str], candidates: Sequence[Dict]):
+    def process_path(parts: Sequence[str], candidates: list[IgnoreDict]):
         """
-        Breadth-first transform of the tree; will add `parts` to the sub-tree(s) specified by `candidates`
+        Breadth-first transform of the tree; will merge `parts` into the sub-tree(s) specified by `candidates`
 
         :param parts: list of field path parts (ie already split on '.') relative to candidates
         :param candidates: list of current candidate sub-trees to process
@@ -99,39 +118,49 @@ def _create_ignore_lookup(ignore: Sequence[str]) -> Dict:
             part = parts[0]
             assert part != ''
 
-            new_candidates = []
+            new_candidates: list[IgnoreDict] = []
 
             for candidate in candidates:
+                assert isinstance(candidate, dict)  # TODO: remove
+
                 if part not in candidate:
                     candidate[part] = {}
 
                 if len(parts) > 1:
                     if part == '*':
                         # all candidates
-                        new_candidates += candidate.values()
+                        assert all(x is not None for x in candidate.values()) # TODO: remove
+                        new_candidates.extend(cast(Iterable[IgnoreDict], candidate.values()))
                     else:
-                        new_candidates.append(candidate[part])
+                        new_candidate = cast(IgnoreDict, candidate[part])
+                        assert candidate[part] is not True
+                        new_candidates.append(new_candidate)
                 else:
                     # current element is a terminal
-                    candidate[part][None] = True
+                    cast(IgnoreDict, candidate[part])[None] = True
 
             candidates = new_candidates
             parts = parts[1:]
 
-    ignore = [x.split('.') for x in ignore]
+    ignore_parts = [x.split('.') for x in ignore]
     # We need to process the wildcard parts last, so sort according to wildcard positions
-    ignore = [(tuple(part == '*' for part in path), path) for path in ignore]
-    ignore.sort(key=lambda x: x[0])
-    ignore = [x[1] for x in ignore]
+    ignore_parts_keyed = [(tuple(part == '*' for part in path), path) for path in ignore_parts]
+    ignore_parts_keyed.sort(key=lambda x: x[0])
+    ignore_parts = [x[1] for x in ignore_parts_keyed]
 
     # Now do the processing
-    data = {}
-    for parts in ignore:
+    data: IgnoreDict = {}
+    for parts in ignore_parts:
         process_path(parts, [data])
     return data
 
 
-def _transform_key_val(key, value, transform_key: Callable, ignore_lookup: Dict) -> Tuple[Any, Any]:
+def _transform_key_val(
+    key: str | Promise,
+    value: CamelizeT,
+    transform_key: Callable,
+    ignore_lookup: Dict
+) -> Tuple[str, CamelizeT]:
     """
     Transform a particular key/value pair
     - Will rename the key if it's not in the ignore_lookup
@@ -157,10 +186,11 @@ def _transform_key_val(key, value, transform_key: Callable, ignore_lookup: Dict)
     if not (ignore_lookup.get(None, False) is True):
         key = transform_key(key)
 
+    assert not isinstance(key, Promise)
     return key, _transform_data(value, transform_key, ignore_lookup)
 
 
-def _transform_data(data, transform_key: Callable, ignore_lookup: Dict):
+def _transform_data(data: CamelizeT, transform_key: Callable, ignore_lookup: Dict) -> CamelizeT:
 
     # Mapping (dict) -- transform keys
     if isinstance(data, Mapping):
@@ -180,10 +210,13 @@ def _transform_data(data, transform_key: Callable, ignore_lookup: Dict):
     # gettext_lazy. Without this they are treated as an iterable.
     if isinstance(data, Iterable) and not isinstance(data, (str, bytes, File, Promise)):
         ignore_lookup = ignore_lookup.get('*', _empty_dict)
-        return [_transform_data(x, transform_key, ignore_lookup) for x in data]
+        transformed = [_transform_data(x, transform_key, ignore_lookup) for x in data]
+        # this cast is not strictly true, but for our purposes an iterable => list might as well be the same type
+        return cast(CamelizeT, transformed)
 
     # is a string/scalar/noniterable; return as-is
-    return data
+    # the cast is because mypy incorrectly thinks the type could have changed
+    return cast(CamelizeT, data)
 
 
 def underscore_to_camel(key: str) -> str:
@@ -206,7 +239,7 @@ def underscore_to_camel(key: str) -> str:
         return key
 
 
-def camelize(data: Any, ignore: Sequence[str]=[]) -> Any:
+def camelize(data: CamelizeT, ignore: IgnoreSpecifier = []) -> CamelizeT:
     """
     Recursively turn underscore-cased keys into camel-cased keys
 
@@ -232,7 +265,7 @@ def camel_to_underscore(key: str) -> str:
         return key
 
 
-def underscoreize(data: Any, ignore: Sequence[str]=[]) -> Any:
+def underscoreize(data: CamelizeT, ignore: IgnoreSpecifier = []) -> CamelizeT:
     """
     Recursively turn camelcase keys into underscored keys
 

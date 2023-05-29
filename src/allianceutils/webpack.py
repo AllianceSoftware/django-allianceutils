@@ -2,6 +2,8 @@ import json
 import logging
 import time
 from typing import Dict
+from typing import Generator
+from typing import Iterable
 from typing import Optional
 from typing import Sequence
 from urllib.parse import ParseResult
@@ -19,7 +21,7 @@ logger = logging.Logger('webpack')
 WEBPACK_DEV_LOADING_TIME_WARNING_DELAY = 20
 
 
-def get_chunk_tags(chunks: Dict, attrs: str):
+def get_chunk_tags(chunks: Iterable[Dict], attrs: str):
     """
     Get tags for
     :param chunks:
@@ -158,7 +160,7 @@ class WebpackEntryPointLoader:
             return urljoin(self.config['BASE_URL'], path)
         return path
 
-    def filter_chunks(self, public_path: str, chunks: Sequence[Dict], required_resource_type:str) -> Sequence[Dict]:
+    def filter_chunks(self, public_path: str, chunks: Sequence[Dict], required_resource_type:str) -> Generator[dict, None, None]:
         if required_resource_type not in self.extensions_by_resource_type:
             valid_resource_types = ', '.join(self.extensions_by_resource_type.keys())
             raise ValueError(f'Invalid chunk type {required_resource_type}. Must be one of: {valid_resource_types}')
@@ -171,7 +173,7 @@ class WebpackEntryPointLoader:
                     **chunk,
                 }
 
-    def get_chunks_for_entry_point(self, entry_point_name:str, resource_type:str) -> Sequence[Dict]:
+    def get_chunks_for_entry_point(self, entry_point_name:str, resource_type:str) ->  Generator[dict, None, None]:
         stats = self.load_stats()
         if stats['status'] == 'compiling':
             logger.warning('Webpack is compiling... web requests will wait until this resolves before loading')

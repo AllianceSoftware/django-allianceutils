@@ -69,7 +69,7 @@ class ValidationErrorCase(SimpleTestCase):
         Can merge ValidationErrors
         """
 
-        def cast_to_list(x):
+        def cast_to_list(x) -> list:
             if isinstance(x, list):
                 return x
             return [x]

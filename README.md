@@ -9,7 +9,6 @@ A collection of utilities for django projects from [Alliance Software](https://w
     * [API](#api)
     * [Auth](#auth)
     * [Decorators](#decorators)
-    * [Filters](#filters)
     * [Management](#management)
         * [Commands](#commands)
         * [Checks](#checks)
@@ -230,16 +229,17 @@ setting or on a ViewSet on the `renderer_classes` property.
 #### ProfileModelBackend
 
 * Backends for use with [GenericUserProfile](#GenericUserProfile); see code examples there
-* `allianceutils.auth.backends.ProfileModelBackendMixin` - in combo with [AuthenticationMiddleware](https://docs.djangoproject.com/en/stable/ref/middleware/#django.contrib.auth.middleware.AuthenticationMiddleware) will set user profiles on `request.user`  
-    * ~`allianceutils.auth.backends.ProfileModelBackend`~ - convenience class combined with case insensitive username & default django permissions backend
-        * this depended on [`authtools`](https://django-authtools.readthedocs.io/en/latest/) which appears to have been
-          abandoned and does not work with django >= 3.
-          If using django 3 then we recommended that you create your own backend in your app:
-          ```python
-            class ProfileModelBackend(ProfileModelBackendMixin, MinimalModelBackend):
-                # you'll need to implement case insensitivity either here or in the User Model  
-                pass
-          ```
+* `allianceutils.auth.backends.ProfileModelBackendMixin` - in combo with [AuthenticationMiddleware](https://docs.djangoproject.com/en/stable/ref/middleware/#django.contrib.auth.middleware.AuthenticationMiddleware) will set user profiles on `request.user`
+  * If you want  
+      * ~`allianceutils.auth.backends.ProfileModelBackend`~ - convenience class combined with case insensitive username & default django permissions backend
+          * this depended on [`authtools`](https://django-authtools.readthedocs.io/en/latest/) which appears to have been
+            abandoned and does not work with django >= 3.
+            If using django 3 then we recommended that you create your own backend in your app:
+            ```python
+              class ProfileModelBackend(ProfileModelBackendMixin, MinimalModelBackend):
+                  # you'll need to implement case insensitivity either here or in the User Model  
+                  pass
+            ```
 
 ### Decorators
 
@@ -288,22 +288,6 @@ class MyViewSet(ViewSet):
 obj = MyViewSet()
 obj.get_object() is obj.get_object()
 obj.get_object.cache_clear()   
-```
-
-### Filters
-
-#### MultipleFieldCharFilter
-
-Search for a string across multiple fields. Requires `django_filters`.
-
-* Usage 
-
-```python
-from allianceutils.filters import MultipleFieldCharFilter
-
-# ...
-# In your filter set (see django_filters for documentation)
-customer = MultipleFieldCharFilter(names=('customer__first_name', 'customer__last_name'), lookup_expr='icontains')
 ```
 
 ### Management

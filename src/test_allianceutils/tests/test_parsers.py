@@ -1,3 +1,10 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Sequence
+
+from django.core.files.uploadhandler import FileUploadHandler
+
 try:
     import rest_framework
 except ImportError:
@@ -11,6 +18,12 @@ from django.test import SimpleTestCase
 
 from allianceutils.api.parsers import CamelCaseJSONParser
 from allianceutils.api.parsers import CamelCaseMultiPartJSONParser
+
+
+@dataclass
+class MockRequest:
+    upload_handlers: Sequence[FileUploadHandler]
+    META: dict[str, str]
 
 
 class TestParsers(SimpleTestCase):
@@ -44,16 +57,14 @@ class TestParsers(SimpleTestCase):
         s = """------test_boundary
 Content-Disposition: form-data; name="jsonData"\r\n\r\n{"keyWithNumeric_1":{"keyWithNumeric2":1,"key":2}}"""
 
-        class MockRequest:
-            pass
-
-        request = MockRequest()
-        request.upload_handlers = (MemoryFileUploadHandler(),)
-        request.META = {
-            "CONTENT_LENGTH": len(s),
-            "CONTENT_TYPE": "multipart/form-data; boundary=----test_boundary",
-            "HTTP_X_MULTIPART_JSON": "1",
-        }
+        request = MockRequest(
+            upload_handlers=(MemoryFileUploadHandler(),),
+            META={
+                "CONTENT_LENGTH": str(len(s)),
+                "CONTENT_TYPE": "multipart/form-data; boundary=----test_boundary",
+                "HTTP_X_MULTIPART_JSON": "1",
+            },
+        )
         parser_context = {"request": request}
         parser = CamelCaseMultiPartJSONParser()
         r = self.bytes(s)
@@ -71,16 +82,14 @@ Content-Disposition: form-data; name="jsonData"\r\n\r\n{"keyWithNumeric_1":{"key
         s = """------test_boundary
 Content-Disposition: form-data; name="jsonData"\r\n\r\n{"aBc": {"dEf": {"hIj": {"kLm": "nOp"}}}}"""
 
-        class MockRequest:
-            pass
-
-        request = MockRequest()
-        request.upload_handlers = (MemoryFileUploadHandler(),)
-        request.META = {
-            "CONTENT_LENGTH": len(s),
-            "CONTENT_TYPE": "multipart/form-data; boundary=----test_boundary",
-            "HTTP_X_MULTIPART_JSON": "1",
-        }
+        request = MockRequest(
+            upload_handlers=(MemoryFileUploadHandler(),),
+            META={
+                "CONTENT_LENGTH": str(len(s)),
+                "CONTENT_TYPE": "multipart/form-data; boundary=----test_boundary",
+                "HTTP_X_MULTIPART_JSON": "1",
+            },
+        )
         parser_context = {"request": request}
 
         class CustomCamelCaseJSONRenderer(CamelCaseMultiPartJSONParser):

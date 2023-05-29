@@ -1,4 +1,27 @@
+from __future__ import annotations
+
 from typing import Collection
+from typing import Protocol
+from typing import TYPE_CHECKING
+
+from django.db.models import Field as ModelField
+from django.db.models.options import Options
+from rest_framework.fields import Field
+from rest_framework.serializers import ModelSerializer
+
+if TYPE_CHECKING:
+    # ModelSerializer.Meta is only available in DRF stubs
+    class DRFSerializerProtocol(Protocol):
+        Meta: ModelSerializer.Meta
+        fields: dict[str, Field]
+
+        # this is provided by SerializerOptInFieldsMixin
+        def get_pinned_fields(self: DRFSerializerProtocol) -> Collection[str]:
+            ...
+
+else:
+    class DRFSerializerProtocol:
+        pass
 
 
 class SerializerOptInFieldsMixin:
@@ -20,7 +43,7 @@ class SerializerOptInFieldsMixin:
     Pinned fields are always returned. (currently pk only if pk exists)
     """
 
-    def get_pinned_fields(self) -> Collection[str]:
+    def get_pinned_fields(self: DRFSerializerProtocol) -> Collection[str]:
         """
         Get by-default pinned fields. Pinned fields are fields always returned regardless of include_fields inclusions.
         Override on serializer to customize.
@@ -31,12 +54,16 @@ class SerializerOptInFieldsMixin:
         """
 
         try:
-            return [self.Meta.model._meta.pk.name]
+            model = self.Meta.model
+            meta: Options = model._meta  # type:ignore[attr-defined]  # _meta is not included in stubs
+            assert meta.pk is not None
+            pk: ModelField = meta.pk
+            return [pk.name]
         except AttributeError:
             pass
         return []
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self: DRFSerializerProtocol, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         if not hasattr(self, "context"):
@@ -60,7 +87,7 @@ class SerializerOptInFieldsMixin:
         if isinstance(fields_to_include, str):
             fields_to_include = [fields_to_include]
 
-        fields_to_include_list = []
+        fields_to_include_list: list[str] = []
         for f in fields_to_include:
             if f.find(",") != -1:
                 fields_to_include_list += f.split(",")

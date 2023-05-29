@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Callable
 from typing import Iterable
@@ -44,6 +46,7 @@ def add_autoreload_extra_files(extra_files: Iterable[Union[str, Path]]):
     if not settings.DEBUG:
         return
 
+    is_running_from_reloader: Callable[[], bool] | None
     try:
        from werkzeug.serving import is_running_from_reloader
     except ImportError:
@@ -54,7 +57,7 @@ def add_autoreload_extra_files(extra_files: Iterable[Union[str, Path]]):
         if not hasattr(settings, 'RUNSERVER_PLUS_EXTRA_FILES'):
             settings.RUNSERVER_PLUS_EXTRA_FILES = []
 
-        settings.RUNSERVER_PLUS_EXTRA_FILES += extra_files
+        settings.RUNSERVER_PLUS_EXTRA_FILES += extra_files  # type:ignore[misc]  # we're adding a new property
 
     else:
         # either:

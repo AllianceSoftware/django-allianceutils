@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import ast
 import difflib
 import inspect
 from itertools import groupby
 import re
+from typing import Callable
+from typing import cast
 from typing import Dict
 from typing import Iterable
 from typing import List
@@ -35,7 +39,7 @@ class Command(OptionalAppCommand):
         else:
             self.apply_output(output)
 
-    def determine_fields_by_model_by_file(self, models: Iterable[Type[Model]]) -> Dict[str, Dict[Model, Field]]:
+    def determine_fields_by_model_by_file(self, models: Iterable[type[Model]]) -> Dict[str, Dict[type[Model], list[ForeignObjectRel]]]:
         """
         Takes a list of models and returns the models & fields for each source file
         :param: models[] - look up the source file & fields for these models
@@ -44,8 +48,9 @@ class Command(OptionalAppCommand):
         related_fields = [
             field
             for model in models
-            for field in model._meta.related_objects
+            for field in model._meta.related_objects  # type:ignore[attr-defined] # related_object exists
         ]
+
 
         model_fields = {
             model: list(model_fields)
@@ -53,24 +58,26 @@ class Command(OptionalAppCommand):
             in groupby(sorted(related_fields, key=lambda f: f.model.__name__), key=lambda f: f.model)
         }
 
-        source_file_models = {
+        get_model_source = cast(Callable[[type], str], inspect.getsourcefile)
+        models_sorted_by_source = sorted(model_fields.keys(), key=get_model_source)
+        source_file_models: dict[str, list[type[Model]]] = {
             source_file: list(models)
             for source_file, models
-            in groupby(sorted(model_fields.keys(), key=inspect.getsourcefile), key=inspect.getsourcefile)
+            in groupby(models_sorted_by_source, key=get_model_source)
         }
 
         source_file_model_fields = {
             source_file: {
                 model: model_fields[model]
                 for model
-                in source_file_models[source_file]
+                in models
             }
-            for source_file
-            in source_file_models.keys()
+            for source_file, models
+            in source_file_models.items()
         }
         return source_file_model_fields
 
-    def generate_comments(self, fields_by_model_by_source_file: Dict[str, Dict[Model, Field]]) -> Dict[str, List[str]]:
+    def generate_comments(self, fields_by_model_by_source_file: Dict[str, Dict[type[Model], list[ForeignObjectRel]]]) -> Dict[str, List[str]]:
         """
         takes in a dict of fields in the format returned by determine_fields_by_model_by_file
         spits out { source_file: [ lines_with_comments ] }, where lines_with_comments are consisted of
@@ -87,24 +94,39 @@ class Command(OptionalAppCommand):
                 ]
                 patches = {}
                 tree = ast.parse(''.join(source_lines))
-                fields_by_model_names = dict([(model.__name__, model) for model in fields_by_model])
+                fields_by_model_names = {
+                    model.__name__: model
+                    for model
+                    in fields_by_model
+                }
 
                 for node in ast.walk(tree):
                     if isinstance(node, ast.ClassDef) and node.name in fields_by_model_names:
                         model = fields_by_model_names[node.name]
                         field_names = [field.name for field in model._meta.fields]
-                        ast_fields = dict([(_assign.targets[0].id, _assign.lineno) for _assign in node.body if isinstance(_assign, ast.Assign)])
-                        actual_fields = set(ast_fields.keys()).intersection(set(field_names)) # do an intersection here - both ast_fields and model def fields contains some passive unwanted ones
+                        ast_fields = {
+                            _assign.targets[0].id: _assign.lineno  # type:ignore[attr-defined]  # id does exist
+                            for _assign
+                            in node.body
+                            if isinstance(_assign, ast.Assign)
+                        }
+                        # do an intersection here: both ast_fields and model def fields contains some passive
+                        # unwanted ones
+                        actual_fields = set(ast_fields.keys()).intersection(set(field_names))
                         if actual_fields:
                             inject_location = max([ast_fields[field] for field in actual_fields])
                         else:
-                            # this model contains no active field definition at this moment; insert comments at beginning of class def
+                            # this model contains no active field definition at this moment; insert comments
+                            # at beginning of class def
                             inject_location = node.lineno
 
                         patches[inject_location] = [
                             self.create_comment(field)
                             for field
-                            in sorted(fields_by_model[model], key=lambda f: f.get_accessor_name())
+                            in sorted(
+                                fields_by_model[model],
+                                key=lambda f: cast(str, f.get_accessor_name())  # will always have a name
+                            )
                         ]
 
                 # mash em up

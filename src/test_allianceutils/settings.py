@@ -1,12 +1,17 @@
+from __future__ import annotations
+
 from distutils.util import strtobool
 import hashlib
 import os
 from pathlib import Path
 import random
 import re
+import sys
+from typing import cast
 import warnings
 
 import django
+from django.core.exceptions import ImproperlyConfigured
 
 is_ci = os.environ.get('CI_SERVER', 'no') == 'yes'
 
@@ -15,23 +20,44 @@ BASE_DIR = Path(__file__).parent
 
 def _build_db_settings():
     # Select DB engine
+    engine = None
+
     if strtobool(os.environ.get('TOX', '0')):
         # look for the DB name in one of the tox environment name components
-        engine = [
-            e
-            for e
-            in ('postgresql', 'mysql')
-            if e in str(Path(os.environ['VIRTUAL_ENV']).name).split('-')
+        engine_candidates = [
+            backend
+            for tox_env, backend
+            in [
+                # ( tox_env, django backend )
+                ('postgres', 'postgresql'),
+                ('mysql', 'mysql'),
+            ]
+            if tox_env in str(Path(os.environ['VIRTUAL_ENV']).name).split('-')
         ]
-        assert engine
-        engine = f'django.db.backends.{engine[0]}'
-    elif os.environ.get('PGDATABASE'):
-        engine = 'django.db.backends.postgresql'
-    else:
-        engine = 'django.db.backends.mysql'
-    
+        assert len(engine_candidates)
+        engine = f'django.db.backends.{engine_candidates[0]}'
+
+    if engine is None and os.environ.get('PGDATABASE'):
+        try:
+            import psycopg2
+        except ImportError:
+            print("PGDATABASE set but pscyopg2 not installed", file=sys.stderr)
+        else:
+            engine = 'django.db.backends.postgresql'
+
+    if engine is None:
+        try:
+            import MySQLdb
+        except ImportError:
+            pass
+        else:
+            engine = 'django.db.backends.mysql'
+
+    if engine is None:
+        raise ImproperlyConfigured("Can't detect database")
+
     # DB default settings
-    db_vars = {
+    db_vars_defaults = {
         'NAME': ('DB_NAME', 'alliance_django_utils'),
         'HOST': ('DB_HOST', 'localhost'),
         'PORT': ('DB_PORT', '5432' if engine == 'django.db.backends.postgresql' else '3306'),
@@ -40,7 +66,11 @@ def _build_db_settings():
     }
     
     # override settings based on env vars
-    db_vars = {var: os.environ.get(env_var, default) for var, (env_var, default) in db_vars.items()}
+    db_vars: dict[str, str | dict[str, str] | None] = {
+        var: os.environ.get(env_var, default)
+        for var, (env_var, default)
+        in db_vars_defaults.items()
+    }
     # remove blank settings (no-password is not treated the same as '')
     db_vars = {key: value for key, value in db_vars.items() if value}
     
@@ -48,12 +78,14 @@ def _build_db_settings():
     
     if engine == 'django.db.backends.mysql':
         # extra mysql options
-        db_vars['OPTIONS'] = {
+        db_options = {
             'init_command': 'SET default_storage_engine=INNODB',
             'charset': 'utf8mb4',
         }
         if not is_ci:
-            db_vars['OPTIONS']['read_default_file'] = '~/.my.cnf'
+            db_options['read_default_file'] = '~/.my.cnf'
+
+        db_vars['OPTIONS'] = db_options
 
     return db_vars
 
@@ -131,7 +163,8 @@ QUERY_COUNT_WARNING_THRESHOLD = 40
 warnings.simplefilter('always')
 
 try:
-    from django.utils.deprecation import RemovedInDjango51Warning
+    # this isn't present in django 3.2
+    from django.utils.deprecation import RemovedInDjango51Warning  # type:ignore[attr-defined]
 except ImportError:
     pass
 else:

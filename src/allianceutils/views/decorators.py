@@ -1,7 +1,6 @@
 from functools import wraps
 
 from django.conf import settings
-from django.utils.decorators import available_attrs
 from django.views.decorators.gzip import gzip_page
 
 
@@ -17,7 +16,7 @@ def gzip_page_ajax(func):
     if not settings.DEBUG:
         return gzipped_func
 
-    @wraps(func, assigned=available_attrs(func))
+    @wraps(func)
     def conditional_gzip_func(request, *args, **kwargs):
         if request.is_ajax():
             return gzipped_func(request, *args, **kwargs)

@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from types import ModuleType
+
 import django
 from django.apps import apps
 from django.conf import settings
@@ -6,6 +10,7 @@ from django.test import SimpleTestCase
 
 from allianceutils.checks import CheckUrlTrailingSlash
 
+rest_framework: ModuleType | None
 try:
     import rest_framework
 except ImportError:

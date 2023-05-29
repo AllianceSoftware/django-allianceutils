@@ -43,20 +43,20 @@ class DecoratorsTest(SimpleTestCase):
 
         # variable arguments
         with self.assertRaises(AssertionError):
-            class MyClass:
+            class MyClass1:
                 @method_cache
                 def my_method(self, *args):
                     return 123
 
         with self.assertRaises(AssertionError):
-            class MyClass:
+            class MyClass2:
                 @method_cache
                 def my_method(self, *kwargs):
                     return 123
 
         # classmethod
         with self.assertRaises(AssertionError):
-            class MyClass:
+            class MyClass3:
                 @method_cache
                 @classmethod
                 def my_method(self):
@@ -64,7 +64,7 @@ class DecoratorsTest(SimpleTestCase):
 
         # staticmethod
         with self.assertRaises(AssertionError):
-            class MyClass:
+            class MyClass4:
                 @method_cache
                 @staticmethod
                 def my_method(self):
@@ -79,7 +79,7 @@ class DecoratorsTest(SimpleTestCase):
         # we might change this in future but for now we use the "self" parameter to
         # distinguish a function from a method so the first param must be "self"
         with self.assertRaises(AssertionError):
-            class MyClass:
+            class MyClass5:
                 @method_cache
                 def my_method(this):
                     return 123

@@ -5,7 +5,7 @@ from django.core.management import call_command
 from django.test import TestCase
 
 
-class j(TestCase):
+class TestDocumentReverseAccessors(TestCase):
     def test_command_preview_output(self):
         out = StringIO()
         call_command('document_reverse_accessors', 'document_reverse_accessors', '-p', stdout=out)

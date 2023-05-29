@@ -29,7 +29,7 @@ def reset_thread_wait_barrier(thread_count: int):
         _request_thread_wait_barrier = None
 
 
-def run_queries(request: HttpRequest, **kwargs) -> HttpRequest:
+def run_queries(request: HttpRequest, **kwargs) -> HttpResponse:
     """
     Run a specified number of queries
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 import random
 
@@ -5,6 +7,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AbstractBaseUser
 from django.core.management import call_command
 from django.db import IntegrityError
+from django.db.models import Manager
+from django.db.models import Model
 from django.forms import IntegerField
 from django.forms import ModelForm
 from django.test import Client
@@ -15,7 +19,7 @@ from django.urls import reverse
 from django.utils.http import urlencode
 
 from allianceutils.auth.models import GenericUserProfile
-from allianceutils.auth.models import ID_ERROR_PROFILE_RELATED_TABLES
+from allianceutils.checks import ID_ERROR_PROFILE_RELATED_TABLES
 
 from .models import AdminProfile
 from .models import CustomerProfile
@@ -23,18 +27,13 @@ from .models import User
 from .models import UserFKImmediateModel
 from .models import UserFKIndirectModel
 
-try:
-    import authtools
-except ImportError:
-    authtools = None
-
 
 def _random_email_case(email: str) -> str:
     parts = email.split('@')
     mailbox, domain = '@'.join(parts[:-1]), parts[-1]
-    mailbox = ''.join([
+    domain = ''.join([
         c.lower() if random.getrandbits(1) else c.upper()
-        for i, c in enumerate(mailbox)
+        for i, c in enumerate(domain)
     ])
     return f'{mailbox}@{domain}'
 
@@ -47,7 +46,7 @@ def _random_email_case(email: str) -> str:
         'django.contrib.auth.hashers.SHA1PasswordHasher',
     ),
     AUTHENTICATION_BACKENDS=(
-        'allianceutils.auth.backends.ProfileModelBackend' if authtools else 'test_allianceutils.auth.backends.ProfileModelBackend',
+        'test_allianceutils.tests.profile_auth.backends.ProfileModelBackend',
     ),
 )
 class AuthTestCase(TestCase):
@@ -57,7 +56,9 @@ class AuthTestCase(TestCase):
         def create_user(model, username):
             # objects.create_user() is only available if UserManager inheritance works
             # w/ more recent authtools, you dont have username - instead you have your email
-            # also, lets try to create user's email in a mIxEdCaSe in order to test whether its case sensitive or not
+            # also, lets try to create user's email in a mIxEdCaSe in order to test sensitivity
+            #
+            # by default only the domain portion should be lowercased
             email_mixed_case = _random_email_case(f'{username}@example.com')
             user = model(email=email_mixed_case)
             user.set_password('abc123')
@@ -65,10 +66,10 @@ class AuthTestCase(TestCase):
             return user
 
         self.user1 = create_user(User, 'user1')
-        self.admin1 = create_user(AdminProfile, 'admin1')
+        self.admin1 = create_user(AdminProfile, 'AdmiN1')
         self.customer1 = create_user(CustomerProfile, 'customer1')
         self.customer2 = create_user(CustomerProfile, 'customer2')
-        self.admin2 = create_user(AdminProfile, 'admin2')
+        self.admin2 = create_user(AdminProfile, 'AdmiN2')
 
         self.profiles = {
             self.user1.id: self.user1,
@@ -180,16 +181,16 @@ class AuthTestCase(TestCase):
         User().profile.profile.profile... works
         """
         for user_id, original_profile in self.profiles.items():
-            manager_query_counts = (
-                (User.objects,                    User, self.get_profile_query_count(original_profile)),
-                (User.profiles,                   type(original_profile), 0),
-            )
+            manager_query_counts: list[tuple[Manager, type[Model], int]] = [
+                (User.objects,  User, self.get_profile_query_count(original_profile)),
+                (User.profiles, type(original_profile), 0),
+            ]
 
             if type(original_profile) != User:
-                manager_query_counts += (
+                manager_query_counts += [
                     (type(original_profile).objects, type(original_profile), 0),
                     (type(original_profile).profiles, type(original_profile), 0),
-                )
+                ]
 
             for manager, expected_fetched_type, profile_lookup_query_count in manager_query_counts:
                 with self.subTest(email=original_profile.email, model=manager.model.__name__, manager=manager.name):
@@ -307,13 +308,12 @@ class AuthTestCase(TestCase):
                 fields = ("email", )
 
         username = self.user1.email.split('@')[0]
-        username = ''.join([x.lower() if i%3 else x.upper() for i,x in enumerate(username)])
+        username = ''.join([x.lower() if i % 3 else x.upper() for i, x in enumerate(username)])
         form = UserForm(data={'email': f'{username}@example.com'})
         self.assertFalse(form.is_valid())
         self.assertEqual(set(form.errors.keys()), {"email"})
         form = UserForm(data={'email': 'available@example.com'})
         self.assertTrue(form.is_valid())
-
 
     def test_middleware(self):
         """
@@ -492,7 +492,7 @@ class AuthTestCase(TestCase):
 
     @isolate_apps('test_allianceutils.tests.profile_auth')
     def test_missing_related_profile_tables(self):
-        class BadUserModel(GenericUserProfile, AbstractBaseUser):
+        class BadUserModel(GenericUserProfile, AbstractBaseUser):  # type:ignore[misc] # metaclasses confuse mypy
             f = IntegerField()
 
             def get_full_name(self):
@@ -501,7 +501,7 @@ class AuthTestCase(TestCase):
             def get_short_name(self):
                 return self.email
 
-        class GoodUserModel(GenericUserProfile, AbstractBaseUser):
+        class GoodUserModel(GenericUserProfile, AbstractBaseUser):  # type:ignore[misc] # metaclasses confuse mypy
             f = IntegerField()
 
             def get_full_name(self):
@@ -532,5 +532,19 @@ class AuthTestCase(TestCase):
         self.assertEqual(User.profiles.count(), len(self.profiles))
 
     def test_queryset_with_args(self):
-        self.assertEqual(tuple(AdminProfile.objects.all().values_list('email')), (('admin1@example.com',),('admin2@example.com',)))
-        self.assertEqual(tuple(AdminProfile.objects.all().values_list('email', flat=True)), ('admin1@example.com', 'admin2@example.com'))
+        # by default
+        self.assertEqual(
+            tuple(AdminProfile.objects.all().values_list('email')),
+            (('AdmiN1@example.com',), ('AdmiN2@example.com',))
+        )
+        self.assertEqual(
+            tuple(AdminProfile.objects.all().values_list('email', flat=True)),
+            ('AdmiN1@example.com', 'AdmiN2@example.com')
+        )
+
+    def test_case_sensitivity(self):
+        user = AdminProfile.objects.get(email="admin1@EXAMPLE.COM")
+        # case insensitivity is actually a responsibility of the email field (via db_collation=...)
+        # but by default the model should normalise the email domain part
+        self.assertEqual(user.email, "AdmiN1@example.com")
+
