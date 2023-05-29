@@ -243,6 +243,19 @@ class AuthTestCase(TestCase):
         self.assertEqual(type(user), User)
         self.assertIsNotNone(manager.get_by_natural_key('user101@example.com'))
 
+    def test_normalize_email(self):
+        """
+        When a user is saved the email should be normalized
+        """
+
+        manager = User.profiles
+        user = manager.create_user(email='USER@examPLE.com', password='abc123')
+        self.assertEqual(type(user), User)
+
+        user = manager.get_by_natural_key('USER@example.com')
+        self.assertIsNotNone(user)
+        self.assertEqual(user.email, 'USER@example.com')
+
     def test_login(self):
         """
         Can login using user details
@@ -495,20 +508,8 @@ class AuthTestCase(TestCase):
         class BadUserModel(GenericUserProfile, AbstractBaseUser):  # type:ignore[misc] # metaclasses confuse mypy
             f = IntegerField()
 
-            def get_full_name(self):
-                return self.email
-
-            def get_short_name(self):
-                return self.email
-
         class GoodUserModel(GenericUserProfile, AbstractBaseUser):  # type:ignore[misc] # metaclasses confuse mypy
             f = IntegerField()
-
-            def get_full_name(self):
-                return self.email
-
-            def get_short_name(self):
-                return self.email
 
             related_profile_tables = []
 
@@ -534,17 +535,18 @@ class AuthTestCase(TestCase):
     def test_queryset_with_args(self):
         # by default
         self.assertEqual(
-            tuple(AdminProfile.objects.all().values_list('email')),
-            (('AdmiN1@example.com',), ('AdmiN2@example.com',))
+            set(tuple(e.lower() for e in record) for record in AdminProfile.objects.all().values_list('email')),
+            set([('admin1@example.com',), ('admin2@example.com',)])
         )
+
         self.assertEqual(
-            tuple(AdminProfile.objects.all().values_list('email', flat=True)),
-            ('AdmiN1@example.com', 'AdmiN2@example.com')
+            set(e.lower() for e in AdminProfile.objects.all().values_list('email', flat=True)),
+            set(['admin1@example.com', 'admin2@example.com'])
         )
 
     def test_case_sensitivity(self):
         user = AdminProfile.objects.get(email="admin1@EXAMPLE.COM")
         # case insensitivity is actually a responsibility of the email field (via db_collation=...)
-        # but by default the model should normalise the email domain part
-        self.assertEqual(user.email, "AdmiN1@example.com")
+        self.assertNotEqual(user.email, "admin1@EXAMPLE.COM")
+        self.assertEqual(user.email.lower(), "admin1@example.com")
 

@@ -34,6 +34,8 @@ so make sure you follow the template
 * Dropped support for django-db-constraints validation (constraint length & collisions); should use django native constraints instead
 * `ProfileModelBackend` has been removed. You should use `ProfileModelBackendMixin` instead, and implement a case
   insensitive username field on your User model.
+* `GenericUserProfile` now no longer normalizes `email` (or even assumes an `email` field is present)
+  * You should implement email/username normalization in your User model
 * `MultipleFieldCharFilter` removed; the `method` argument on a `filter.Field` is simple enough to make this now unnecessary.
   * see [documentation](https://django-filter.readthedocs.io/en/stable/ref/filters.html#method)
 

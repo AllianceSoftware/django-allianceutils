@@ -523,10 +523,7 @@ class User(GenericUserProfile, authtools.models.AbstractEmailUser):
         'customerprofile',
         'adminprofile',
     ]
-
-    def natural_key(self):
-        return (self.email,)
-        
+    
     # the default implementation will iterate through the related profile tables
     # and return the first profile it can find. If you have custom logic for
     # choosing the profile for a user then you can do that here

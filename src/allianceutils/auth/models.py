@@ -10,6 +10,7 @@ from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth.models import UserManager
 from django.core import checks
 from django.core.exceptions import ValidationError
+from django.db.models import EmailField
 from django.db.models import Field
 from django.db.models import Model
 from django.db.models import QuerySet
@@ -280,18 +281,6 @@ class GenericUserProfile(Model):
 
     class Meta:
         abstract = True
-
-    @classmethod
-    def normalize_email(cls, email: str) -> str:
-        return email.lower()
-
-    def clean(self):
-        if self.__class__._base_manager.filter(email=self.normalize_email(self.email)).exclude(pk=self.pk).exists():
-            raise ValidationError({'email': 'Sorry, this email address is not available.'})
-
-    def save(self, *args, **kwargs):
-        self.email = self.normalize_email(self.email)
-        return super().save(*args, **kwargs)
 
     def get_profile(self) -> Self:
         # We're already a profile
