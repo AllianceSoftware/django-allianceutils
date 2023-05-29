@@ -1,5 +1,7 @@
 from contextlib import ExitStack as nullcontext  # want this to work with python <3.7 so not using nullcontext directly
 from io import StringIO
+from types import ModuleType
+from unittest import skipIf
 
 from django.apps import apps
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -19,6 +21,12 @@ from allianceutils.util.camel_case import _create_ignore_lookup
 from allianceutils.util.camel_case import _debug_lookup
 from allianceutils.util.get_firstparty_apps import is_firstparty_app
 from test_allianceutils.tests.serializers.models import Person
+
+isort: ModuleType | None
+try:
+    import isort
+except ImportError:
+    isort = None
 
 
 class UtilTestCase(SimpleTestCase):
@@ -422,6 +430,7 @@ class CamelCaseTestCase(TransactionTestCase):
             self.assertEqual(underscoreize(test_in, ignore), test_out)
 
 
+@skipIf(isort is None, "isort not installed")
 @override_settings(
     INSTALLED_APPS=(
         'allianceutils',  # first party
