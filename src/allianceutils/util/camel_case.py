@@ -121,15 +121,12 @@ def _create_ignore_lookup(ignore: IgnoreSpecifier) -> IgnoreDict:
             new_candidates: list[IgnoreDict] = []
 
             for candidate in candidates:
-                assert isinstance(candidate, dict)  # TODO: remove
-
                 if part not in candidate:
                     candidate[part] = {}
 
                 if len(parts) > 1:
                     if part == '*':
                         # all candidates
-                        assert all(x is not None for x in candidate.values()) # TODO: remove
                         new_candidates.extend(cast(Iterable[IgnoreDict], candidate.values()))
                     else:
                         new_candidate = cast(IgnoreDict, candidate[part])
