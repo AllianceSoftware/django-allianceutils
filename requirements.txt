@@ -1,9 +1,0 @@
-# requirements for local development
-# this is not used by tox
--r requirements-optional.txt
-
-Django>=2.2
-tox==3.14.5
-tox-factor==0.1.2
-isort>=5
-

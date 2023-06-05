@@ -26,7 +26,25 @@ so make sure you follow the template
 
 -->
 
-## 2.2.x unreleased
+## 3.x.x unreleased
+
+### Breaking changes
+* Dropped support for django 2.2
+* Dropped support for python 3.7, 3.6
+* Dropped support for django-db-constraints validation (constraint length & collisions); should use django native constraints instead
+* `ProfileModelBackend` has been removed. You should use `ProfileModelBackendMixin` instead, and implement a case
+  insensitive username field on your User model.
+* `GenericUserProfile` now no longer normalizes `email` (or even assumes an `email` field is present)
+  * You should implement email/username normalization in your User model
+* `MultipleFieldCharFilter` removed; the `method` argument on a `filter.Field` is simple enough to make this now unnecessary.
+  * see [documentation](https://django-filter.readthedocs.io/en/stable/ref/filters.html#method)
+
+### Added
+
+* Add support for django 4.2
+* Add support for python 3.10, 3.11
+* New `QueryCountMiddleware` methods `set_threshold` and `increase_threshold`
+  * `request.QUERY_COUNT_WARNING_THRESHOLD` is still supported but will be removed in future versions
 
 ### Fixed
 

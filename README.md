@@ -9,7 +9,6 @@ A collection of utilities for django projects from [Alliance Software](https://w
     * [API](#api)
     * [Auth](#auth)
     * [Decorators](#decorators)
-    * [Filters](#filters)
     * [Management](#management)
         * [Commands](#commands)
         * [Checks](#checks)
@@ -28,9 +27,9 @@ A collection of utilities for django projects from [Alliance Software](https://w
 
 ## System Requirements
 
-* Tested with django 2.2 and 3.2
+* Tested with django 3.2 and 4.2
   * Pull requests accepted for other versions, but at minimum we test against current LTS versions
-* Python >=3.6 (no python 3.5 support)
+* Python >=3.8
 
 ## Usage
 
@@ -230,16 +229,17 @@ setting or on a ViewSet on the `renderer_classes` property.
 #### ProfileModelBackend
 
 * Backends for use with [GenericUserProfile](#GenericUserProfile); see code examples there
-* `allianceutils.auth.backends.ProfileModelBackendMixin` - in combo with [AuthenticationMiddleware](https://docs.djangoproject.com/en/stable/ref/middleware/#django.contrib.auth.middleware.AuthenticationMiddleware) will set user profiles on `request.user`  
-    * ~`allianceutils.auth.backends.ProfileModelBackend`~ - convenience class combined with case insensitive username & default django permissions backend
-        * this depended on [`authtools`](https://django-authtools.readthedocs.io/en/latest/) which appears to have been
-          abandoned and does not work with django >= 3.
-          If using django 3 then we recommended that you create your own backend in your app:
-          ```python
-            class ProfileModelBackend(ProfileModelBackendMixin, MinimalModelBackend):
-                # you'll need to implement case insensitivity either here or in the User Model  
-                pass
-          ```
+* `allianceutils.auth.backends.ProfileModelBackendMixin` - in combo with [AuthenticationMiddleware](https://docs.djangoproject.com/en/stable/ref/middleware/#django.contrib.auth.middleware.AuthenticationMiddleware) will set user profiles on `request.user`
+  * If you want  
+      * ~`allianceutils.auth.backends.ProfileModelBackend`~ - convenience class combined with case insensitive username & default django permissions backend
+          * this depended on [`authtools`](https://django-authtools.readthedocs.io/en/latest/) which appears to have been
+            abandoned and does not work with django >= 3.
+            If using django 3 then we recommended that you create your own backend in your app:
+            ```python
+              class ProfileModelBackend(ProfileModelBackendMixin, MinimalModelBackend):
+                  # you'll need to implement case insensitivity either here or in the User Model  
+                  pass
+            ```
 
 ### Decorators
 
@@ -266,9 +266,12 @@ def my_view(request: HttpRequest) -> httpResponse:
 #### method_cache
 
 * Caches the results of a method on the object instance
+* There is no thread synchronization so in some circumstances the method may be called multiple times if multiple threads share the object 
 * Only works for regular object methods with no arguments other than `self`.
     * Does not support `@classmethod` or `@staticmethod`
-    * If you want more powerful caching behaviour then you can wrap `cachetools` (examples [here](https://github.com/tkem/cachetools/issues/107))
+    * If you want more powerful caching behaviour then you can
+      * use [`methodtools`](https://pypi.org/project/methodtools/)
+      * wrap `cachetools` (examples [here](https://github.com/tkem/cachetools/issues/107#issuecomment-436274285))
 * Similar to [`@cached_property`](https://docs.python.org/3/library/functools.html#functools.cached_property) except that it works on methods instead of properties
 * Differs from [`@lru_cache()`](https://docs.python.org/3/library/functools.html#functools.lru_cache) in that
     * `lru_cache` uses a single cache for each decorated function
@@ -288,22 +291,6 @@ class MyViewSet(ViewSet):
 obj = MyViewSet()
 obj.get_object() is obj.get_object()
 obj.get_object.cache_clear()   
-```
-
-### Filters
-
-#### MultipleFieldCharFilter
-
-Search for a string across multiple fields. Requires `django_filters`.
-
-* Usage 
-
-```python
-from allianceutils.filters import MultipleFieldCharFilter
-
-# ...
-# In your filter set (see django_filters for documentation)
-customer = MultipleFieldCharFilter(names=('customer__first_name', 'customer__last_name'), lookup_expr='icontains')
 ```
 
 ### Management
@@ -462,9 +449,11 @@ user = CurrentUserMiddleware.get_user()
 warnings.simplefilter('always', allianceutils.middleware.QueryCountWarning)
 ```
 
-* To increase the query count limit for a given request, you can increase `request.QUERY_COUNT_WARNING_THRESHOLD`
-    * Rather than hardcode a new limit, you should increment the existing value
-    * If `request.QUERY_COUNT_WARNING_THRESHOLD` is falsy then checks are disabled for this request 
+* To increase the query count limit for one request, you can call `QueryCountMiddleware.increase_threshold(request, increment)` 
+* To set the query count limit for one request you can call `QueryCountMiddleware.set_threshold(request, threshold)`
+  * Rather than hardcode a new limit, `increase_threshold()` is generally preferable
+  * This can be useful to disable checks entirely (pass `0` as the new limit)
+
 
 ```python
 def my_view(request, *args, **kwargs):
@@ -534,10 +523,7 @@ class User(GenericUserProfile, authtools.models.AbstractEmailUser):
         'customerprofile',
         'adminprofile',
     ]
-
-    def natural_key(self):
-        return (self.email,)
-        
+    
     # the default implementation will iterate through the related profile tables
     # and return the first profile it can find. If you have custom logic for
     # choosing the profile for a user then you can do that here
@@ -917,6 +903,14 @@ See [CHANGELOG.md](CHANGELOG.md)
 
 ## Development
 
+* To create a clean local environment
+  * `python3 -m venv venv && source venv/bin/activate && pip install --upgrade pip` 
+  * `poetry install --no-root --sync --only=main --extras=""`
+  * Note that due to [a poetry bug](https://github.com/python-poetry/poetry/issues/7364) extras are currently not removed
+  * This will install the latest django version; if you want to test a specific django version you need to `pip install` it manually 
+* Dev dependencies
+  * `poetry install --no-root --sync --with=dev --extras "extras mysql postgres"`
+
 ### Release Process
 
 #### Poetry Config
@@ -943,3 +937,17 @@ See [CHANGELOG.md](CHANGELOG.md)
         * `poetry publish`
 
 
+### Testing
+* To run test cases
+  * The django settings module is `test_allianceutils/settings.py`
+    * The following env vars are optional but you may want to set them if the default don't match your local setup: 
+      * `DB_NAME`
+      * `DB_HOST`
+      * `DB_PORT`
+      * `DB_USER`
+      * `DB_PASSWORD`
+* [tox](https://tox.wiki/en/latest/)
+  * used to run tests against different django/python/database versions
+  * `tox` to run all tests. Will require that you have a postgres & mysql server running.
+    * `tox -f django42` will run the subset of tests that cover django 4.2. Check `tox.ini` for the list of tested environments. 
+* When you push to github a [github Actions](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python) workflow will be triggered (see `.github/workflows/django.yml`)  
