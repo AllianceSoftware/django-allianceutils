@@ -450,7 +450,7 @@ warnings.simplefilter('always', allianceutils.middleware.QueryCountWarning)
 ```
 
 * To increase the query count limit for one request, you can call `QueryCountMiddleware.increase_threshold(request, increment)` 
-* To set the query count limit for one request you can call `QueryCountMiddleware.ste_threshold(request, threshold)`
+* To set the query count limit for one request you can call `QueryCountMiddleware.set_threshold(request, threshold)`
   * Rather than hardcode a new limit, `increase_threshold()` is generally preferable
   * This can be useful to disable checks entirely (pass `0` as the new limit)
 
