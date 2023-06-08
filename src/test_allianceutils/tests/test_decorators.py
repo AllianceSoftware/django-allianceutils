@@ -26,7 +26,8 @@ class DecoratorsTest(SimpleTestCase):
         obj.my_method.clear_cache()
         self.assertEqual(obj.my_method(), 3)
 
-        self.assertEqual(obj.my_method.__name__, 'my_method')
+        func_name = obj.my_method.__name__  # type:ignore[attr-defined] # not typed, but present
+        self.assertEqual(func_name, 'my_method')
 
         with self.assertRaises(AttributeError):
             # Trying to clear the class method doesn't work (we'd have
@@ -37,7 +38,8 @@ class DecoratorsTest(SimpleTestCase):
         # extra arguments
         with self.assertRaises(AssertionError):
             class MyClass:
-                @method_cache
+                # should raise an exception at runtime
+                @method_cache  # type:ignore[arg-type]  # this is intentionally incompatible
                 def my_method(self, x):
                     return 123
 

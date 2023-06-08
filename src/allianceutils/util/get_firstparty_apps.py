@@ -18,7 +18,7 @@ def is_firstparty_app(app_config: AppConfig) -> bool:
     Use isort's way of determining whether an app is "first party" or otherwise
     """
     # import isort here so that it's not a hard dependency
-    from isort.api import Config
+    from isort.api import Config  # type:ignore[attr-defined]  # not exported but is in "api" so ok to use
     from isort.api import place_module
 
     isort_config = Config(settings_path=_root_path)
