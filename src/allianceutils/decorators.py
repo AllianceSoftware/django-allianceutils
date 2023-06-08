@@ -1,9 +1,12 @@
 import functools
 import inspect
 from typing import Callable
+from typing import cast
+from typing import Generic
 from typing import TypeVar
 
-from typing_extensions import ParamSpec
+ParamT = TypeVar("ParamT")
+ReturnT = TypeVar("ReturnT")
 
 
 class _CachedMethodDescriptor:
@@ -36,11 +39,25 @@ class _CachedMethodDescriptor:
                 raise AttributeError("clear_cache() should be called via a class instance, not a class") from ae
 
 
-# see https://stackoverflow.com/a/68290080
-# for typing of decorators; it doesn't work for us however because we have a decorator that returns a descriptor
-# (is that even typable in python?)
-# The only reason the typing is correct is because we only accept methods with no arguments (other than self)
-def method_cache(fn: Callable) -> _CachedMethodDescriptor:
+# see PEP612 for typing of decorators; this is additionally complicated by the fact that our decorator actually
+# replaces the function with a descriptor.
+#
+# However in our case:
+#   - from the perspective of the caller this should just look like the function is unchanged.
+#   - we only accept methods that take no params (other than self)
+#
+# We can then simplify what's really going on behind the scenes and pretend that the function signature hasn't
+# changed at all (except for the addition of the .clear_cache() method)
+#
+class DecoratedFuncWithClear(Generic[ReturnT]):
+    def __call__(self) -> ReturnT:  # type:ignore[empty-body]  # this is just a stub for typing
+        ...
+
+    def clear_cache(self):
+        ...
+
+
+def method_cache(fn: Callable[[ParamT], ReturnT]) -> DecoratedFuncWithClear[ReturnT]:
     """
     Method decorator to cache function results.
 
@@ -59,4 +76,4 @@ def method_cache(fn: Callable) -> _CachedMethodDescriptor:
         # "self" we'll assume it's a method
         assert "self" in sig.parameters, "method_cache works on methods, not functions"
 
-    return _CachedMethodDescriptor(fn)
+    return cast(DecoratedFuncWithClear[ReturnT], _CachedMethodDescriptor(fn))
