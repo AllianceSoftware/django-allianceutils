@@ -40,9 +40,13 @@ class UserManager(allianceutils.auth.models.GenericUserProfileManagerMixin, auth
         if "username" in kwargs:
             raise RuntimeError("`username` is being used instead of USERNAME_FIELD")
         email = self.normalize_email(email)
-        user = self.model(email=email, is_staff=is_staff, **kwargs)  # type:ignore[operator]  # is callable
-        user.set_password(password)
+        user = self.model(
+            email=email,  # type:ignore[misc]  # email present on test User model
+            is_staff=is_staff,
+            **kwargs)
+        user.set_password(password)  # type:ignore[attr-defined]  # set_password present on test User model
         user.save(using=self._db)
+        assert isinstance(user, User)
         return user
 
 

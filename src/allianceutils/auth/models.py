@@ -163,7 +163,7 @@ class GenericUserProfileManagerMixin(BaseUserManager):
     _auto_select_related_profiles: bool
     _auto_prefetch_related_profiles: bool
 
-    model: GenericUserProfile  # type:ignore[assignment] # narrow from parent definition
+    model: type[GenericUserProfile] # type:ignore[assignment] # narrow from parent definition
 
     def __init__(self, select_related_profiles=False, prefetch_related_profiles=False, *args, **kwargs):
         """
