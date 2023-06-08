@@ -38,6 +38,7 @@ so make sure you follow the template
   * You should implement email/username normalization in your User model
 * `MultipleFieldCharFilter` removed; the `method` argument on a `filter.Field` is simple enough to make this now unnecessary.
   * see [documentation](https://django-filter.readthedocs.io/en/stable/ref/filters.html#method)
+* Added type information
 
 ### Added
 

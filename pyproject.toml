@@ -9,11 +9,12 @@ authors = ["Alliance Software <support@alliancesoftware.com.au>"]
 license = "BSD-2-Clause"
 readme = "README.md"
 packages = [
-    { include = "src/allianceutils" },
+    { include = "allianceutils", from = "src" },
 ]
 include = [
     "CHANGELOG.md",
 	"LICENSE",
+    "src/allianceutils/py.typed",
 ]
 keywords = [
     "django",
@@ -111,7 +112,7 @@ extra_standard_library=[
 	"typing",
 ]
 
-# packages that we may have made local modifications too or are checked out from github
+# packages that we may have made local modifications to or are checked out from github
 # IsortTestCase has expectations about what is set here:
 known_third_party=["test_allianceutils.tests.isort_force_thirdparty"]
 #known_first_party=["allianceutils"]
