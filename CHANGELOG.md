@@ -31,7 +31,7 @@ so make sure you follow the template
 ### Breaking changes
 * Dropped support for django 2.2
 * Dropped support for python 3.7, 3.6
-* Dropped support for django-db-constraints validation (constraint length & collisions); should use django native constraints instead
+* Dropped support for django-db-constraints validation (`check_db_constraints()` constraint length & collisions); should use django native constraints instead
 * `ProfileModelBackend` has been removed. You should use `ProfileModelBackendMixin` instead, and implement a case
   insensitive username field on your User model.
 * `GenericUserProfile` now no longer normalizes `email` (or even assumes an `email` field is present)
