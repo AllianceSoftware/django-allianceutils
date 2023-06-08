@@ -927,6 +927,7 @@ See [CHANGELOG.md](CHANGELOG.md)
 #### Publishing a New Release
     * Update CHANGELOG.md with details of changes and new version
     * Run `bin/build.py`. This will extract version from CHANGELOG.md, bump version in `pyproject.toml` and generate a build for publishing
+    * Commit version bumps
     * Tag with new version and update the version branch:
         * `ver=$( poetry version --short ) && echo "Version: $ver"`
         * `git tag v/$ver`
