@@ -81,7 +81,7 @@ class UserSerializer(SerializerOptInFieldsMixin, ModelSerializer):
 
 Usage
 
-```py
+```python
 def on_post_migrate(sender, **kwargs):
     register_custom_permissions("myapp", ("my_perm", "My Permission"))
 ```
@@ -121,13 +121,13 @@ If you have no object level permissions (eg. from rules) then it will just do a 
     * Otherwise it will call `get_queryset` on the ViewSet and extract the model from the returned queryset
  * To alter this behaviour extends `GenericDjangoViewsetPermissions` and implement `get_model`
 * Usage example:
-```
+```python
 class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
     queryset = MyModel.objects.all()
     serializer_class = MySerializer
 ```
 * `GenericDjangoViewsetPermissions.default_actions_to_perms_map` defines the default set of permissions. These can be extended or overridden using `actions_to_perms_map`:
-```
+```python
 class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
 
     # ...
@@ -252,7 +252,7 @@ setting or on a ViewSet on the `renderer_classes` property.
 
 Example
 
-```
+```python
 
 @allianceutils.views.decorators.gzip_page_ajax
 def my_view(request: HttpRequest) -> httpResponse:
@@ -305,7 +305,7 @@ obj.get_object.cache_clear()
 
 Example:
 
-```
+```python
 class Command(allianceutils.management.commands.base.OptionalAppCommand):
     def add_arguments(self, parser):
         super().add_arguments(parser)
@@ -367,7 +367,7 @@ class MyAppConfig(AppConfig):
         * Note that if you skip a resolver it will also skip checks on everything inside that resolver
 * Note: If using Django REST Framework's [`DefaultRouter`](http://www.django-rest-framework.org/api-guide/routers/#defaultrouter) then you need to turn off `include_format_suffixes`:
 
-```
+```python
 router = routers.DefaultRouter(trailing_slash=True)
 router.include_format_suffixes = False
 router.register(r'myurl', MyViewSet)
@@ -604,7 +604,7 @@ def my_view(request):
         * If code in the context block raised an exception (including a `ValidationError`) then this will not be caught
         * If `ValidationError` the context manager returned has any errors (either from `ve.add_error()` or from the wrapped function) then this will be raised
 
-```
+```python
     def clean(self):
         with allianceutils.models.raise_validation_errors(super().clean) as ve:
             if some_condition:
@@ -628,7 +628,7 @@ def my_view(request):
     * The `capture_validation_error()` context manager solves this problem
     * Note that due to the way context managers work, each potential `ValidationError` needs its own with `capture_validation_error` context
 
-```
+```python
     def clean(self):
         with allianceutils.models.raise_validation_errors() as ve:
              with ve.capture_validation_error():
@@ -644,7 +644,7 @@ def my_view(request):
 
 * Utility functions that return predicates for use with [django-rules](https://github.com/dfunckt/django-rules)
 
-```
+```python
 from allianceutils.rules import has_any_perms, has_perms, has_perm
 
 # requires at least 1 listed permission
