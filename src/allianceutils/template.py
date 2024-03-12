@@ -101,8 +101,8 @@ def parse_tag_arguments(
     use parser to parse token passed to the tag. returns args as FilterExpressions and kwargs
     this code is a stripped down version of django.template.library.parse_bits()
 
-    eg: provided `<% tag "foo" "bar" roar="waaagh">`, this returns `([foo, bar], {'roar':'waaagh'})`
-    where foo and bar are FilterExpressions of "foo" and "bar"s that can be evaluated later base on
+    eg: provided `<% tag "foo" "bar" roar="waaagh">`, this returns `([foo, bar], {'roar':'waaagh'}, None)`
+    where foo and bar are FilterExpressions of "foo" and "bar"s that can be evaluated later based on
     context.
 
     If ``supports_as`` is ``True`` then will handle `{% tag "foo" "bar" as fooBar %}` and store the output of the
@@ -150,8 +150,7 @@ def build_html_attrs(html_kwargs: dict[str, str], prohibited_attrs: list[str] | 
     turns html_kwargs as a dict into an escaped string suitable for use as html tag attributes.
     also verifies that no prohibited_attrs are keys in html_kwargs
 
-    eg
-    input: {"foo": "bar", "baz": "<"}
+    eg input: {"foo": "bar", "baz": "<"}
     output: 'foo="bar" baz="&lt;"'
     """
     if prohibited_attrs:

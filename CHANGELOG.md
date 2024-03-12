@@ -39,7 +39,7 @@ so make sure you follow the template
     * `build_html_attrs`
     * `is_static_expression`
 
-* Migrate `common_lib.tests.util` from template project with the following classes:
+* Migrate `common_lib.tests.util` from template project to `tests/util.py` with the following decorators:
     * `suppress_silk`
     * `logging_filter`
     * `warning_filter`
