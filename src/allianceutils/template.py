@@ -169,7 +169,7 @@ def build_html_attrs(html_kwargs: dict[str, str], prohibited_attrs: list[str] | 
 def is_static_expression(expr: FilterExpression | None) -> bool:
     """Check if a given expression is static"""
 
-    # the arg.var.lookups is how Variable internally determines if value is a literal. See it's
+    # the arg.var.lookups is how Variable internally determines if value is a literal. See its
     # implementation of ``resolve``.
     if not expr or not isinstance(expr.var, Variable) or expr.var.lookups is None:
         return True

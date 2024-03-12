@@ -11,7 +11,7 @@ from django.urls import resolve
 from django.urls import reverse
 import rules.permissions
 
-logger = logging.getLogger("common_lib")
+logger = logging.getLogger("allianceutils")
 
 
 class NoDefaultPermissionsMeta:

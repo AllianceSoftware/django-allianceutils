@@ -10,7 +10,7 @@ GLOBAL_REQUEST = threading.local()
 class CurrentRequestMiddleware(object):
     """Provides access to the current request object
 
-    To setup add ``common_lib.middleware.CurrentRequestMiddleware`` to :setting:`MIDDLEWARE`
+    To setup add ``allianceutils.middleware.CurrentRequestMiddleware`` to :setting:`MIDDLEWARE`
 
     Usage::
 

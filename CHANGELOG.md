@@ -28,6 +28,30 @@ so make sure you follow the template
 
 ## 3.x.x unreleased
 
+### Added
+
+* Add `CurrentRequestMiddleware`
+
+* Migrate `common_lib.templatetags.common` from template project to `template.py` with the following functions:
+    * `resolve`
+    * `token_kwargs`
+    * `parse_tag_arguments`
+    * `build_html_attrs`
+    * `is_static_expression`
+
+* Migrate `common_lib.tests.util` from template project with the following classes:
+    * `suppress_silk`
+    * `logging_filter`
+    * `warning_filter`
+
+* Migrate `permission` from template project with:
+    * `class NoDefaultPermissionsMeta`
+    * `class PermissionNotImplementedError`
+    * `class AmbiguousGlobalPermissionWarning`
+    * `def identify_global_perms`
+    * `def reverse_if_probably_allowed`
+
+
 ## 3.0.0 2023-06-08
 
 ### Breaking changes
@@ -51,7 +75,7 @@ so make sure you follow the template
 
 ### Fixed
 
-* Resolve bug in `CamelCaseMultiPartJSONParser.parse` where if the `HTTP_X_MULTIPART_JSON` header is not set it tries to parse the stream a second time, which returns no data 
+* Resolve bug in `CamelCaseMultiPartJSONParser.parse` where if the `HTTP_X_MULTIPART_JSON` header is not set it tries to parse the stream a second time, which returns no data
 
 ## 2.2.0 2022-03-28
 
@@ -62,8 +86,8 @@ so make sure you follow the template
 ## 2.1.0 2021-12-17
 
 ### Fixed
-* Support new URL pattern adopted by django to resolve [CVE-2021-44420] (https://www.djangoproject.com/weblog/2021/dec/07/security-releases/) 
-* Add check class for configurable git path, update to handle hooksPath config for newer husky  
+* Support new URL pattern adopted by django to resolve [CVE-2021-44420] (https://www.djangoproject.com/weblog/2021/dec/07/security-releases/)
+* Add check class for configurable git path, update to handle hooksPath config for newer husky
 
 ## 2.0.0 2021-07-22
 
@@ -74,9 +98,9 @@ so make sure you follow the template
     * `ProfileModelBackend` will not be available if `authtools` is not able to be imported (`authtools` does not currently work with django 3.2)
 * ````
 * Add `add_autoreload_extra_files()`
-* Add ability for checks to ignore apps/models using a regex instead of just a static string 
+* Add ability for checks to ignore apps/models using a regex instead of just a static string
 
-  
+
 ### Fixed
 * `GenericUserProfile.normalize_email` can now be overridden on child classes and will work as expected
 
