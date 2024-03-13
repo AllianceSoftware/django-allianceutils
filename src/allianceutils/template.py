@@ -101,12 +101,15 @@ def parse_tag_arguments(
     use parser to parse token passed to the tag. returns args as FilterExpressions and kwargs
     this code is a stripped down version of django.template.library.parse_bits()
 
-    eg: provided `<% tag "foo" "bar" roar="waaagh">`, this returns `([foo, bar], {'roar':'waaagh'}, None)`
+    eg: provided `{% tag "foo" "bar" roar="waaagh" %}`, this returns `([foo, bar], {'roar':'waaagh'}, None)`
     where foo and bar are FilterExpressions of "foo" and "bar"s that can be evaluated later based on
     context.
 
     If ``supports_as`` is ``True`` then will handle `{% tag "foo" "bar" as fooBar %}` and store the output of the
-    tag inside the named variable (``fooBar`` in the previous example)
+    tag inside the named variable (``fooBar`` in the previous example). For example, a vanilla-extract stylesheet
+    could be loaded using the stylesheet tag (`{% stylesheet "./myView.css.ts" as styles %}`), and then accessed
+    elsewhere in the template from the `styles` variable: `<h1 class="{{ styles.heading }}">My View</h1>`. Adding
+    the tag output to the context will need to be handled by the tag class which is being used (e.g. stylesheet).
 
     Returns:
         3-elements tuple containing the args (a list), kwargs (a dict) and the value ``as <variable>`` if specified

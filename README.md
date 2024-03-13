@@ -17,7 +17,9 @@ A collection of utilities for django projects from [Alliance Software](https://w
     * [Models](#models)
     * [Rules](#rules)
     * [Serializers](#serializers)
+    * [Template](#template)
     * [Template Tags](#template-tags)
+    * [Tests](#tests)
     * [Util](#util)
 * [Changelog](#changelog)
 
@@ -240,6 +242,36 @@ setting or on a ViewSet on the `renderer_classes` property.
                   # you'll need to implement case insensitivity either here or in the User Model
                   pass
             ```
+
+#### Permissions
+
+##### NoDefaultPermissionsMeta
+
+- Define a `Meta` class with empty default permissions so Django doesn't create any
+- Usage example:
+
+```python
+class User(GenericUserProfile):
+
+    class Meta(NoDefaultPermissionsMeta):
+        pass
+```
+
+##### PermissionNotImplementedError
+
+- Subclass of `NotImplementedError` specific to permissions
+
+##### identify_global_perms
+
+- Takes a permission or list of permissions and splits them into global and object permissions, returning a tuple of (global permission list, object permission list). If the type can't be determined, the permission is returned in the global permission list.
+
+##### AmbiguousGlobalPermissionWarning
+
+- Raised if a permission cannot be classified as either global or per-object
+
+##### reverse_if_probably_allowed
+
+- Attempts to guess whether a user has permission to access a view to determine whether a URL should be displayed. Only for display purposes, not actual security, as it is not 100% reliable: can be used to, for example, hide the edit link in a CRUD view where the user does not have edit access. Takes the current request and the requested viewname, and optionally the specific object to be accessed.
 
 ### Decorators
 
@@ -676,6 +708,119 @@ SERIALIZATION_MODULES = {
 }
 ```
 
+### Template
+
+##### resolve
+
+* Resolves different types of kwarg values consistently.
+  * If value is a NodeList then it is rendered
+  * If value is a FilterExpression then it is resolved
+  * If value is a dict then each element is resolved if it is a FilterExpression, or else returned as is
+  * Otherwise value is returned as is
+
+
+* Example Usage
+```python
+    def resolved_kwargs(self, context: Context):
+        pk = resolve(self.pk, context)
+        model = resolve(self.model_name, context)
+        object = resolve(self.object, context)
+```
+
+##### token_kwargs
+
+* Re-implements the `token_kwargs` function from the Django base template library. This allows expanding the range of possible keywords to include '-' for aria attributes (e.g. `aria-label="My Label"`), and ':' for namespaced attributes (e.g. `xlink:href="foo"`). Used internally in [parse_tag_arguments](#parse_tag_arguments) - see that section for usage
+
+##### parse_tag_arguments
+
+* Implements a stripped-down version of `django.template.library.parse_bits()` to parse tokens passed to tags in Django templates.
+  * Takes the parser to process the tag, the token passed to the tag, and the kwarg `supports_as`
+  * Returns a tuple of `(args: list, kwargs: dict, target_var: str)`:
+    * args: a list of args as FilterExpressions
+    * kwargs: a dict of kwargs
+    * target_var: if `supports_as` is `True` and `as <variable>` is specified, returns the string reference for the tag. Otherwise returns `None`
+
+
+* Example Usage
+
+```python
+class StylesheetNode(template.Node, BundlerAsset):
+    def __init__(self, filename: Path, origin: Origin | None, attrs=None, target_var=None):
+        self.filename = filename
+        self.attrs = attrs
+        self.target_var = target_var
+        super().__init__(origin or Origin(UNKNOWN_SOURCE))
+
+    def render(self, context: Context):
+        if self.target_var:
+            context[self.target_var] = get_classes(self.filename)
+
+@register.tag("stylesheet")
+def stylesheet(parser: template.base.Parser, token: template.base.Token):
+    args, kwargs, target_var = parse_tag_arguments(parser, token, supports_as=True)
+    filename = args[0]
+    return StylesheetNode(filename, parser.origin, kwargs, target_var=target_var)
+```
+
+```html
+    {% stylesheet "./theme.css" as styles %}
+
+    <div class="{{ styles.section }}">
+        <h1 class="{{ styles.heading }}">My View</h1>
+        ...
+    </div>
+```
+
+##### build_html_attrs
+
+* Takes a dict of HTML tag attributes and transforms values into escaped strings suitable for use as HTML tag attributes. Can also pass a list of `prohibited_attrs` to prevent passing attributes which should not be passed to template tags.
+
+* Example Usage
+```python
+from django.utils.html import format_html
+...
+class LinkNode(template.Node):
+    def __init__(
+        self,
+        *,
+        href: FilterExpression | str | None = None,
+        **extra_kwargs,
+    ) -> None:
+        self.href = href
+
+    ...
+
+    def render(self, context: Context) -> SafeString:
+        href = resolve(self.href, context)
+        html_kwargs = { "href": href }
+        html_attrs = build_html_attrs(html_kwargs)
+        return format_html(
+            "<a {}>{}</a>",
+            html_attrs,
+        )
+```
+
+```html
+    {% link "/home" %}
+```
+
+##### is_static_expression
+
+* Checks if a given FilterExpression is static using the same method as Django's `resolve` implementation for the `Variable` class
+
+* Example Usage
+```python
+def validate_tag(parser, token):
+    tag_name = token.split_contents()[0]
+    args, _, _ = parse_tag_arguments(parser, token)
+
+    for arg in args:
+        if not is_static_expression(arg):
+            raise TemplateSyntaxError(
+                f"{tag_name} must be passed static strings for its arguments (encountered variable '{arg.var}')"
+            )
+```
+
 ### Template Tags
 
 #### render_entry_point
@@ -771,6 +916,60 @@ SERIALIZATION_MODULES = {
 {% load default_value %}
 {{ default_value myvar1=99 myvar2=myvar1|upper }}
 {{ myvar1 }} {{ myvar2 }}
+```
+
+### Tests
+
+##### suppress_silk
+
+* Decorator to disable silk SQL query logging.
+* This is needed for tests that use `assertNumQueries()` since otherwise the query count may include silk's `EXPLAIN`
+
+* Example Usage
+
+```python
+    @suppress_silk()
+    def test_lookup_object(self):
+        """Test that a query is run if object is not provided in template"""
+        user = self.get_privileged_user()
+        viewname = self.VIEW_KWARGS
+        view_kwargs = {"pk": user.pk}
+
+        request = HttpRequest()
+
+        # Without suppress_silk, an EXPLAIN query will be added
+        with self.assertNumQueries(1):
+            tpl = Template('{% load link %}{% link "' + viewname + '" pk=pk %}foo{% endlink %}')
+            tpl.render(Context({"request": request, "user": user, **view_kwargs}))
+```
+
+##### logging_filter
+
+* Decorator to disable logging for specified log names
+* This is useful because using `override_settings(LOGGING=...)` triggers an update to the python logging settings
+
+* Example Usage
+```python
+    @logging_filter(["django.request"])
+    def test_django_validation_errors(self):
+        url = reverse("django-validation-test-url")
+        for key, expect in EXPECTED_RESPONSES.items():
+            with self.subTest(key=key):
+                response = self.client.post(url, data={"error_key": key}, format="json")
+                self.assertEqual(400, response.status_code)
+                self.assertEqual(expect, response.json())
+```
+
+##### warning_filter
+
+* Apply a `warning.simplefilter()` for the specified warnings
+
+* Example Usage
+```python
+    @warning_filter("ignore", category=DeprecationWarning)
+    def test_relying_on_deprecated_feature(self):
+        instance = MyModel.objects.filter(deprecated_filter=True)
+        assertIsInstance(instance, MyModel)
 ```
 
 ### Util
