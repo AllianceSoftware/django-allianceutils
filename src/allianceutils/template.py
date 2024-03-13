@@ -1,6 +1,11 @@
 from collections.abc import Mapping
 from collections.abc import MutableMapping
 from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 from django.template import TemplateSyntaxError
 from django.template import Variable
@@ -42,8 +47,8 @@ kwarg_re = _lazy_re_compile(r"(?:(\w+|(\w+-)+\w+|(\w+:)\w+|(\w+:)(\w+-)+\w+)=)?(
 # The only change is to use the regex above instead of the one in Django. This allows us to support '-' in the keyword,
 # e.g. `aria-label="My Label"`, as well as ':' for namespaced attributes, e.g. `xlink:href="foo"`.
 def token_kwargs(
-    bits: list[str], parser: Parser, support_legacy: bool = False
-) -> dict[str, FilterExpression]:
+    bits: List[str], parser: Parser, support_legacy: bool = False
+) -> Dict[str, FilterExpression]:
     """
     Parse token keyword arguments and return a dictionary of the arguments
     retrieved from the ``bits`` token list.
@@ -69,7 +74,7 @@ def token_kwargs(
         if len(bits) < 3 or bits[1] != "as":
             return {}
 
-    kwargs: dict[str, FilterExpression] = {}
+    kwargs: Dict[str, FilterExpression] = {}
     while bits:
         if kwarg_format:
             match = kwarg_re.match(bits[0])
@@ -92,11 +97,11 @@ def token_kwargs(
 
 def parse_tag_arguments(
     parser: Parser, token: Token, supports_as=False
-) -> (
-    tuple[list[Any], dict[str, FilterExpression], str | None]
-    | tuple[list[FilterExpression], dict[Any, Any], str | None]
-    | tuple[list[FilterExpression], dict[str, FilterExpression], str | None]
-):
+) -> Union[
+    Tuple[List[Any], Dict[str, FilterExpression], Optional[str]],
+    Tuple[List[FilterExpression], Dict[Any, Any], Optional[str]],
+    Tuple[List[FilterExpression], Dict[str, FilterExpression], Optional[str]]
+]:
     """
     use parser to parse token passed to the tag. returns args as FilterExpressions and kwargs
     this code is a stripped down version of django.template.library.parse_bits()
@@ -148,7 +153,7 @@ def parse_tag_arguments(
     return args, kwargs, target_var
 
 
-def build_html_attrs(html_kwargs: dict[str, str], prohibited_attrs: list[str] | None = None) -> SafeString:
+def build_html_attrs(html_kwargs: Dict[str, str], prohibited_attrs: Optional[List[str]] = None) -> SafeString:
     """
     turns html_kwargs as a dict into an escaped string suitable for use as html tag attributes.
     also verifies that no prohibited_attrs are keys in html_kwargs
@@ -168,7 +173,7 @@ def build_html_attrs(html_kwargs: dict[str, str], prohibited_attrs: list[str] | 
     return output
 
 
-def is_static_expression(expr: FilterExpression | None) -> bool:
+def is_static_expression(expr: Optional[FilterExpression]) -> bool:
     """Check if a given expression is static"""
 
     # the arg.var.lookups is how Variable internally determines if value is a literal. See its

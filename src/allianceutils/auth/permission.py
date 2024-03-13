@@ -1,6 +1,11 @@
 from collections.abc import Iterable
 import logging
 from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 import warnings
 
 from django.contrib.auth import get_backends
@@ -9,7 +14,7 @@ from django.http import Http404
 from django.http import HttpRequest
 from django.urls import resolve
 from django.urls import reverse
-import rules.permissions
+import rules.permissions # type: ignore[import]
 
 logger = logging.getLogger("allianceutils")
 
@@ -34,7 +39,7 @@ class AmbiguousGlobalPermissionWarning(Warning):
     pass
 
 
-def identify_global_perms(perms: str | Iterable[str]) -> tuple[list[str], list[str]]:
+def identify_global_perms(perms: Union[str, Iterable[str]]) -> Tuple[List[str], List[str]]:
     """Given a permission or a list of permissions identifies which are global and which are object permissions
 
     returns (global permission list, object permission list)
@@ -95,10 +100,10 @@ def identify_global_perms(perms: str | Iterable[str]) -> tuple[list[str], list[s
 def reverse_if_probably_allowed(
     request: HttpRequest,
     viewname: str,
-    object: Model | None = None,
-    args: list[Any] | None = None,
-    kwargs: dict[str, Any] | None = None,
-) -> str | None:
+    object: Optional[Model] = None,
+    args: Optional[List[Any]] = None,
+    kwargs: Optional[Dict[str, Any]]= None,
+) -> Optional[str]:
     """
     Call reverse() on a view. Try to guess whether the current user has permission to access that view
     If they do then return the URL otherwise return None
@@ -132,7 +137,7 @@ def reverse_if_probably_allowed(
         # if settings.DEBUG:
         #     raise NotImplementedError("guess_view_permission() doesn't work with " + str(target_match.func))
 
-    perm: str | list[str] | None = None
+    perm: Optional[Union[str, List[str]]] = None
     perm_object = None
     if target_perm := getattr(target_class, "permission_required", None):
         # optimisation: if it looks like this has only static global permission(s) then

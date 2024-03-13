@@ -1,5 +1,6 @@
 from collections.abc import Callable
 import threading
+from typing import Optional
 
 from django.http import HttpRequest
 from django.http import HttpResponse
@@ -30,7 +31,7 @@ class CurrentRequestMiddleware(object):
             GLOBAL_REQUEST.request.pop()
 
     @staticmethod
-    def get_request() -> HttpRequest | None:
+    def get_request() -> Optional[HttpRequest]:
         """Get the current request
 
         If no request available returns None

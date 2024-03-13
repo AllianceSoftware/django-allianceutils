@@ -109,7 +109,7 @@ class _ExtendedValidationError(ValidationError):
 
     def add_error(
         self,
-        field: str | None,
+        field: Optional[str],
         error: ExtendedErrorT,
     ):
         """
@@ -172,7 +172,7 @@ class _ExtendedValidationError(ValidationError):
 
         # we need to promote one or more both to a dict-type ValidationError
         if any(hasattr(ve, 'error_dict') for ve in to_merge):
-            to_merge_dicts: list[ErrorDictT] = []
+            to_merge_dicts: List[ErrorDictT] = []
             for ve in to_merge:
                 if not hasattr(ve, 'error_dict'):
                     ve_list: ErrorListT = [x for x in ve.error_list if not is_empty(x)]
@@ -195,7 +195,7 @@ class _ExtendedValidationError(ValidationError):
                     if isinstance(value, (str, Promise)):
                         copied_value = value
                     else:
-                        copied_value = value.copy() # cast(ErrorListT | ErrorDictT, value).copy()
+                        copied_value = value.copy() # cast(Union[ErrorListT, ErrorDictT], value).copy()
                     error_list.extend(copied_value)
 
             new_ve = _ExtendedValidationError(merged_dict)

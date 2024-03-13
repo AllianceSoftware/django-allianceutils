@@ -39,7 +39,7 @@ class ProfileModelBackendMixin:
     Will fall back to default get_user() behaviour if no profiles manager available
     """
 
-    def get_user(self: _BaseUserModelBackend, user_id) -> GenericUserProfile | None:
+    def get_user(self: _BaseUserModelBackend, user_id) -> Optional[GenericUserProfile]:
         try:
             manager = UserModel.profiles
         except AttributeError:

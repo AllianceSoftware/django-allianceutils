@@ -1,5 +1,10 @@
 from collections.abc import Iterable
 import logging
+from typing import cast
+from typing import Dict
+from typing import List
+from typing import Literal
+from typing import Optional
 import warnings
 
 from django.conf import settings
@@ -22,10 +27,10 @@ class suppress_silk(TestContextDecorator):
     - silk only EXPLAINs queries involving models (manual SQL will be logged but not EXPLAINed)
     """
 
-    conn_name: str | None
-    previous_flag_stack: list[bool]  # is a stack to handle nesting
+    conn_name: Optional[str]
+    previous_flag_stack: List[Optional[str]]  # is a stack to handle nesting
 
-    def __init__(self, connection_name: str | None = None):
+    def __init__(self, connection_name: Optional[str] = None):
         """
         Suppresses silk's EXPLAIN queries for the specified database connection
         Will use the default connection if none given
@@ -39,12 +44,13 @@ class suppress_silk(TestContextDecorator):
 
     def enable(self):
         conn = self._get_conn()
-        self.previous_flag_stack.append(conn.features.supports_explaining_query_execution)
-        conn.features.supports_explaining_query_execution = False
+        # django determines whether a query can be explained by the presence of an explain_prefix
+        self.previous_flag_stack.append(conn.ops.explain_prefix)
+        conn.ops.explain_prefix = None
 
     def disable(self):
         conn = self._get_conn()
-        conn.features.supports_explaining_query_execution = self.previous_flag_stack.pop()
+        conn.ops.explain_prefix = self.previous_flag_stack.pop()
 
 
 # ---------------------------------------------------------------------------
@@ -62,11 +68,11 @@ class logging_filter(TestContextDecorator):
         self.loggers = loggers
         super().__init__()
 
-    modified_loggers: dict[str, bool]
+    modified_loggers: Dict[str, bool]
 
     def enable(self):
         logger_names = self.loggers or settings.LOGGING["loggers"].keys()
-        self.modified_loggers = dict.fromkeys(logger_names, None)
+        self.modified_loggers = cast(Dict[str, bool], dict.fromkeys(logger_names, False))
         for logger_name in self.modified_loggers.keys():
             logger = logging.getLogger(logger_name)
             self.modified_loggers[logger_name] = logger.disabled
@@ -85,7 +91,7 @@ class warning_filter(TestContextDecorator):
     see https://docs.python.org/3/library/warnings.html#describing-warning-filters
     """
 
-    action: str
+    action: Literal['default', 'error', 'ignore', 'always', 'module', 'once']
     filters: dict
 
     def __init__(self, action, **filters):

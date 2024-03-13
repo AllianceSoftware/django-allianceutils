@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from typing import cast
 from typing import Iterable
+from typing import List
+from typing import Optional
 from typing import Type
 from typing import TYPE_CHECKING
 from typing import TypeVar
+from typing import Union
 
 from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth.models import UserManager
@@ -30,7 +33,7 @@ class GenericUserProfileIterable(ModelIterable):
 
     queryset: GenericUserProfileQuerySet  # this is coupled to this QuerySet
 
-    def __iter__(self) -> Iterable[GenericUserProfile | _ModelT]:  # type:ignore[override]  # specialised return
+    def __iter__(self) -> Iterable[Union[GenericUserProfile, _ModelT]]:  # type:ignore[override]  # specialised return
         if self.queryset._do_iterate_profiles:
             for user in super().__iter__():
                 yield user.profile
@@ -91,7 +94,7 @@ class GenericUserProfileQuerySet(QuerySet):
         qs._do_iterate_profiles = self._do_iterate_profiles
         return qs
 
-    def _get_related_profile_tables(self) -> list[str]:
+    def _get_related_profile_tables(self) -> List[str]:
         """
         See GenericUserProfile.related_profile_tables
         """
@@ -233,7 +236,7 @@ class GenericUserProfileManagerMixin(BaseUserManager):
 
     def select_related_profiles(
         self,
-        queryset: GenericUserProfileQuerySet | GenericUserProfileManagerMixin | None = None,
+        queryset: Optional[Union[GenericUserProfileQuerySet, GenericUserProfileManagerMixin]] = None,
         prefix: str = ""
     ) -> GenericUserProfileQuerySet:
         if bool(queryset) != bool(prefix):
@@ -247,7 +250,7 @@ class GenericUserProfileManagerMixin(BaseUserManager):
 
     def prefetch_related_profiles(
         self,
-        queryset: GenericUserProfileQuerySet | GenericUserProfileManagerMixin | None = None,
+        queryset: Optional[Union[GenericUserProfileQuerySet, GenericUserProfileManagerMixin]] = None,
         prefix: str = ""
     ) -> GenericUserProfileQuerySet:
         if bool(queryset) != bool(prefix):
@@ -277,7 +280,7 @@ class GenericUserProfile(Model):
 
     # This should be overridden to include a list of the FKs to the tables
     # to join to in order to fetch profiles [will be passed to select_related()]
-    related_profile_tables: list[str]
+    related_profile_tables: List[str]
 
     class Meta:
         abstract = True
@@ -305,9 +308,9 @@ class GenericUserProfile(Model):
         """
         def __get__(
             self,
-            obj: GenericUserProfile | None,
-            cls: type[GenericUserProfile] | None = None
-        ) -> Self | GenericUserProfile:
+            obj: Optional[GenericUserProfile],
+            cls: Optional[type[GenericUserProfile]] = None
+        ) -> Union[Self, GenericUserProfile]:
             if obj is None:
                 # class invocation
                 return self
@@ -315,7 +318,7 @@ class GenericUserProfile(Model):
             user_profile = obj.get_profile()
 
             # cache the result on all records in the multi-table inheritance chain
-            record: GenericUserProfile | None = user_profile
+            record: Optional[GenericUserProfile] = user_profile
             while isinstance(record, Model):
                 record.__dict__['profile'] = user_profile
 
