@@ -129,7 +129,7 @@ jobs:
 
       # mypy tests
       - name: Run mypy tests (postgres)
-        if: matrix.python-version == '3.8' && matrix.database-type == 'postgres'
+        if: matrix.python-version == '3.10' && matrix.database-type == 'postgres'
         run: |
           source venv/bin/activate
           tox -f mypy-py${{ steps.pyver.outputs.VER }}-${{ matrix.database-type }}
@@ -142,7 +142,7 @@ jobs:
           DB_NAME: postgres
 
       - name: Run mypy tests (mysql)
-        if: matrix.python-version == '3.8' && matrix.database-type == 'mysql'
+        if: matrix.python-version == '3.10' && matrix.database-type == 'mysql'
         run: |
           source venv/bin/activate
           tox -f mypy-py${{ steps.pyver.outputs.VER }}-${{ matrix.database-type }}
