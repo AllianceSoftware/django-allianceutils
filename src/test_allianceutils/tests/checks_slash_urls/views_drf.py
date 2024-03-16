@@ -12,4 +12,4 @@ class FooSerializer(ModelSerializer):
 
 class FooViewSet(ModelViewSet):
     serializer_class = FooSerializer
-    queryset = Foo.objects.all()
+    queryset = Foo.objects.all() # type:ignore[attr-defined]

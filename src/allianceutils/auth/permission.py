@@ -14,7 +14,7 @@ from django.http import Http404
 from django.http import HttpRequest
 from django.urls import resolve
 from django.urls import reverse
-import rules.permissions # type: ignore[import]
+import rules.permissions # type: ignore[import-not-found]
 
 logger = logging.getLogger("allianceutils")
 

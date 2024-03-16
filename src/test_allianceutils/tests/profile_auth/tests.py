@@ -505,10 +505,10 @@ class AuthTestCase(TestCase):
 
     @isolate_apps('test_allianceutils.tests.profile_auth')
     def test_missing_related_profile_tables(self):
-        class BadUserModel(GenericUserProfile, AbstractBaseUser):  # type:ignore[misc] # metaclasses confuse mypy
+        class BadUserModel(GenericUserProfile, AbstractBaseUser):
             f = IntegerField()
 
-        class GoodUserModel(GenericUserProfile, AbstractBaseUser):  # type:ignore[misc] # metaclasses confuse mypy
+        class GoodUserModel(GenericUserProfile, AbstractBaseUser):
             f = IntegerField()
 
             related_profile_tables = []
