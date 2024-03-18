@@ -169,8 +169,7 @@ QUERY_COUNT_WARNING_THRESHOLD = 40
 warnings.simplefilter('always')
 
 try:
-    # this isn't present in django 3.2
-    from django.utils.deprecation import RemovedInDjango51Warning  # type:ignore[attr-defined]
+    from django.utils.deprecation import RemovedInDjango51Warning
 except ImportError:
     pass
 else:
