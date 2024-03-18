@@ -28,9 +28,14 @@ so make sure you follow the template
 
 ## 3.x.x unreleased
 
+### Breaking Changes
+* Dropped support for django 3.2
+
 ### Added
 
+* Add support for django 5.0
 * Add `CurrentRequestMiddleware`
+* Add `tox-poetry-installer` middleware to allow better management of tox dependencies in poetry
 
 * Migrate `common_lib.templatetags.common` from template project to `template.py` with the following functions:
     * `resolve`
@@ -51,6 +56,9 @@ so make sure you follow the template
     * `def identify_global_perms`
     * `def reverse_if_probably_allowed`
 
+### Fixed
+
+* CI now properly tests for all Django versions, whereas previously Poetry would install the latest Django version and overwrite the tox-managed dependencies
 
 ## 3.0.0 2023-06-08
 

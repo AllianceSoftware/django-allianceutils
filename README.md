@@ -29,7 +29,7 @@ A collection of utilities for django projects from [Alliance Software](https://w
 
 ## System Requirements
 
-* Tested with django 3.2 and 4.2
+* Tested with django 4.2 and 5.0
   * Pull requests accepted for other versions, but at minimum we test against current LTS versions
 * Python >=3.8
 
