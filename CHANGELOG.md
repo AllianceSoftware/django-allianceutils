@@ -26,7 +26,7 @@ so make sure you follow the template
 
 -->
 
-## 3.x.x unreleased
+## 4.0.0 2024-03-18
 
 ### Breaking Changes
 * Dropped support for django 3.2
