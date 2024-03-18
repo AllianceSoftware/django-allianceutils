@@ -62,8 +62,8 @@ _ci_collation = ci_collations[_db_engine]
 class User(allianceutils.auth.models.GenericUserProfile, auth_models.AbstractBaseUser, auth_models.PermissionsMixin):
     USERNAME_FIELD = 'email'
 
-    objects = UserManager()  # type:ignore[assignment] # overriding super
-    profiles: UserManager = UserManager(select_related_profiles=True)  # type:ignore[assignment] # overriding super
+    objects = UserManager()  # type:ignore[assignment,misc] # overriding super
+    profiles: UserManager = UserManager(select_related_profiles=True)  # type:ignore[assignment,misc] # overriding super
     related_profile_tables = [
         'customerprofile',
         'adminprofile',
