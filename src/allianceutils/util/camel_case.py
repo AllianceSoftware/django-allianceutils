@@ -9,6 +9,7 @@ from typing import Callable
 from typing import cast
 from typing import Dict
 from typing import Iterable
+from typing import List
 from typing import Literal
 from typing import Mapping
 from typing import Sequence
@@ -26,7 +27,7 @@ _re_underscore = re.compile(r'(?!^)(?<!_)_([^_])')
 
 """
 a sequence of fields to ignore when camelizing
-# see camelize()/underscorize() 
+# see camelize()/underscorize()
 """
 IgnoreSpecifier = Iterable[str]
 
@@ -41,7 +42,7 @@ _empty_dict: IgnoreDict = {} # we use this a lot in here
 CamelizeT = TypeVar('CamelizeT')
 
 
-def _debug_lookup(ignore_tree: IgnoreDict, indent: int = 0) -> list[str]:
+def _debug_lookup(ignore_tree: IgnoreDict, indent: int = 0) -> List[str]:
     """
     Format a tree processed by _transform_ignore() into something human-readable (for debugging/testing purposes)
     """
@@ -107,7 +108,7 @@ def _create_ignore_lookup(ignore: IgnoreSpecifier) -> IgnoreDict:
     :return: See above
     """
 
-    def process_path(parts: Sequence[str], candidates: list[IgnoreDict]):
+    def process_path(parts: Sequence[str], candidates: List[IgnoreDict]):
         """
         Breadth-first transform of the tree; will merge `parts` into the sub-tree(s) specified by `candidates`
 
@@ -118,7 +119,7 @@ def _create_ignore_lookup(ignore: IgnoreSpecifier) -> IgnoreDict:
             part = parts[0]
             assert part != ''
 
-            new_candidates: list[IgnoreDict] = []
+            new_candidates: List[IgnoreDict] = []
 
             for candidate in candidates:
                 if part not in candidate:
@@ -153,7 +154,7 @@ def _create_ignore_lookup(ignore: IgnoreSpecifier) -> IgnoreDict:
 
 
 def _transform_key_val(
-    key: str | Promise,
+    key: Union[str, Promise],
     value: CamelizeT,
     transform_key: Callable,
     ignore_lookup: Dict

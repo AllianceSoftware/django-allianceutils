@@ -39,7 +39,7 @@ class Command(OptionalAppCommand):
         else:
             self.apply_output(output)
 
-    def determine_fields_by_model_by_file(self, models: Iterable[type[Model]]) -> Dict[str, Dict[type[Model], list[ForeignObjectRel]]]:
+    def determine_fields_by_model_by_file(self, models: Iterable[type[Model]]) -> Dict[str, Dict[type[Model], List[ForeignObjectRel]]]:
         """
         Takes a list of models and returns the models & fields for each source file
         :param: models[] - look up the source file & fields for these models
@@ -60,7 +60,7 @@ class Command(OptionalAppCommand):
 
         get_model_source = cast(Callable[[type], str], inspect.getsourcefile)
         models_sorted_by_source = sorted(model_fields.keys(), key=get_model_source)
-        source_file_models: dict[str, list[type[Model]]] = {
+        source_file_models: Dict[str, List[type[Model]]] = {
             source_file: list(models)
             for source_file, models
             in groupby(models_sorted_by_source, key=get_model_source)
@@ -77,7 +77,7 @@ class Command(OptionalAppCommand):
         }
         return source_file_model_fields
 
-    def generate_comments(self, fields_by_model_by_source_file: Dict[str, Dict[type[Model], list[ForeignObjectRel]]]) -> Dict[str, List[str]]:
+    def generate_comments(self, fields_by_model_by_source_file: Dict[str, Dict[type[Model], List[ForeignObjectRel]]]) -> Dict[str, List[str]]:
         """
         takes in a dict of fields in the format returned by determine_fields_by_model_by_file
         spits out { source_file: [ lines_with_comments ] }, where lines_with_comments are consisted of

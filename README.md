@@ -17,7 +17,9 @@ A collection of utilities for django projects from [Alliance Software](https://w
     * [Models](#models)
     * [Rules](#rules)
     * [Serializers](#serializers)
+    * [Template](#template)
     * [Template Tags](#template-tags)
+    * [Tests](#tests)
     * [Util](#util)
 * [Changelog](#changelog)
 
@@ -27,7 +29,7 @@ A collection of utilities for django projects from [Alliance Software](https://w
 
 ## System Requirements
 
-* Tested with django 3.2 and 4.2
+* Tested with django 4.2 and 5.0
   * Pull requests accepted for other versions, but at minimum we test against current LTS versions
 * Python >=3.8
 
@@ -81,7 +83,7 @@ class UserSerializer(SerializerOptInFieldsMixin, ModelSerializer):
 
 Usage
 
-```py
+```python
 def on_post_migrate(sender, **kwargs):
     register_custom_permissions("myapp", ("my_perm", "My Permission"))
 ```
@@ -92,14 +94,14 @@ Permission class for Django Rest Framework that adds support for object level pe
 
 Differs from just DRF's [DjangoObjectPermissions](https://www.django-rest-framework.org/api-guide/permissions/#object-level-permissions) because it
 * does not require a queryset
-* uses the same permission for every request http method and ViewSet method 
+* uses the same permission for every request http method and ViewSet method
 
 Notes
 * The default django permissions system will [always return False](https://docs.djangoproject.com/en/stable/topics/auth/customizing/#handling-object-permissions) if given an object; you must be using another permissions backend
 * As per [DRF documentation](http://www.django-rest-framework.org/api-guide/permissions/#object-level-permissions): get_object() is only required if you want to implement object-level permissions
 * **WARNING** If you override `get_object()` then you need to *manually* invoke `self.check_object_permissions(self.request, obj)`
 * Will attempt to check permission both globally and on a per-object basis but considers it an error if the check returns True for both
-*   
+*
 
 Usage
 * See [DRF permissions policy](https://www.django-rest-framework.org/api-guide/permissions/#setting-the-permission-policy) for details on apply Permissions policies globally
@@ -108,7 +110,7 @@ Usage
 ```python
 class MyAPIView(SimpleDjangoObjectPermissions, APIView):
         permission_required = 'my_module.my_permission'
-        permission_classes = [allianceutils.api.permissions.SimpleDjangoObjectPermissions] 
+        permission_classes = [allianceutils.api.permissions.SimpleDjangoObjectPermissions]
 ```
 
 If you have no object level permissions (eg. from rules) then it will just do a static permission check.
@@ -118,16 +120,16 @@ If you have no object level permissions (eg. from rules) then it will just do a 
 * Map viewset actions to Django permissions.
   * The model used for permission is extracted from the ViewSet
     * If you implement `get_permission_model` on the ViewSet that will be used
-    * Otherwise it will call `get_queryset` on the ViewSet and extract the model from the returned queryset 
- * To alter this behaviour extends `GenericDjangoViewsetPermissions` and implement `get_model` 
+    * Otherwise it will call `get_queryset` on the ViewSet and extract the model from the returned queryset
+ * To alter this behaviour extends `GenericDjangoViewsetPermissions` and implement `get_model`
 * Usage example:
-```
+```python
 class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
     queryset = MyModel.objects.all()
     serializer_class = MySerializer
 ```
 * `GenericDjangoViewsetPermissions.default_actions_to_perms_map` defines the default set of permissions. These can be extended or overridden using `actions_to_perms_map`:
-```
+```python
 class MyViewSet(GenericDjangoViewsetPermissions, viewsets.ModelViewSet):
 
     # ...
@@ -224,22 +226,52 @@ setting or on a ViewSet on the `renderer_classes` property.
 * `allianceutils.auth.backends.MinimalModelBackend`
     * Replaces the built-in django [ModelBackend](https://docs.djangoproject.com/en/stable/ref/contrib/auth/#django.contrib.auth.backends.ModelBackend)
     * Provides django model-based authentication
-    * Removes the default authorization (permissions checks) except for checking `is_superuser` 
+    * Removes the default authorization (permissions checks) except for checking `is_superuser`
 
 #### ProfileModelBackend
 
 * Backends for use with [GenericUserProfile](#GenericUserProfile); see code examples there
 * `allianceutils.auth.backends.ProfileModelBackendMixin` - in combo with [AuthenticationMiddleware](https://docs.djangoproject.com/en/stable/ref/middleware/#django.contrib.auth.middleware.AuthenticationMiddleware) will set user profiles on `request.user`
-  * If you want  
+  * If you want
       * ~`allianceutils.auth.backends.ProfileModelBackend`~ - convenience class combined with case insensitive username & default django permissions backend
           * this depended on [`authtools`](https://django-authtools.readthedocs.io/en/latest/) which appears to have been
             abandoned and does not work with django >= 3.
             If using django 3 then we recommended that you create your own backend in your app:
             ```python
               class ProfileModelBackend(ProfileModelBackendMixin, MinimalModelBackend):
-                  # you'll need to implement case insensitivity either here or in the User Model  
+                  # you'll need to implement case insensitivity either here or in the User Model
                   pass
             ```
+
+#### Permissions
+
+##### NoDefaultPermissionsMeta
+
+- Define a `Meta` class with empty default permissions so Django doesn't create any
+- Usage example:
+
+```python
+class User(GenericUserProfile):
+
+    class Meta(NoDefaultPermissionsMeta):
+        pass
+```
+
+##### PermissionNotImplementedError
+
+- Subclass of `NotImplementedError` specific to permissions
+
+##### identify_global_perms
+
+- Takes a permission or list of permissions and splits them into global and object permissions, returning a tuple of (global permission list, object permission list). If the type can't be determined, the permission is returned in the global permission list.
+
+##### AmbiguousGlobalPermissionWarning
+
+- Raised if a permission cannot be classified as either global or per-object
+
+##### reverse_if_probably_allowed
+
+- Attempts to guess whether a user has permission to access a view to determine whether a URL should be displayed. Only for display purposes, not actual security, as it is not 100% reliable: can be used to, for example, hide the edit link in a CRUD view where the user does not have edit access. Takes the current request and the requested viewname, and optionally the specific object to be accessed.
 
 ### Decorators
 
@@ -252,21 +284,21 @@ setting or on a ViewSet on the `renderer_classes` property.
 
 Example
 
-```
+```python
 
 @allianceutils.views.decorators.gzip_page_ajax
 def my_view(request: HttpRequest) -> httpResponse:
     data = {
         "message": "Hello World",
     }
-    return django.http.JsonResponse(data) 
+    return django.http.JsonResponse(data)
 
 ```
 
 #### method_cache
 
 * Caches the results of a method on the object instance
-* There is no thread synchronization so in some circumstances the method may be called multiple times if multiple threads share the object 
+* There is no thread synchronization so in some circumstances the method may be called multiple times if multiple threads share the object
 * Only works for regular object methods with no arguments other than `self`.
     * Does not support `@classmethod` or `@staticmethod`
     * If you want more powerful caching behaviour then you can
@@ -275,8 +307,8 @@ def my_view(request: HttpRequest) -> httpResponse:
 * Similar to [`@cached_property`](https://docs.python.org/3/library/functools.html#functools.cached_property) except that it works on methods instead of properties
 * Differs from [`@lru_cache()`](https://docs.python.org/3/library/functools.html#functools.lru_cache) in that
     * `lru_cache` uses a single cache for each decorated function
-    * `lru_cache` will block garbage collection of values in the cache 
-    * A `cache_clear()` method is attached to the function but unlike `lru_cache` it is scoped to an object instance   
+    * `lru_cache` will block garbage collection of values in the cache
+    * A `cache_clear()` method is attached to the function but unlike `lru_cache` it is scoped to an object instance
 
 Usage
 ```python
@@ -290,7 +322,7 @@ class MyViewSet(ViewSet):
 
 obj = MyViewSet()
 obj.get_object() is obj.get_object()
-obj.get_object.cache_clear()   
+obj.get_object.cache_clear()
 ```
 
 ### Management
@@ -305,7 +337,7 @@ obj.get_object.cache_clear()
 
 Example:
 
-```
+```python
 class Command(allianceutils.management.commands.base.OptionalAppCommand):
     def add_arguments(self, parser):
         super().add_arguments(parser)
@@ -316,7 +348,7 @@ class Command(allianceutils.management.commands.base.OptionalAppCommand):
             print(f"Called with {app_config.name}")
         if options['type'] == 'label':
             print(f"Called with {app_config.label}")
-```  
+```
 
 ##### print_logging
 
@@ -351,12 +383,12 @@ class MyAppConfig(AppConfig):
         register(check=CheckExplicitTableNames(), tags=Tags.models)
         register(check=check_git_hooks, tags=Tags.admin)
         register(check=CheckReversibleFieldNames(), tags=Tags.models)
-        register(check=CheckUrlTrailingSlash(expect_trailing_slash=True), tags=Tags.url)        
+        register(check=CheckUrlTrailingSlash(expect_trailing_slash=True), tags=Tags.url)
 ```
 
 ##### CheckUrlTrailingSlash
 
-* Checks that your URLs are consistent with the `settings.APPEND_SLASH`  
+* Checks that your URLs are consistent with the `settings.APPEND_SLASH`
 * Arguments:
     * `ignore_attrs` - skip checks on url patterns where an attribute of the pattern matches something in here (see example above)
         * Most relevant attributes of a `RegexURLResolver`:
@@ -367,7 +399,7 @@ class MyAppConfig(AppConfig):
         * Note that if you skip a resolver it will also skip checks on everything inside that resolver
 * Note: If using Django REST Framework's [`DefaultRouter`](http://www.django-rest-framework.org/api-guide/routers/#defaultrouter) then you need to turn off `include_format_suffixes`:
 
-```
+```python
 router = routers.DefaultRouter(trailing_slash=True)
 router.include_format_suffixes = False
 router.register(r'myurl', MyViewSet)
@@ -383,8 +415,8 @@ urlpatterns += router.urls
 
 * Checks that git hookshave been set up, one of:
   * `.git/hooks` directory has been symlinked to the project's `git-hooks`
-  * [`husky`](https://github.com/typicode/husky) hooks have been installed 
-* 
+  * [`husky`](https://github.com/typicode/husky) hooks have been installed
+*
 
 ##### check\_db\_constraints
 
@@ -398,7 +430,7 @@ urlpatterns += router.urls
     * `ignore_labels` - if an app label (eg `silk`) or app_label + model labels (eg `silk.request`)
         matches something in `ignore_labels` then it will be ignored.
         * `allianceutils.checks.DEFAULT_TABLE_NAME_CHECK_IGNORE` contains a default list of apps/models to ignore
-        * Can be either a `str` or a regex (anything that contains a `.match()` method) 
+        * Can be either a `str` or a regex (anything that contains a `.match()` method)
 
 ##### CheckReversibleFieldNames
 
@@ -422,7 +454,7 @@ urlpatterns += router.urls
 #### CurrentUserMiddleware
 
 * Middleware to enable accessing the currently logged-in user without a request object.
-    * Assumes that `threading.local` is not shared between requests (an assumption also made by django internationalisation) 
+    * Assumes that `threading.local` is not shared between requests (an assumption also made by django internationalisation)
 
 * Setup
     * Add `allianceutils.middleware.CurrentUserMiddleware` to `MIDDLEWARE`.
@@ -443,13 +475,13 @@ user = CurrentUserMiddleware.get_user()
 * Usage
     * Add `allianceutils.middleware.CurrentUserMiddleware` to `MIDDLEWARE`.
     * Uses the `warnings` module to raise a warning; by default this is suppressed by django
-        * To ensure `QueryCountWarning` is never suppressed  
+        * To ensure `QueryCountWarning` is never suppressed
 
 ```python
 warnings.simplefilter('always', allianceutils.middleware.QueryCountWarning)
 ```
 
-* To increase the query count limit for one request, you can call `QueryCountMiddleware.increase_threshold(request, increment)` 
+* To increase the query count limit for one request, you can call `QueryCountMiddleware.increase_threshold(request, increment)`
 * To set the query count limit for one request you can call `QueryCountMiddleware.set_threshold(request, threshold)`
   * Rather than hardcode a new limit, `increase_threshold()` is generally preferable
   * This can be useful to disable checks entirely (pass `0` as the new limit)
@@ -461,7 +493,7 @@ def my_view(request, *args, **kwargs):
     ...
 
 ```
- 
+
 
 ### Migrations
 
@@ -497,7 +529,7 @@ class Migration(migrations.Migration):
 ```python
 class MyModel(NoDeleteModel):
         objects = combine_querysets_as_manager(NoDeleteQuerySet, MyQuerySet)
-```  
+```
 
 #### GenericUserProfile
 Allows you to iterate over a `User` table and have it return a corresponding `Profile` record without generating extra queries
@@ -506,7 +538,7 @@ Minimal example:
 
 ```python
 # ------------------------------------------------------------------
-# base User model 
+# base User model
 
 # If you're using django auth instead of authtools, you can just use
 # GenericUserProfileManager instead of having to make your own manager class
@@ -516,21 +548,21 @@ class UserManager(GenericUserProfileManagerMixin, authtools.models.UserManager):
 class User(GenericUserProfile, authtools.models.AbstractEmailUser):
     objects = UserManager()
     profiles = UserManager(select_related_profiles=True)
-    
+
     # these are the tables that should be select_related()/prefetch_related()
     # to minimise queries
     related_profile_tables = [
         'customerprofile',
         'adminprofile',
     ]
-    
+
     # the default implementation will iterate through the related profile tables
     # and return the first profile it can find. If you have custom logic for
     # choosing the profile for a user then you can do that here
     #
     # You would normally not access this directly but instead use the`.profile`
     # property that caches the return value of `get_profile()` and works
-    # correctly for both user and profile records  
+    # correctly for both user and profile records
     def get_profile(self) -> Model:
         # custom logic
         if datetime.now() > datetime.date(2000,1,1):
@@ -563,7 +595,7 @@ profiles = list(User.objects.select_related_profiles().all())
 # joining to profile tables: 1 query
 # This assumes that RetailLocation.company.manager is a FK ref to the user table
 # The syntax is a bit different because we can't modify the query generation
-# in an unrelated table 
+# in an unrelated table
 qs = RetailLocation.objects.all()
 qs = User.objects.select_related_profiles(qs, 'company__manager')
 location_managers = list((loc, loc.company.manager.profile) for loc in qs.all())
@@ -583,14 +615,14 @@ AUTHENTICATION_BACKENDS = [
 
 def my_view(request):
     # standard django AuthenticationMiddleware will call the authentication backend
-    profile = request.user  
+    profile = request.user
     return HttpResponse('Current user is ' + profile.username)
 
 ```
 
 * Limitations:
     * Profile iteration does not work with `.values()` or `.values_list()`
-    
+
 #### raise_validation_errors
 
 * The `raise_validation_errors` context manager enables cleaner code for constructing validation
@@ -599,12 +631,12 @@ def my_view(request):
 * `raise_validation_errors` accepts an (optional) function to wrap
     * The context manager returns a `ValidationError` subclass with an `add_error` function that follows the same rules as `django.forms.forms.BaseForm.add_error`
     * If the wrapped function raises a `ValidationError` then this will be merged into the `ValidationError` returned by the context manager
-    * If the wrapped function raises any other exception then this will not be intercepted and the context block will not be executed 
+    * If the wrapped function raises any other exception then this will not be intercepted and the context block will not be executed
     * At the end of a block,
         * If code in the context block raised an exception (including a `ValidationError`) then this will not be caught
-        * If `ValidationError` the context manager returned has any errors (either from `ve.add_error()` or from the wrapped function) then this will be raised 
+        * If `ValidationError` the context manager returned has any errors (either from `ve.add_error()` or from the wrapped function) then this will be raised
 
-```
+```python
     def clean(self):
         with allianceutils.models.raise_validation_errors(super().clean) as ve:
             if some_condition:
@@ -617,8 +649,8 @@ def my_view(request):
                     'fieldname2': field-specific error message',
                 })
             if something_bad:
-                raise RuntimeError('Oh no!') 
-            
+                raise RuntimeError('Oh no!')
+
             # at the end of the context, ve will be raised if it contains any errors
             #   - unless an exception was raised in the block (RuntimeError example above) in which case
             #     the raised exception will take precedence
@@ -626,9 +658,9 @@ def my_view(request):
 
 * Sometimes you already have functions that may raise a `ValidationError` and `add_error()` will not help
     * The `capture_validation_error()` context manager solves this problem
-    * Note that due to the way context managers work, each potential `ValidationError` needs its own with `capture_validation_error` context 
+    * Note that due to the way context managers work, each potential `ValidationError` needs its own with `capture_validation_error` context
 
-```
+```python
     def clean(self):
         with allianceutils.models.raise_validation_errors() as ve:
              with ve.capture_validation_error():
@@ -644,7 +676,7 @@ def my_view(request):
 
 * Utility functions that return predicates for use with [django-rules](https://github.com/dfunckt/django-rules)
 
-```
+```python
 from allianceutils.rules import has_any_perms, has_perms, has_perm
 
 # requires at least 1 listed permission
@@ -656,7 +688,7 @@ rules.add_perm('northwind.unpublish_book', has_perm('northwind.is_book_editor'))
 # requires all listed permissions
 rules.add_perm('northwind.sublicense_book', has_perms('northwind.is_book_editor', 'northwind.can_sign_contracts'))
 
-```  
+```
 
 ### Serializers
 
@@ -674,6 +706,119 @@ rules.add_perm('northwind.sublicense_book', has_perms('northwind.is_book_editor'
 SERIALIZATION_MODULES = {
     'json_ordered': 'allianceutils.serializers.json_ordered',
 }
+```
+
+### Template
+
+##### resolve
+
+* Resolves different types of kwarg values consistently.
+  * If value is a NodeList then it is rendered
+  * If value is a FilterExpression then it is resolved
+  * If value is a dict then each element is resolved if it is a FilterExpression, or else returned as is
+  * Otherwise value is returned as is
+
+
+* Example Usage
+```python
+    def resolved_kwargs(self, context: Context):
+        pk = resolve(self.pk, context)
+        model = resolve(self.model_name, context)
+        object = resolve(self.object, context)
+```
+
+##### token_kwargs
+
+* Re-implements the `token_kwargs` function from the Django base template library. This allows expanding the range of possible keywords to include '-' for aria attributes (e.g. `aria-label="My Label"`), and ':' for namespaced attributes (e.g. `xlink:href="foo"`). Used internally in [parse_tag_arguments](#parse_tag_arguments) - see that section for usage
+
+##### parse_tag_arguments
+
+* Implements a stripped-down version of `django.template.library.parse_bits()` to parse tokens passed to tags in Django templates.
+  * Takes the parser to process the tag, the token passed to the tag, and the kwarg `supports_as`
+  * Returns a tuple of `(args: list, kwargs: dict, target_var: str)`:
+    * args: a list of args as FilterExpressions
+    * kwargs: a dict of kwargs
+    * target_var: if `supports_as` is `True` and `as <variable>` is specified, returns the string reference for the tag. Otherwise returns `None`
+
+
+* Example Usage
+
+```python
+class StylesheetNode(template.Node, BundlerAsset):
+    def __init__(self, filename: Path, origin: Origin | None, attrs=None, target_var=None):
+        self.filename = filename
+        self.attrs = attrs
+        self.target_var = target_var
+        super().__init__(origin or Origin(UNKNOWN_SOURCE))
+
+    def render(self, context: Context):
+        if self.target_var:
+            context[self.target_var] = get_classes(self.filename)
+
+@register.tag("stylesheet")
+def stylesheet(parser: template.base.Parser, token: template.base.Token):
+    args, kwargs, target_var = parse_tag_arguments(parser, token, supports_as=True)
+    filename = args[0]
+    return StylesheetNode(filename, parser.origin, kwargs, target_var=target_var)
+```
+
+```html
+    {% stylesheet "./theme.css" as styles %}
+
+    <div class="{{ styles.section }}">
+        <h1 class="{{ styles.heading }}">My View</h1>
+        ...
+    </div>
+```
+
+##### build_html_attrs
+
+* Takes a dict of HTML tag attributes and transforms values into escaped strings suitable for use as HTML tag attributes. Can also pass a list of `prohibited_attrs` to prevent passing attributes which should not be passed to template tags.
+
+* Example Usage
+```python
+from django.utils.html import format_html
+...
+class LinkNode(template.Node):
+    def __init__(
+        self,
+        *,
+        href: FilterExpression | str | None = None,
+        **extra_kwargs,
+    ) -> None:
+        self.href = href
+
+    ...
+
+    def render(self, context: Context) -> SafeString:
+        href = resolve(self.href, context)
+        html_kwargs = { "href": href }
+        html_attrs = build_html_attrs(html_kwargs)
+        return format_html(
+            "<a {}>{}</a>",
+            html_attrs,
+        )
+```
+
+```html
+    {% link "/home" %}
+```
+
+##### is_static_expression
+
+* Checks if a given FilterExpression is static using the same method as Django's `resolve` implementation for the `Variable` class
+
+* Example Usage
+```python
+def validate_tag(parser, token):
+    tag_name = token.split_contents()[0]
+    args, _, _ = parse_tag_arguments(parser, token)
+
+    for arg in args:
+        if not is_static_expression(arg):
+            raise TemplateSyntaxError(
+                f"{tag_name} must be passed static strings for its arguments (encountered variable '{arg.var}')"
+            )
 ```
 
 ### Template Tags
@@ -711,7 +856,7 @@ SERIALIZATION_MODULES = {
       "publicPath": "/assets/"
     }
    ```
-   
+
    Output for `{% render_entry_point 'admin' 'js' %}`:
 
    ```html
@@ -719,7 +864,7 @@ SERIALIZATION_MODULES = {
    <script type="text/javascript" src="/assets/common.bundle.js?639269b921c8cf869c5f"></script>
    <script type="text/javascript" src="/assets/admin.bundle.js?c78fb252d4e00207afef"></script>
    ```
-   
+
    Output for `{% render_entry_point 'admin' 'css' %}`:
 
    ```html
@@ -748,9 +893,9 @@ SERIALIZATION_MODULES = {
   {% render_entry_point 'app' 'css' %}
 </head>
 <body>
-  
+
   ...
-  
+
   {% if DEBUG %}
     {# See https://reactjs.org/docs/cross-origin-errors.html #}
     {% render_entry_point entry_point 'js' attrs="crossorigin" %}
@@ -765,12 +910,66 @@ SERIALIZATION_MODULES = {
 
 * Sets default value(s) on the context in a template
 * This is useful because some built-in django templates raise warnings about unset variables (eg `is_popup` in the django admin template)
-* Note that some tags (eg `with`) save & restore the context state; if done inside such a template tag `default_value` will not persist when the state is restored 
+* Note that some tags (eg `with`) save & restore the context state; if done inside such a template tag `default_value` will not persist when the state is restored
 
 ```html
 {% load default_value %}
 {{ default_value myvar1=99 myvar2=myvar1|upper }}
 {{ myvar1 }} {{ myvar2 }}
+```
+
+### Tests
+
+##### suppress_silk
+
+* Decorator to disable silk SQL query logging.
+* This is needed for tests that use `assertNumQueries()` since otherwise the query count may include silk's `EXPLAIN`
+
+* Example Usage
+
+```python
+    @suppress_silk()
+    def test_lookup_object(self):
+        """Test that a query is run if object is not provided in template"""
+        user = self.get_privileged_user()
+        viewname = self.VIEW_KWARGS
+        view_kwargs = {"pk": user.pk}
+
+        request = HttpRequest()
+
+        # Without suppress_silk, an EXPLAIN query will be added
+        with self.assertNumQueries(1):
+            tpl = Template('{% load link %}{% link "' + viewname + '" pk=pk %}foo{% endlink %}')
+            tpl.render(Context({"request": request, "user": user, **view_kwargs}))
+```
+
+##### logging_filter
+
+* Decorator to disable logging for specified log names
+* This is useful because using `override_settings(LOGGING=...)` triggers an update to the python logging settings
+
+* Example Usage
+```python
+    @logging_filter(["django.request"])
+    def test_django_validation_errors(self):
+        url = reverse("django-validation-test-url")
+        for key, expect in EXPECTED_RESPONSES.items():
+            with self.subTest(key=key):
+                response = self.client.post(url, data={"error_key": key}, format="json")
+                self.assertEqual(400, response.status_code)
+                self.assertEqual(expect, response.json())
+```
+
+##### warning_filter
+
+* Apply a `warning.simplefilter()` for the specified warnings
+
+* Example Usage
+```python
+    @warning_filter("ignore", category=DeprecationWarning)
+    def test_relying_on_deprecated_feature(self):
+        instance = MyModel.objects.filter(deprecated_filter=True)
+        assertIsInstance(instance, MyModel)
 ```
 
 ### Util
@@ -783,8 +982,8 @@ SERIALIZATION_MODULES = {
     * If `DEBUG` is not enabled then this will do nothing
     * This should be called from inside the
       [`ready()`](https://docs.djangoproject.com/en/stable/ref/applications/#django.apps.AppConfig.ready) method of
-      an [`AppConfig`](https://docs.djangoproject.com/en/stable/ref/applications/#configuring-applications) 
-  
+      an [`AppConfig`](https://docs.djangoproject.com/en/stable/ref/applications/#configuring-applications)
+
 ```python
 class MyAppConfig(AppConfig):
     def ready(self):
@@ -839,7 +1038,7 @@ output_tree == {
 * `allianceutils.util.underscore_to_camel(str)` - camel case => underscore case a string
 * It is assumed that words will not begin with numbers:
     * `zoo_foo99_bar` is okay
-    * `zoo_foo_99bar` will result in an irreversible transformation (`zooFoo99bar` => `zoo_foo99_bar`) 
+    * `zoo_foo_99bar` will result in an irreversible transformation (`zooFoo99bar` => `zoo_foo99_bar`)
 
 #### get_firstparty_apps
 
@@ -895,7 +1094,7 @@ retry_fn(generate_number, (IntegrityError, ), 10)
 ## Experimental
 
 * These are experimental and may change without notice
-    * `document_reverse_accessors` management command  
+    * `document_reverse_accessors` management command
 
 ## Changelog
 
@@ -904,10 +1103,10 @@ See [CHANGELOG.md](CHANGELOG.md)
 ## Development
 
 * To create a clean local environment
-  * `python3 -m venv venv && source venv/bin/activate && pip install --upgrade pip` 
+  * `python3 -m venv venv && source venv/bin/activate && pip install --upgrade pip`
   * `poetry install --no-root --sync --only=main --extras=""`
   * Note that due to [a poetry bug](https://github.com/python-poetry/poetry/issues/7364) extras are currently not removed
-  * This will install the latest django version; if you want to test a specific django version you need to `pip install` it manually 
+  * This will install the latest django version; if you want to test a specific django version you need to `pip install` it manually
 * Dev dependencies
   * `poetry install --no-root --sync --with=dev --extras "extras mysql postgres"`
 
@@ -941,7 +1140,7 @@ See [CHANGELOG.md](CHANGELOG.md)
 ### Testing
 * To run test cases
   * The django settings module is `test_allianceutils/settings.py`
-    * The following env vars are optional but you may want to set them if the default don't match your local setup: 
+    * The following env vars are optional but you may want to set them if the default don't match your local setup:
       * `DB_NAME`
       * `DB_HOST`
       * `DB_PORT`
@@ -950,5 +1149,5 @@ See [CHANGELOG.md](CHANGELOG.md)
 * [tox](https://tox.wiki/en/latest/)
   * used to run tests against different django/python/database versions
   * `tox` to run all tests. Will require that you have a postgres & mysql server running.
-    * `tox -f django42` will run the subset of tests that cover django 4.2. Check `tox.ini` for the list of tested environments. 
-* When you push to github a [github Actions](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python) workflow will be triggered (see `.github/workflows/django.yml`)  
+    * `tox -f django42` will run the subset of tests that cover django 4.2. Check `tox.ini` for the list of tested environments.
+* When you push to github a [github Actions](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python) workflow will be triggered (see `.github/workflows/django.yml`)

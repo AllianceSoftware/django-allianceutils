@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from typing import Collection
+from typing import Dict
+from typing import List
 from typing import Protocol
 from typing import TYPE_CHECKING
 
@@ -13,7 +15,7 @@ if TYPE_CHECKING:
     # ModelSerializer.Meta is only available in DRF stubs
     class DRFSerializerProtocol(Protocol):
         Meta: ModelSerializer.Meta
-        fields: dict[str, Field]
+        fields: Dict[str, Field]
 
         # this is provided by SerializerOptInFieldsMixin
         def get_pinned_fields(self: DRFSerializerProtocol) -> Collection[str]:
@@ -87,7 +89,7 @@ class SerializerOptInFieldsMixin:
         if isinstance(fields_to_include, str):
             fields_to_include = [fields_to_include]
 
-        fields_to_include_list: list[str] = []
+        fields_to_include_list: List[str] = []
         for f in fields_to_include:
             if f.find(",") != -1:
                 fields_to_include_list += f.split(",")

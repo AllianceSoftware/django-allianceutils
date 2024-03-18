@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 from typing import Iterable
+from typing import Optional
 from typing import Tuple
 from typing import Union
 
@@ -46,7 +47,7 @@ def add_autoreload_extra_files(extra_files: Iterable[Union[str, Path]]):
     if not settings.DEBUG:
         return
 
-    is_running_from_reloader: Callable[[], bool] | None
+    is_running_from_reloader: Optional[Callable[[], bool]]
     try:
        from werkzeug.serving import is_running_from_reloader
     except ImportError:

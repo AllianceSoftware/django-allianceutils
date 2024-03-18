@@ -15,12 +15,12 @@ class User(models.Model):
 
 
 class Person(User):
-    objects = UserManager()
+    objects = UserManager() # type:ignore[misc]
     label = models.CharField(max_length=10)
 
 
 class Customer(Person):
-    objects = UserManager()
+    objects = UserManager() # type:ignore[misc]
     num = models.IntegerField()
 
 

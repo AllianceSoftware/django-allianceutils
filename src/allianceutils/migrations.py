@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from typing import Dict
 from typing import Sequence
+from typing import Tuple
 from typing import Union
 
 from django.apps import apps
@@ -22,7 +24,7 @@ class RunSQLFromFile(RunSQL):
     app_name: str
     filename: Path
 
-    def __init__(self, *, app_name: str, filename: str | Path, **kwargs):
+    def __init__(self, *, app_name: str, filename: Union[str, Path], **kwargs):
         self.app_name = app_name
         self.filename = Path(filename)
         if self.filename.is_absolute():
@@ -33,7 +35,7 @@ class RunSQLFromFile(RunSQL):
             reverse_sql=None,
             **kwargs)
 
-    def deconstruct(self) -> tuple[str, Sequence[Any], dict[str, Any]]:
+    def deconstruct(self) -> Tuple[str, Sequence[Any], Dict[str, Any]]:
         path, args, kwargs = super().deconstruct()
         del kwargs["sql"]
         del kwargs["reverse_sql"]
