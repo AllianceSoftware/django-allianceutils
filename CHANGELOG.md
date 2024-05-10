@@ -26,6 +26,12 @@ so make sure you follow the template
 
 -->
 
+## 4.x.x unreleased
+
+### Fixed
+
+* `is_static_expression` now handles expressions with filters correctly
+
 ## 4.0.0 2024-03-18
 
 ### Breaking Changes
