@@ -173,12 +173,20 @@ def build_html_attrs(html_kwargs: Dict[str, str], prohibited_attrs: Optional[Lis
     return output
 
 
-def is_static_expression(expr: Optional[FilterExpression]) -> bool:
-    """Check if a given expression is static"""
+def is_static_expression(expr: Optional[Union[FilterExpression,str]]) -> bool:
+    """Check if a given expression is static
 
+    This can be used when writing custom template tags to determine if the value passed in is a static value, and can
+    be resolved without ``context``.
+    """
+    if expr is None or isinstance(expr, str):
+        return True
+    if not isinstance(expr, FilterExpression):
+        return False  # type: ignore[unreachable] # unreachable because of type, but we want to return False rather than crash if not a FilterExpression
     # the arg.var.lookups is how Variable internally determines if value is a literal. See its
     # implementation of ``resolve``.
-    if not expr or not isinstance(expr.var, Variable) or expr.var.lookups is None:
-        return True
+    if  not isinstance(expr.var, Variable) or expr.var.lookups is None:
+        # If it has filters then we assume it's not static
+        return not expr.filters
     # There are 3 built-ins that look like vars but get resolved from a static list (see ``BaseContext``)
     return expr.var.var in ["None", "True", "False"]
