@@ -26,7 +26,7 @@ so make sure you follow the template
 
 -->
 
-## 4.x.x unreleased
+## 4.0.1 2024-05-13
 
 ### Fixed
 

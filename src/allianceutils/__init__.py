@@ -4,7 +4,7 @@ import unittest
 
 from django.db.models.base import ModelBase
 
-__version__ = "4.0.0"
+__version__ = "4.0.1"
 
 
 # All the tests are in test_allianceutils
