@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import ast
-from collections import defaultdict
 import inspect
-from pathlib import Path
 import re
 import subprocess
-from typing import cast
+from pathlib import Path
 from typing import Collection
 from typing import Dict
 from typing import Iterable
@@ -15,8 +13,8 @@ from typing import Mapping
 from typing import Optional
 from typing import Type
 from typing import Union
+from typing import cast
 
-from django.apps import apps
 from django.apps.config import AppConfig
 from django.conf import settings
 from django.core.checks import CheckMessage
@@ -24,8 +22,8 @@ from django.core.checks import Error
 from django.core.checks import Info
 from django.core.checks import Warning
 from django.db.models import Model
-from django.urls import get_resolver
 from django.urls import URLResolver
+from django.urls import get_resolver
 
 from allianceutils.util import camel_to_underscore
 from allianceutils.util import get_firstparty_apps
@@ -399,8 +397,8 @@ class CheckReversibleFieldNames:
 
 
 def check_duplicated_middleware(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
-    messages = []
-    middlewares = settings.MIDDLEWARE
+    messages: list[CheckMessage] = []
+    middlewares = cast(list, settings.MIDDLEWARE)
     duplicates = set([x for x in middlewares if middlewares.count(x) > 1])
     if duplicates:
         messages.append(
