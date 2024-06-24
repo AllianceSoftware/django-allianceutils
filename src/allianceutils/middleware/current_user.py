@@ -2,7 +2,9 @@ import threading
 
 from django.utils.deprecation import MiddlewareMixin
 
-GLOBAL_USER = threading.local()
+from asgiref.local import Local as LocalContext
+
+GLOBAL_USER = LocalContext() # w/o thread_critical=True to allow for sync<->async
 
 
 class CurrentUserMiddleware(MiddlewareMixin):
@@ -21,7 +23,8 @@ class CurrentUserMiddleware(MiddlewareMixin):
         :param request: The current request
         :return None
         """
-        assert hasattr(request, 'user'), (
+        if not hasattr(request, 'user'):
+            raise Exception(
             "The CurrentUser middleware requires the authentication middleware "
             "to be installed. Edit your MIDDLEWARE setting to insert"
             "'django.contrib.auth.middleware.AuthenticationMiddleware' before "
@@ -57,4 +60,7 @@ class CurrentUserMiddleware(MiddlewareMixin):
 
     @classmethod
     def _del_user(cls):
-        del GLOBAL_USER.user
+        # its possible for `user` to not present if the cleanup's called twice eg.
+        # one from exception processing and the other from response processing on exception
+        if hasattr(GLOBAL_USER, 'user'):
+            del GLOBAL_USER.user

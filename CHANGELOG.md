@@ -26,6 +26,16 @@ so make sure you follow the template
 
 -->
 
+## 4.1.0 unreleased
+
+### Fixed
+
+* Resolve bug in `CurrentUserMiddleware` where if an exception was raised, middleware triggers an additional exception
+
+### Added
+
+* Added `check_duplicated_middleware` system check to ensure no middleware gets included twice in config
+
 ## 4.0.1 2024-05-13
 
 ### Fixed
