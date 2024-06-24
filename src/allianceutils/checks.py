@@ -402,10 +402,10 @@ def check_duplicated_middleware(app_configs: Iterable[AppConfig], **kwargs) -> L
     messages = []
     middlewares = settings.MIDDLEWARE
     duplicates = set([x for x in middlewares if middlewares.count(x) > 1])
-    if len(duplicates):
+    if duplicates:
         messages.append(
             Error(
-                f"{duplicates} had been included multiple times in your settings",
+                f"{duplicates} is included multiple times in 'MIDDLEWARE' setting",
                 obj='settings',
                 id=ID_ERROR_MIDDLEWARE_DUPLICATED,
             )
