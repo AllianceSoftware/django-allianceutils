@@ -92,7 +92,7 @@ class CheckUrlTrailingSlash:
         self.expect_trailing_slash = expect_trailing_slash
         self.ignore_attrs = dict(ignore_attrs.items())
 
-    def __call__(self, app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
+    def __call__(self, app_configs: Optional[Iterable[AppConfig]], **kwargs) -> List[CheckMessage]:
         # We ignore app_configs; so does django core check_url_settings()
         # Consider where ROOT_URLCONF points app A urlpatterns which include() app B urlpatterns
         # which define a URL to view in app C -- which app was the one that owned the URL?
@@ -154,7 +154,7 @@ class CheckGitHooks:
     def __init__(self, git_path: Optional[Union[str, Path]] = None):
         self.git_path = Path(git_path) if git_path is not None else get_default_git_path()
 
-    def __call__(self, app_configs: Iterable[AppConfig], **kwargs):
+    def __call__(self, app_configs: Optional[Iterable[AppConfig]], **kwargs):
         return _check_git_hooks(app_configs, self.git_path, **kwargs)
 
 
@@ -164,11 +164,11 @@ def get_default_git_path() -> Path:
     return Path(project_dir, '.git')
 
 
-def check_git_hooks(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
+def check_git_hooks(app_configs: Optional[Iterable[AppConfig]], **kwargs) -> List[CheckMessage]:
     return _check_git_hooks(app_configs, git_path=get_default_git_path(), **kwargs)
 
 
-def _check_git_hooks(app_configs: Iterable[AppConfig], git_path: Path, **kwargs) -> List[CheckMessage]:
+def _check_git_hooks(app_configs: Optional[Iterable[AppConfig]], git_path: Path, **kwargs) -> List[CheckMessage]:
 
     # handle the case where .git is a file rather than a directory
     try:
@@ -342,7 +342,7 @@ class CheckExplicitTableNames:
         self.ignore_labels = ignore_labels
         self.enforce_lowercase = enforce_lowercase
 
-    def __call__(self, app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
+    def __call__(self, app_configs: Optional[Iterable[AppConfig]], **kwargs) -> List[CheckMessage]:
         """
         Warn when models don't have Meta's db_table_name set in apps that require it.
         """
@@ -360,7 +360,7 @@ class CheckReversibleFieldNames:
     def __init__(self, ignore_labels: Iterable[str] = []):
         self.ignore_labels = ignore_labels
 
-    def __call__(self, app_configs: Iterable[AppConfig], ** kwargs):
+    def __call__(self, app_configs: Optional[Iterable[AppConfig]], ** kwargs):
         candidate_models = find_candidate_models(app_configs, self.ignore_labels)
         errors = []
         for model in candidate_models.values():
@@ -396,7 +396,7 @@ class CheckReversibleFieldNames:
         return messages
 
 
-def check_duplicated_middleware(app_configs: Iterable[AppConfig], **kwargs) -> List[CheckMessage]:
+def check_duplicated_middleware(app_configs: Optional[Iterable[AppConfig]], **kwargs) -> List[CheckMessage]:
     messages: list[CheckMessage] = []
     middlewares = cast(list, settings.MIDDLEWARE)
     duplicates = set([x for x in middlewares if middlewares.count(x) > 1])

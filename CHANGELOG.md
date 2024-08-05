@@ -31,6 +31,7 @@ so make sure you follow the template
 ### Fixed
 
 * Resolve bug in `CurrentUserMiddleware` where if an exception was raised, middleware triggers an additional exception
+* Fix types for all django checks to accept `None` for the `app_configs` argument
 
 ### Added
 
