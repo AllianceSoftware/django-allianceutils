@@ -43,7 +43,7 @@ class Command(django.core.management.base.BaseCommand):
         # logging_tree always goes to stdout; need to capture it and redirect to django management stdout
         orig_stdout = sys.stdout
         try:
-            sys.stdout = self.stdout  # type:ignore[assignment] # we're changing the type
+            sys.stdout = self.stdout
             logging_tree.printout()
         finally:
             sys.stdout = orig_stdout

@@ -318,7 +318,7 @@ class GenericUserProfile(Model):
 
                 # note that record.pk will always return the underlying pk id, not the user_ptr record
                 # so we have to access it via the pk field's name and not the 'pk' alias
-                pk = cast(Field, record._meta.pk)
+                pk = record._meta.pk
                 record = getattr(record, pk.name)
 
             return user_profile

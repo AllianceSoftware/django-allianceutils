@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from typing import cast
 from typing import Optional
 from typing import Protocol
 
+from allianceutils.auth.models import GenericUserProfile
 from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.db.models import Model
-
-from allianceutils.auth.models import GenericUserProfile
 
 
 def resolve_perm_name(module, entity, action, is_global) -> str:
@@ -43,7 +41,7 @@ class ProfileModelBackendMixin:
         try:
             manager = UserModel.profiles
         except AttributeError:
-            return super().get_user(user_id)
+            return super().get_user(user_id)  # type: ignore[safe-super]
 
         try:
             user = manager.get(pk=user_id)

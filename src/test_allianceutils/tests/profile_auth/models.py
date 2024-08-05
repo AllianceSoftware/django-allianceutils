@@ -55,7 +55,7 @@ ci_collations = {
     "django.db.backends.mysql": "utf8mb4_0900_ai_ci",  # default mysql CI collation
 }
 
-_db_engine = cast(str, settings.DATABASES["default"]["ENGINE"])  # type:ignore[misc]
+_db_engine = cast(str, settings.DATABASES["default"]["ENGINE"])
 _ci_collation = ci_collations[_db_engine]
 
 
