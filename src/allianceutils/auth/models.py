@@ -1,27 +1,21 @@
 from __future__ import annotations
 
-from typing import cast
 from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import Type
-from typing import TYPE_CHECKING
 from typing import TypeVar
 from typing import Union
+from typing import cast
 
+from allianceutils.checks import ID_ERROR_PROFILE_RELATED_TABLES
 from django.contrib.auth.models import BaseUserManager
 from django.contrib.auth.models import UserManager
 from django.core import checks
-from django.core.exceptions import ValidationError
-from django.db.models import EmailField
-from django.db.models import Field
 from django.db.models import Model
 from django.db.models import QuerySet
 from django.db.models.query import ModelIterable
 from typing_extensions import Self
-
-from allianceutils import ModelProtocol
-from allianceutils.checks import ID_ERROR_PROFILE_RELATED_TABLES
 
 _ModelT = TypeVar("_ModelT", bound=Model, covariant=True)
 
@@ -121,10 +115,10 @@ class GenericUserProfileQuerySet(QuerySet):
             return self._clone()
         return self.prefetch_related(*self.model.related_profile_tables)
 
-    def iterator(self):
+    def iterator(self, chunk_size: Optional[int]=None):
         # extra validation check in case some subclass overwrote our other validation checks
         self._validate_iterator()
-        return super().iterator()
+        return super().iterator(chunk_size)
 
 
 def _is_profile(model: Type[Model]) -> bool:
@@ -324,7 +318,7 @@ class GenericUserProfile(Model):
 
                 # note that record.pk will always return the underlying pk id, not the user_ptr record
                 # so we have to access it via the pk field's name and not the 'pk' alias
-                pk = cast(Field, record._meta.pk)
+                pk = record._meta.pk
                 record = getattr(record, pk.name)
 
             return user_profile
