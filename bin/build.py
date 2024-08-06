@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-from pkg_resources import parse_version
+from packaging.version import Version
 import re
 import subprocess
 
@@ -14,7 +14,7 @@ with (Path(__file__).parent.parent / "CHANGELOG.md").open("r") as f:
     # get rid of html comments
     file_contents = re.sub('<!--.*?-->', '', file_contents, flags=re.MULTILINE | re.DOTALL)
 
-    highest_ver = parse_version("0")
+    highest_ver = Version("0")
     ver_string = "0"
     for line in file_contents.split("\n"):
         if line.startswith("## "):
@@ -22,7 +22,7 @@ with (Path(__file__).parent.parent / "CHANGELOG.md").open("r") as f:
             if not match:
                 raise ValueError(f"!!Cannot interpret header in {repr(line)}")
             try:
-                cur_ver = parse_version(match.group("ver"))
+                cur_ver = Version(match.group("ver"))
             except ValueError as e:
                 raise ValueError(f"Cannot interpret version in {repr(line)}") from e
             if cur_ver >= highest_ver:
