@@ -453,7 +453,27 @@ urlpatterns += router.urls
     * Add `HTTP_AUTH_USERNAME` and `HTTP_AUTH_PASSWORD` to appropriate setting file, e.g. `settings/production_staging.py`
         * Remember that you shouldn't be hardcoding credentials in code: read content from env vars or file
 
+#### CurrentRequestMiddleware
+
+* Middleware to enable accessing the current request from anywhere
+    * Assumes that `threading.local` is not shared between requests (an assumption also made by django internationalisation)
+
+* Setup
+    * Add `allianceutils.middleware.CurrentRequestMiddleware` to `MIDDLEWARE`.
+
+* Usage
+
+```python
+from allianceutils.middleware import CurrentRequestMiddleware
+
+# Will return `None` if request not available. This will be the case when called outside of a request, for example
+# from a management command.
+request = CurrentRequestMiddleware.get_request()
+```
+
 #### CurrentUserMiddleware
+
+* **NOTE:** If using `CurrentRequestMiddleware` you can access the user from there, and you do not need this middleware.
 
 * Middleware to enable accessing the currently logged-in user without a request object.
     * Assumes that `threading.local` is not shared between requests (an assumption also made by django internationalisation)
