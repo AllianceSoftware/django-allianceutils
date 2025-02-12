@@ -26,6 +26,16 @@ so make sure you follow the template
 
 -->
 
+## 4.1.1 2025-02-13
+
+### Fixed
+
+* Remove dependency on deprecated distutils package
+
+### Added
+
+* Copied `strtobool` from distutils
+
 ## 4.1.0 2024-08-06
 
 ### Fixed
