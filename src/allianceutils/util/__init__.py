@@ -17,6 +17,7 @@ from .camel_case import underscore_to_camel
 from .camel_case import underscoreize
 from .date import python_to_django_date_format
 from .get_firstparty_apps import get_firstparty_apps
+from .strtobool import strtobool
 
 __all__ = [
     'camel_to_underscore',
@@ -28,6 +29,7 @@ __all__ = [
     'python_to_django_date_format',
 
     'retry_fn',
+    'strtobool',
 ]
 
 

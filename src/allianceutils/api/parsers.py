@@ -1,4 +1,3 @@
-from distutils.util import strtobool
 import json
 
 from django.conf import settings
@@ -7,6 +6,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework.parsers import MultiPartParser
 
 from allianceutils.util.camel_case import underscoreize
+from allianceutils.util.strtobool import strtobool
 
 
 class CamelCaseJSONParser(JSONParser):
