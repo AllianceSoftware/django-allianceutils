@@ -1,3 +1,8 @@
+"""
+Django DB instrumentation makes this relatively simple now:
+
+https://docs.djangoproject.com/en/dev/topics/db/instrumentation/
+"""
 from __future__ import annotations
 
 import logging
