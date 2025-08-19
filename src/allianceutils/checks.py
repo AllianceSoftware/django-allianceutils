@@ -284,7 +284,7 @@ def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: 
                     first_target = sub_node.targets[0]
                     if first_target.id == 'db_table':  # type:ignore[attr-defined] # isn't present in type defs
                         if isinstance(sub_node.value, ast.Constant):
-                            found = sub_node.value.s
+                            found = sub_node.value.value
                         else:
                             # If it's an expression then we don't know what it's going to evaluate it
                             # so we're just going to assume it's ok
@@ -295,7 +295,7 @@ def _check_explicit_table_names_on_model(model: Type[Model], enforce_lowercase: 
                     elif (
                         first_target.id == 'managed'  # type:ignore[attr-defined] # isn't present in type defs
                         and isinstance(sub_node.value, (ast.Constant))
-                        and sub_node.value.s == False
+                        and sub_node.value.value == False
                     ):
                         found = True
                         break
