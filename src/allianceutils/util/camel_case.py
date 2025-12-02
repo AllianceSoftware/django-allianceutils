@@ -193,10 +193,10 @@ def _transform_data(data: CamelizeT, transform_key: Callable, ignore_lookup: Dic
     # Mapping (dict) -- transform keys
     if isinstance(data, Mapping):
         cls = OrderedDict if isinstance(data, OrderedDict) else dict
-        return cls(
+        return cast(CamelizeT, cls(
             _transform_key_val(key, value, transform_key, ignore_lookup)
             for (key, value) in data.items()
-        )
+        ))
 
     # Iterable - we'll want to use iterable to cover all ... iterables, such as a list or a queryset,
     # but we'll want to ignore two common iterable types: str & bytes. We also ignore File specifically for

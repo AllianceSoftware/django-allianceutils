@@ -67,7 +67,7 @@ rules = { version = "*", optional = true }
 
 # optional databases
 mysqlclient = { version = "*", optional = true }
-psycopg2 = { version = "*", optional = true }
+psycopg = { version = "*", optional = true }
 
 [tool.poetry.extras]
 extras = [
@@ -76,11 +76,11 @@ extras = [
     "rules",
 ]
 mysql = ["mysqlclient"]
-postgres = ["psycopg2"]
+postgres = ["psycopg"]
 
 [tool.poetry.group.databases.dependencies]
 mysqlclient = "*"
-psycopg2 = "*"
+psycopg = "*"
 
 [tool.poetry.group.dev]
 optional = true
@@ -95,7 +95,6 @@ django-filter-stubs = "*"
 django-stubs = "*"
 djangorestframework-stubs = "*"
 types-mysqlclient = "*"
-types-psycopg2 = "*"
 types-Werkzeug = "*"
 
 
