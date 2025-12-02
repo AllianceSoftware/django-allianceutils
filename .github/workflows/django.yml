@@ -10,15 +10,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      # the combinations can run in parallel by adjusting this value
       max-parallel: 20
-      # all combinations of the matrix choices below are combined to create jobs. The max combinations is 256
       matrix:
-        python-version: ['3.11', '3.12', '3.13', '3.14']
-        database-type: ['postgres', 'mysql']
+        python-version: [ '3.11', '3.12', '3.13', '3.14' ]
+        django-version: [ '42', '52' ]
+        database-type: [ 'postgres', 'mysql' ]
+        exclude:
+          - python-version: '3.14'
+            django-version: '42'  # Django 4.2 doesn't support 3.14
 
     services:
-
       postgres:
         # Docker Hub image
         image: postgres
@@ -97,11 +98,11 @@ jobs:
           poetry install --no-root --sync --with=dev --extras "postgres"
 
       # postgres tests
-      - name: Run PostgreSQL Tests with py${{ matrix.python-version }}
+      - name: Run PostgreSQL Tests with py${{ matrix.python-version }} django${{ matrix.django-version }}
         if: matrix.database-type == 'postgres'
         run: |
           source venv/bin/activate
-          tox -f test-py${{ steps.pyver.outputs.VER }}-${{ matrix.database-type }}
+          tox -f test-py${{ steps.pyver.outputs.VER }}-django${{ matrix.django-version }}-${{ matrix.database-type }}
         env:
           CI_SERVER: yes
           DB_HOST: localhost
@@ -115,11 +116,11 @@ jobs:
 #        if: matrix.database-type == 'mysql'
 #        run: sudo /etc/init.d/mysql start
 
-      - name: Run MySQL Tests with py${{ matrix.python-version }}
+      - name: Run MySQL Tests with py${{ matrix.python-version }} django${{ matrix.django-version }}
         if: matrix.database-type == 'mysql'
         run: |
           source venv/bin/activate
-          tox -f test-py${{ steps.pyver.outputs.VER }}-${{ matrix.database-type }}
+          tox -f test-py${{ steps.pyver.outputs.VER }}-django${{ matrix.django-version }}-${{ matrix.database-type }}
         env:
           CI_SERVER: yes
           DB_HOST: 127.0.0.1
