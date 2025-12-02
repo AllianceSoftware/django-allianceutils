@@ -26,6 +26,11 @@ so make sure you follow the template
 
 -->
 
+## 4.2.0 2025-12-02
+
+* Added: Support for Django 5.2
+* Added: Support for Python 3.14
+
 ## 4.1.1 2025-02-13
 
 ### Fixed
