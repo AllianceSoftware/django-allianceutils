@@ -1,4 +1,4 @@
-from distutils.util import strtobool
+from allianceutils.util.strtobool import strtobool
 import threading
 from time import sleep
 from typing import Optional

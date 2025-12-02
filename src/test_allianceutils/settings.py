@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from distutils.util import strtobool
+from allianceutils.util.strtobool import strtobool
 import hashlib
 import os
 from pathlib import Path
@@ -45,9 +45,9 @@ def _build_db_settings():
     # guess based on env variables & installed packages
     if engine is None and os.environ.get('PGDATABASE'):
         try:
-            import psycopg2
+            import psycopg
         except ImportError:
-            print("PGDATABASE set but pscyopg2 not installed", file=sys.stderr)
+            print("PGDATABASE set but pscyopg not installed", file=sys.stderr)
         else:
             engine = 'django.db.backends.postgresql'
 
@@ -158,9 +158,9 @@ USE_TZ = True
 # -------------------------------------
 # Test case performance
 PASSWORD_HASHERS = (
-        #'django_plainpasswordhasher.PlainPasswordHasher', # very fast but extremely insecure
-        "django.contrib.auth.hashers.SHA1PasswordHasher",  # fast but insecure
-    )
+    #'django_plainpasswordhasher.PlainPasswordHasher', # very fast but extremely insecure
+    "django.contrib.auth.hashers.MD5PasswordHasher",
+)
 
 # -------------------------------------
 # Custom settings
@@ -169,7 +169,7 @@ QUERY_COUNT_WARNING_THRESHOLD = 40
 warnings.simplefilter('always')
 
 try:
-    from django.utils.deprecation import RemovedInDjango51Warning
+    from django.utils.deprecation import RemovedInDjango51Warning #type: ignore
 except ImportError:
     pass
 else:

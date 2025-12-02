@@ -9,9 +9,6 @@ GLOBAL_USER = LocalContext() # w/o thread_critical=True to allow for sync<->asyn
 
 class CurrentUserMiddleware(MiddlewareMixin):
 
-    def __init__(self, get_response=None):
-        self.get_response = get_response
-
     """
     Middleware to enable accessing the currently logged-in user without
     a request object.

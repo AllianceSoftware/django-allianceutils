@@ -14,6 +14,7 @@ from django.test import Client
 from django.test import override_settings
 from django.test import TestCase
 from django.urls import reverse
+from django.db import close_old_connections
 
 # Compensation for the fact that django or other middleware may do some internal queries
 from allianceutils.middleware import CurrentUserMiddleware
@@ -22,7 +23,8 @@ from test_allianceutils.tests.middleware.views import reset_thread_wait_barrier
 QUERY_COUNT_OVERHEAD = 0
 
 
-def execute_request(client: Client | None,
+def execute_request(
+    client: Client | None,
     url_path: str,
     data: Dict[str, str] = {},
     thread_count: int = 1,
@@ -41,7 +43,7 @@ def execute_request(client: Client | None,
     thread_exceptions = []
     thread_responses = []
 
-    def do_request(client: Client | None=None, count: int | None=None):
+    def do_request(client: Client | None = None, count: int | None = None):
         try:
             if prehook:
                 client = prehook(client, count)
@@ -53,10 +55,22 @@ def execute_request(client: Client | None,
             raise
 
     if thread_count == 1:
+        # Main thread: let Django’s TestCase manage the connection.
         do_request(client, 0)
         return thread_responses[0]
 
-    threads = [threading.Thread(target=do_request, args=(client, count)) for count in range(thread_count)]
+    def thread_target(client: Client | None, count: int | None):
+        # Each worker thread must manage its own DB connections.
+        close_old_connections()
+        try:
+            do_request(client, count)
+        finally:
+            close_old_connections()
+
+    threads = [
+        threading.Thread(target=thread_target, args=(client, count))
+        for count in range(thread_count)
+    ]
 
     for t in threads:
         t.start()
@@ -64,10 +78,9 @@ def execute_request(client: Client | None,
         t.join()
 
     if thread_exceptions:
-        raise Exception(f'Found {len(thread_exceptions)} exception(s): {thread_exceptions}')
+        raise Exception(f"Found {len(thread_exceptions)} exception(s): {thread_exceptions}")
 
     return thread_responses
-
 
 class CurrentUserMiddlewareTestCase(TestCase):
     def setUp(self):

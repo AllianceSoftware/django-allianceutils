@@ -42,9 +42,7 @@ def _random_email_case(email: str) -> str:
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.contrib.auth.middleware.AuthenticationMiddleware',
     ],
-    PASSWORD_HASHERS=(
-        'django.contrib.auth.hashers.SHA1PasswordHasher',
-    ),
+    PASSWORD_HASHERS=("django.contrib.auth.hashers.MD5PasswordHasher",),
     AUTHENTICATION_BACKENDS=(
         'test_allianceutils.tests.profile_auth.backends.ProfileModelBackend',
     ),
