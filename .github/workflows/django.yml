@@ -14,7 +14,7 @@ jobs:
       max-parallel: 20
       # all combinations of the matrix choices below are combined to create jobs. The max combinations is 256
       matrix:
-        python-version: ['3.8', '3.9', '3.10', '3.11']
+        python-version: ['3.11', '3.12', '3.13', '3.14']
         database-type: ['postgres', 'mysql']
 
     services:

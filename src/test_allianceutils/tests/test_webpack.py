@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from distutils.util import strtobool
+from allianceutils.util.strtobool import strtobool
 import os
 from pathlib import Path
 from typing import Any

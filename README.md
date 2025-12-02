@@ -31,7 +31,7 @@ A collection of utilities for django projects from [Alliance Software](https://w
 
 * Tested with django 4.2 and 5.0
   * Pull requests accepted for other versions, but at minimum we test against current LTS versions
-* Python >=3.8
+* Python >=3.11
 
 ## Usage
 
