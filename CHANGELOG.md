@@ -26,6 +26,10 @@ so make sure you follow the template
 
 -->
 
+## 4.2.1 2025-12-17
+
+* Fix `RunSQLFromFile` so it actually runs the sql 
+
 ## 4.2.0 2025-12-02
 
 * Added: Support for Django 5.2
