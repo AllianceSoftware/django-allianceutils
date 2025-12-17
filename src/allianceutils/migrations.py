@@ -51,6 +51,3 @@ class RunSQLFromFile(RunSQL):
         )
         sql = path.read_text()
         super()._run_sql(schema_editor, sql)  # type:ignore[misc] # underscore methods are hidden
-
-
-# TODO: add test cases for this
