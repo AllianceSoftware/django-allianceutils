@@ -28,12 +28,11 @@ class RunSQLFromFile(RunSQL):
         self.app_name = app_name
         self.filename = Path(filename)
         if self.filename.is_absolute():
-            raise ValueError("filename should be relative to app's migrations directory")
+            raise ValueError(
+                "filename should be relative to app's migrations directory"
+            )
 
-        super().__init__(
-            sql="",
-            reverse_sql=None,
-            **kwargs)
+        super().__init__(sql="", reverse_sql=None, **kwargs)
 
     def deconstruct(self) -> Tuple[str, Sequence[Any], Dict[str, Any]]:
         path, args, kwargs = super().deconstruct()
@@ -47,9 +46,8 @@ class RunSQLFromFile(RunSQL):
         return "Raw SQL operation from file"
 
     def _run_sql(self, schema_editor, sqls):
-        path = Path(apps.get_app_config(self.app_name).path, 'migrations', self.filename)
+        path = Path(
+            apps.get_app_config(self.app_name).path, "migrations", self.filename
+        )
         sql = path.read_text()
-        super()._run_sql(schema_editor, sqls)  # type:ignore[misc] # underscore methods are hidden
-
-
-# TODO: add test cases for this
+        super()._run_sql(schema_editor, sql)  # type:ignore[misc] # underscore methods are hidden

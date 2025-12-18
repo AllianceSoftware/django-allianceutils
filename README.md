@@ -532,6 +532,9 @@ class Migration(migrations.Migration):
     ]
 ```
 
+**NOTE:** In mysql, having double semicolons can cause the error Query was empty (1065). This includes having them at the end 
+of comments like `/*!40101 SET character_set_client = utf8 */;`
+
 ### Models
 
 #### Utility functions / classes
