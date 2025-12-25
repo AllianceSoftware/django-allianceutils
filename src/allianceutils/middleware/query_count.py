@@ -69,8 +69,12 @@ class QueryCountMiddleware:
 
     @classmethod
     def set_threshold(cls, request: HttpRequest, threshold: int):
-        cast(QueryCountHttpRequest, request).QUERY_COUNT_WARNING_THRESHOLD = threshold
+        # Use underlying Django request if available (e.g., DRF Request)
+        target_request = getattr(request, '_request', request)
+        cast(QueryCountHttpRequest, target_request).QUERY_COUNT_WARNING_THRESHOLD = threshold
 
     @classmethod
     def increase_threshold(cls, request: HttpRequest, increment: int):
-        cast(QueryCountHttpRequest, request).QUERY_COUNT_WARNING_THRESHOLD += increment
+        # Use underlying Django request if available (e.g., DRF Request)
+        target_request = getattr(request, '_request', request)
+        cast(QueryCountHttpRequest, target_request).QUERY_COUNT_WARNING_THRESHOLD += increment
